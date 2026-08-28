@@ -15,7 +15,7 @@
 ## 2. 开工前检查
 
 - [ ] 阅读 `docs/README.md` 指定的 1–8 号文档；
-- [ ] 确认 Node 与包管理器版本；
+- [ ] 使用 `.nvmrc` 指定的 Node 24.x 与 `packageManager` 指定的 pnpm 10；
 - [ ] 初始化 Git 仓库并提交文档基线；
 - [ ] 创建 Vercel 项目但不要填公共模型 Key；
 - [ ] 创建并认领 Upstash Redis 免费实例；

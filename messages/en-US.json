@@ -1,0 +1,23 @@
+{
+  "Home": {
+    "description": "Get the problem straight before the meeting, keep the room focused while it runs, and leave with outcomes worth keeping. Locale routing, the Arco shell, and local quality gates are ready for the real workflow.",
+    "eyebrow": "A 24-hour hackathon project",
+    "localOnly": "Meeting data stays on this device",
+    "modes": {
+      "brainstorm": "Brainstorm together",
+      "brainstormDescription": "Open up the possibility space, then keep the ideas worth pursuing.",
+      "decision": "Align on a decision",
+      "decisionDescription": "Surface alternatives and risks, then push the room toward a clear call.",
+      "general": "A low-key general discussion fallback is also available",
+      "retro": "Reflect and improve",
+      "retroDescription": "Find the real cause and turn shared insight into the next action."
+    },
+    "readiness": "Scaffold readiness",
+    "readinessItems": {
+      "quality": "Local linting, type checks, and tests",
+      "routing": "Simplified Chinese, Traditional Chinese, and English routes",
+      "ui": "Arco Design application shell"
+    },
+    "title": "The meeting cheat tool for getting work done"
+  }
+}

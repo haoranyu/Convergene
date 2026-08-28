@@ -41,6 +41,7 @@ flowchart LR
 
 | 层 | 选择 | 说明 |
 |---|---|---|
+| 运行时 | Node.js 24.x + pnpm 10 | 对齐 Vercel 新项目默认 LTS 与当前 AI SDK/commitlint |
 | 应用框架 | Next.js App Router + TypeScript | 页面、BFF、部署在一个工程内 |
 | UI | Arco Design React + CSS Modules | 高密度工作台，保持单一组件系统 |
 | 国际化 | next-intl | locale 路由、ICU messages、日期/数字/复数 |
@@ -52,6 +53,7 @@ flowchart LR
 | 报告 | react-markdown + remark-gfm + Mermaid | 同时保留 Markdown 源码和安全预览 |
 | 单元/组件 | Vitest + React Testing Library | 领域函数、schema、组件状态 |
 | E2E | Playwright | 三条主流程冒烟和 locale 路由 |
+| 代码质量 | ESLint 10 + Next.js Core Web Vitals + Prettier | 使用当前官方 flat config，不绑定 Airbnb preset |
 | 部署 | Vercel Hobby | 黑客松个人演示免费，支持 Route Handlers |
 
 官方实现依据：

@@ -1,0 +1,23 @@
+{
+  "Home": {
+    "description": "会前把问题问清楚，会中把讨论收住，会后把产出带走。这里已经准备好三语路由、Arco 外壳和本地质量门禁，接下来可以开始实现真实会议流程。",
+    "eyebrow": "24 小时黑客松项目",
+    "localOnly": "会议数据仅存本机",
+    "modes": {
+      "brainstorm": "脑暴共创",
+      "brainstormDescription": "把脑洞打开，再把值得继续的候选收回来。",
+      "decision": "决策对齐",
+      "decisionDescription": "补齐备选和风险，把讨论逼近一个明确决定。",
+      "general": "另有低调的通用讨论兜底",
+      "retro": "复盘改进",
+      "retroDescription": "追到真正原因，把共识转成下一步行动。"
+    },
+    "readiness": "脚手架准备度",
+    "readinessItems": {
+      "quality": "本地 lint、类型检查与测试",
+      "routing": "简中、繁中与英文路由",
+      "ui": "Arco Design 应用外壳"
+    },
+    "title": "打工人会议作弊器"
+  }
+}
