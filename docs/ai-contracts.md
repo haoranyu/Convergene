@@ -43,11 +43,11 @@ interface AIResponse<TOutput> {
 
 | Role | 任务 | 优先级 |
 |---|---|---|
-| `fast` | 剧本分类、节点展开、随手记归类 | 延迟优先，结构化输出必须稳定 |
+| `fast` | 剧本分类、节点展开；ST-02 随手记归类 | 延迟优先，结构化输出必须稳定 |
 | `grill` | 下一问、准备度、最终 Brief | 推理与追问质量优先 |
 | `report` | 事实草稿的语言组织 | 长文本稳定性和三语表达优先 |
 
-三个 role 可以指向同一个模型。默认 model id 在真实 sponsor 环境验证后写入 Provider preset；用户可在同一 Provider 内覆盖，不改变任务 schema。
+三个 role 可以指向同一个模型。默认 model id 在真实 sponsor 环境验证后写入 Provider preset；实现 ST-01 后，用户可在同一 Provider 内覆盖，不改变任务 schema。
 
 ## 3. 剧本配置
 
@@ -232,12 +232,12 @@ interface InitialMapNodeDraft {
   note?: string
   order?: number
   topicPrompt?: string
+  transitionHint?: string
 }
 
 interface InitialMapOutput {
   nodes: InitialMapNodeDraft[]
   templateCoverage: string[]
-  transitionHints: string[]
 }
 ```
 
@@ -249,7 +249,7 @@ interface InitialMapOutput {
 - key 唯一且全部 parent 存在；
 - 无环；
 - 一级 topic order 唯一、连续；
-- 每个一级 topic 有一条短 `topicPrompt`；
+- 每个一级 topic 有一条短 `topicPrompt` 和一条短 `transitionHint`；
 - 标题符合字素与单词约束。
 
 模型返回临时 key，不生成真实 UUID、边 id 或坐标。程序校验通过后才生成领域对象并运行 Dagre。
@@ -295,7 +295,7 @@ interface ExpandNodeOutput {
 - `RETRO_TURN_INTO_ACTION` 不能虚构负责人和截止日期；
 - 客户端把所有新节点作为选中节点的直接子节点，标记 `source = EXPANSION_AI` 和 `strategyId`。
 
-## 8. `classify-note`
+## 8. `classify-note`（ST-02 Stretch）
 
 ### 输入
 

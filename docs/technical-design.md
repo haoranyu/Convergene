@@ -1,6 +1,6 @@
 # Convergene 24 小时技术设计（v0.4）
 
-> 状态：架构边界已确认，等待实现  
+> 状态：架构边界与工程基线已实现，P0 产品模块待实现
 > 目标：一个 Next.js 工程、本地会议数据、极薄 BFF、用户自带模型 Key；确定性领域逻辑与模型推理严格分离。
 
 ## 1. 架构摘要
@@ -41,6 +41,7 @@ flowchart LR
 
 | 层 | 选择 | 说明 |
 |---|---|---|
+| 运行时 | Node.js 24.x + pnpm 10 | 对齐 Vercel 新项目默认 LTS 与当前 AI SDK/commitlint |
 | 应用框架 | Next.js App Router + TypeScript | 页面、BFF、部署在一个工程内 |
 | UI | Arco Design React + CSS Modules | 高密度工作台，保持单一组件系统 |
 | 国际化 | next-intl | locale 路由、ICU messages、日期/数字/复数 |
@@ -52,6 +53,7 @@ flowchart LR
 | 报告 | react-markdown + remark-gfm + Mermaid | 同时保留 Markdown 源码和安全预览 |
 | 单元/组件 | Vitest + React Testing Library | 领域函数、schema、组件状态 |
 | E2E | Playwright | 三条主流程冒烟和 locale 路由 |
+| 代码质量 | ESLint 10 + Next.js Core Web Vitals + Prettier | 使用当前官方 flat config，不绑定 Airbnb preset |
 | 部署 | Vercel Hobby | 黑客松个人演示免费，支持 Route Handlers |
 
 官方实现依据：
@@ -68,6 +70,20 @@ flowchart LR
 
 不引入完整 Arco Pro 模板、Redux、WebSocket、队列、独立后端仓库或通用 agent 工作流框架。
 
+### 2.1 已实现的工程基线
+
+- 根目录使用 `.nvmrc` 锁定 Node 24.x，`packageManager` 与 lockfile 锁定 pnpm 10；
+- `src/app/[locale]` 已生成三种 locale 的静态页面，`src/proxy.ts` 承担 next-intl 语言检测；
+- `src/ui/app-providers.tsx` 统一接入 Arco 的简中、繁中与英文 locale；
+- `src/modules/meeting-domain` 与 `src/modules/shared` 展示深模块公共入口和 Result 类型约定；
+- `eslint.config.mjs` 使用 ESLint 10、TypeScript ESLint、Next.js Core Web Vitals 与 React Hooks 官方规则；
+- Husky `pre-commit` 执行 staged lint/format、typecheck、unit test，`commit-msg` 执行 Commitlint；
+- Vitest 默认使用 Node 环境；未来 RTL 组件测试按文件声明 jsdom，避免纯领域测试承担浏览器环境成本；
+- Playwright 基础路由测试使用 3100 端口；
+- GitHub Actions 暂不启用，所有质量门禁先在本地运行。
+
+这些内容只是可运行骨架，不表示 Dexie、Provider 配置、AI routes、会议画布或报告流程已经实现。
+
 ## 3. 存储边界
 
 ### 3.1 浏览器 IndexedDB
@@ -79,7 +95,7 @@ flowchart LR
 - 节点、边、布局位置和当前议题；
 - 会议产出、时间戳和行动项可选字段；
 - 生成的报告；
-- UI locale、导览完成状态等非敏感偏好。
+- 导览完成状态等非敏感偏好；UI locale 的路由事实源是当前 URL，`NEXT_LOCALE` Cookie 只保存下次访问偏好，不重复写入 IndexedDB。
 
 禁止保存：
 
@@ -136,7 +152,7 @@ interface Meeting {
   startedAt?: string
   endedAt?: string
   activeTopicNodeId?: string
-  brief?: MeetingBrief
+  brief?: MeetingBriefDraft | MeetingBriefSnapshot
   report?: MeetingReport
   createdAt: string
   updatedAt: string
@@ -148,7 +164,7 @@ interface ReadinessDimension {
   summary?: string
 }
 
-interface MeetingBrief {
+interface MeetingBriefContent {
   objective: string
   desiredOutcome: string
   confirmed: string[]
@@ -162,6 +178,13 @@ interface MeetingBrief {
     openingLine: string
     closingChecklist: string[]
   }
+}
+
+interface MeetingBriefDraft extends MeetingBriefContent {
+  confirmedAt?: never
+}
+
+interface MeetingBriefSnapshot extends MeetingBriefContent {
   confirmedAt: string
 }
 
@@ -193,6 +216,7 @@ interface MindMapNode {
   source: 'USER' | 'INITIAL_AI' | 'EXPANSION_AI' | 'QUICK_NOTE'
   strategyId?: StrategyId
   topicPrompt?: string
+  transitionHint?: string
   parentSuggestion?: ParentSuggestion
   createdAt: string
   updatedAt: string
@@ -229,6 +253,8 @@ interface MeetingReport {
 }
 ```
 
+准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 可以保存草稿或已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认只把草稿替换为快照，初始图成功后才转入 `MAP_READY`。
+
 `StrategyId` 的闭集定义在 [AI 任务契约](./ai-contracts.md)。不要以用户可见的翻译文案作为持久化 id。
 
 ## 5. IndexedDB 设计
@@ -240,7 +266,7 @@ db.version(1).stores({
   meetings: 'id, status, preparationStage, scheduledStartAt, updatedAt',
   nodes: 'id, meetingId, [meetingId+kind], updatedAt',
   edges: 'id, meetingId, sourceNodeId, targetNodeId, [meetingId+sourceNodeId]',
-  outcomes: 'id, meetingId, nodeId, [meetingId+origin], markedAt',
+  outcomes: 'id, meetingId, &[meetingId+nodeId], [meetingId+origin], markedAt',
   grillTurns: 'id, meetingId, [meetingId+index]',
   appState: 'key'
 })
@@ -249,9 +275,10 @@ db.version(1).stores({
 `appState` 至少保存：
 
 - `activeMeetingId`：实现唯一 `LIVE`；
-- `uiLocale`；
 - `guideCompleted`；
 - 数据导出 schema 版本。
+
+`uiLocale` 由当前 URL 决定，`NEXT_LOCALE` Cookie 保存下次访问偏好；不在 `appState` 建立可能分叉的另一份持久化事实源。
 
 关键写入使用 Dexie transaction：
 
@@ -259,6 +286,7 @@ db.version(1).stores({
 - 结束会议：更新 Meeting、清空单例状态；
 - 应用 AI 展开：验证图后同时写节点与边；
 - 确认 AI 归类：删除旧边、写新边并再次验证无环；
+- 标记会议产出：同一事务内保证每个 Meeting 的同一 Node 最多一条 Outcome；取消标记时删除该记录；
 - 删除 Meeting：级联删除节点、边、产出和 Grill turns。
 
 跨标签页使用 `BroadcastChannel` 或 Dexie live query 刷新状态；正确性依赖 IndexedDB 事务，不依赖广播消息先后。
@@ -317,7 +345,7 @@ const providerPresets = {
 } as const
 ```
 
-具体模型 id 在实现初期通过真实 sponsor 权益验证后写入。高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。
+具体模型 id 在实现初期通过真实 sponsor 权益验证后写入。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 
@@ -346,6 +374,8 @@ POST /api/ai/classify-note
 POST /api/ai/report
 ```
 
+`classify-note` Route 属于 ST-02 Stretch；其余 Route 是基础 P0。预先定义契约不代表 Stretch 已完成或进入 P0 门禁。
+
 共享处理链：
 
 ```text
@@ -371,10 +401,12 @@ deriveMeetingView(meeting, now): MeetingView
 startMeeting(state, meetingId, attendeeCount, now): StartResult
 endMeeting(state, meetingId, attendeeCount, now): EndResult
 recoverForgottenMeeting(meeting, choice): Meeting
-calculateMeetingEconomics(meeting, outcomes): MeetingEconomics
+calculateMeetingEconomics(meeting, outcomes, now): MeetingEconomics
 ```
 
-纯函数负责状态和成本；组件、模型和报告不能重复实现。
+`recoverForgottenMeeting` 是 ST-04 Stretch 接缝；基础 P0 只推导超时状态并展示 banner，不调用恢复决策。
+
+纯函数负责状态和成本；`now` 必须由调用方显式传入，以便 `LIVE` 累计人时可测试且不读取隐式系统时钟。组件、模型和报告不能重复实现。
 
 ### `mind-map-domain`
 
@@ -428,7 +460,7 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 ## 10. AI 性能与失败策略
 
-- `classify-meeting`、`expand-node`、`classify-note` 使用 fast 模型；
+- `classify-meeting`、`expand-node` 使用 fast 模型；实现 ST-02 时，`classify-note` 也使用 fast 模型；
 - `grill` 使用质量优先模型；
 - `initial-map` 和 `report` 使用结构化输出稳定的模型；
 - 若三个 role 指向同一模型，接口保持不变；

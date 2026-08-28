@@ -1,0 +1,23 @@
+{
+  "Home": {
+    "description": "會前把問題問清楚，會中把討論收住，會後把產出帶走。這裡已經準備好三語路由、Arco 外殼和本機品質門檻，接下來可以開始實作真正的會議流程。",
+    "eyebrow": "24 小時黑客松專案",
+    "localOnly": "會議資料僅存本機",
+    "modes": {
+      "brainstorm": "腦暴共創",
+      "brainstormDescription": "把腦洞打開，再把值得繼續的候選收回來。",
+      "decision": "決策對齊",
+      "decisionDescription": "補齊備選和風險，把討論推向一個明確決定。",
+      "general": "另有低調的通用討論備用模式",
+      "retro": "復盤改進",
+      "retroDescription": "追到真正原因，把共識轉成下一步行動。"
+    },
+    "readiness": "鷹架準備度",
+    "readinessItems": {
+      "quality": "本機 lint、型別檢查與測試",
+      "routing": "簡中、繁中與英文路由",
+      "ui": "Arco Design 應用外殼"
+    },
+    "title": "打工人會議作弊工具"
+  }
+}
