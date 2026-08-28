@@ -1,6 +1,6 @@
 # Convergene 24 小时技术设计（v0.4）
 
-> 状态：架构边界已确认，等待实现  
+> 状态：架构边界与工程基线已实现，P0 产品模块待实现
 > 目标：一个 Next.js 工程、本地会议数据、极薄 BFF、用户自带模型 Key；确定性领域逻辑与模型推理严格分离。
 
 ## 1. 架构摘要
@@ -69,6 +69,20 @@ flowchart LR
 - [Mermaid security configuration](https://mermaid.js.org/config/schema-docs/config-properties-securitylevel.html)
 
 不引入完整 Arco Pro 模板、Redux、WebSocket、队列、独立后端仓库或通用 agent 工作流框架。
+
+### 2.1 已实现的工程基线
+
+- 根目录使用 `.nvmrc` 锁定 Node 24.x，`packageManager` 与 lockfile 锁定 pnpm 10；
+- `src/app/[locale]` 已生成三种 locale 的静态页面，`src/proxy.ts` 承担 next-intl 语言检测；
+- `src/ui/app-providers.tsx` 统一接入 Arco 的简中、繁中与英文 locale；
+- `src/modules/meeting-domain` 与 `src/modules/shared` 展示深模块公共入口和 Result 类型约定；
+- `eslint.config.mjs` 使用 ESLint 10、TypeScript ESLint、Next.js Core Web Vitals 与 React Hooks 官方规则；
+- Husky `pre-commit` 执行 staged lint/format、typecheck、unit test，`commit-msg` 执行 Commitlint；
+- Vitest 默认使用 Node 环境；未来 RTL 组件测试按文件声明 jsdom，避免纯领域测试承担浏览器环境成本；
+- Playwright 基础路由测试使用 3100 端口；
+- GitHub Actions 暂不启用，所有质量门禁先在本地运行。
+
+这些内容只是可运行骨架，不表示 Dexie、Provider 配置、AI routes、会议画布或报告流程已经实现。
 
 ## 3. 存储边界
 

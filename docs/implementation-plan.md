@@ -14,9 +14,9 @@
 
 ## 2. 开工前检查
 
-- [ ] 阅读 `docs/README.md` 指定的 1–8 号文档；
-- [ ] 使用 `.nvmrc` 指定的 Node 24.x 与 `packageManager` 指定的 pnpm 10；
-- [ ] 初始化 Git 仓库并提交文档基线；
+- [x] 阅读 `docs/README.md` 指定的核心文档；
+- [x] 使用 `.nvmrc` 指定的 Node 24.x 与 `packageManager` 指定的 pnpm 10；
+- [x] 初始化 Git 仓库并提交文档基线；
 - [ ] 创建 Vercel 项目但不要填公共模型 Key；
 - [ ] 创建并认领 Upstash Redis 免费实例；
 - [ ] 准备 StepFun 与硅基流动测试 Key，只写本地私有环境文件；
@@ -56,12 +56,16 @@
 
 ### P0-01 初始化
 
+状态：已完成。
+
 - Next.js App Router + TypeScript；
 - ESLint/Prettier；
 - Vitest + RTL + Playwright；
 - Arco、React Flow、Dagre、Dexie、next-intl、AI SDK、Zod、react-markdown、Mermaid、Upstash SDK。
 
 ### P0-02 Locale 外壳
+
+状态：基础外壳已完成；真实产品词典随功能垂直切片继续补齐。
 
 - `[locale]` 路由；
 - `zh-CN`、`zh-TW`、`en-US` 空词典与 parity 测试；
@@ -70,11 +74,13 @@
 
 ### P0-03 模块骨架
 
+状态：基础接缝已建立；`fixtures/` 和其余 feature/module 目录按首个使用场景创建，不提交无意义空目录。
+
 - 建立 `features/`、`modules/`、`ui/`、`fixtures/`；
 - 只导出深模块公共入口，避免跨目录引用内部文件；
 - 建立统一 error code 和 Result 类型。
 
-完成门槛：三种 locale 首页均可打开；测试命令、类型检查和 build 成功。
+完成门槛：已满足。三种 locale 首页可打开；format、lint、typecheck、unit test、build 与基础 Playwright E2E 均已通过。
 
 ## 5. 领域与持久化（3–5 小时）
 

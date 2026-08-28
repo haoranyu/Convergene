@@ -1,6 +1,6 @@
 # Convergene 文档入口
 
-> 状态：产品共识已确认，等待实现  
+> 状态：产品共识与工程脚手架已完成，进入 P0 功能实现
 > 目标交付：2026-08-29 Vibe Hacks #05 的 24 小时可演示版本  
 > 产品定位：帮助会议新手的个人会议作弊器，而不是企业会议管理系统
 
@@ -11,30 +11,65 @@
 1. [产品规格](./product-spec.md)：要解决的问题、P0/P1 边界、完整用户流程和成功标准。
 2. [领域模型](./domain-model.md)：术语、状态机、数据不变量和成本算法。
 3. [技术设计](./technical-design.md)：工程架构、存储边界、安全、API 与目录结构。
-4. [AI 任务契约](./ai-contracts.md)：每个模型任务的输入、输出、约束、重试和模式差异。
-5. [UI 设计](./ui-design.md)：页面结构、画布交互、状态与响应式边界。
-6. [国际化规范](./i18n.md)：三种 locale、词典、格式化和 AI 输出语言。
-7. [验收测试](./acceptance-tests.md)：功能完成的可执行判断。
-8. [需求追踪矩阵](./traceability.md)：把 P0 需求映射到实施任务和验收证据。
-9. [24 小时实施计划](./implementation-plan.md)：依赖顺序、时间切片、降级线和 Definition of Done。
-10. [设计系统](./design-system/MASTER.md)：视觉 token、组件约束和交付检查表。
-11. [ADR](./adr/)：已经决定且不应在实现时被随意推翻的架构选择。
+4. [第三方依赖选型](./dependency-selection.md)：依赖职责、Airbnb 取舍、新增门槛与升级规则。
+5. [AI 任务契约](./ai-contracts.md)：每个模型任务的输入、输出、约束、重试和模式差异。
+6. [UI 设计](./ui-design.md)：页面结构、画布交互、状态与响应式边界。
+7. [国际化规范](./i18n.md)：三种 locale、词典、格式化和 AI 输出语言。
+8. [验收测试](./acceptance-tests.md)：功能完成的可执行判断。
+9. [需求追踪矩阵](./traceability.md)：把 P0 需求映射到实施任务和验收证据。
+10. [24 小时实施计划](./implementation-plan.md)：依赖顺序、时间切片、降级线和 Definition of Done。
+11. [设计系统](./design-system/MASTER.md)：视觉 token、组件约束和交付检查表。
+12. [ADR](./adr/)：已经决定且不应在实现时被随意推翻的架构选择。
 
 ## 文档事实源
 
-| 问题 | 事实源 |
-|---|---|
-| 产品为什么做、用户能做什么、P0 边界 | `product-spec.md` |
-| 状态、字段语义、成本、允许的状态转移 | `domain-model.md` |
-| 框架、模块、API、存储、安全和部署 | `technical-design.md` |
-| Prompt、schema、上下文与模型失败行为 | `ai-contracts.md` |
-| 页面布局、交互细节、文案与响应式 | `ui-design.md` |
-| locale、翻译与格式化 | `i18n.md` |
-| 是否完成 | `acceptance-tests.md` |
-| 需求、任务和测试如何互相追踪 | `traceability.md` |
-| 实现先后和可后移项 | `implementation-plan.md` |
+| 问题                                 | 事实源                    |
+| ------------------------------------ | ------------------------- |
+| 产品为什么做、用户能做什么、P0 边界  | `product-spec.md`         |
+| 状态、字段语义、成本、允许的状态转移 | `domain-model.md`         |
+| 框架、模块、API、存储、安全和部署    | `technical-design.md`     |
+| 依赖为什么引入、何时引入或不引入     | `dependency-selection.md` |
+| Prompt、schema、上下文与模型失败行为 | `ai-contracts.md`         |
+| 页面布局、交互细节、文案与响应式     | `ui-design.md`            |
+| locale、翻译与格式化                 | `i18n.md`                 |
+| 是否完成                             | `acceptance-tests.md`     |
+| 需求、任务和测试如何互相追踪         | `traceability.md`         |
+| 实现先后和可后移项                   | `implementation-plan.md`  |
 
 如果文档冲突：先遵守已接受的 ADR 和领域不变量，再遵守产品行为；技术与 UI 文档必须被修改到与其一致。不要在代码里默默创造新的产品规则。
+
+## 当前仓库基线
+
+工程骨架已经落地，但尚未实现真实会议闭环：
+
+- Node.js 24.x、pnpm 10、Next.js 16 App Router、React 19 与 TypeScript strict；
+- Arco Design 应用外壳和 `zh-CN`、`zh-TW`、`en-US` locale 路由；
+- `features/`、`modules/`、`ui/` 的模块接缝，以及首个确定性时间状态领域函数；
+- Vitest、React Testing Library 与 Playwright 测试入口；
+- ESLint 10 flat config、Prettier、EditorConfig、Husky、lint-staged 与 Commitlint；
+- 根目录 `AGENTS.md`／`CLAUDE.md` 作为 coding agent 的特殊入口，产品文档仍统一保存在 `docs/`；
+- 当前不配置 GitHub Actions，交付检查全部在本地执行。
+
+开始开发：
+
+```bash
+nvm use
+pnpm install
+pnpm dev
+```
+
+提交前或交付前使用：
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm test:e2e
+```
+
+其中 `pre-commit` 自动执行 lint-staged、类型检查和单测，`commit-msg` 强制 Conventional Commits。Playwright 固定使用 `127.0.0.1:3100`，避免与常用的 3000 端口冲突。
 
 ## 当前已经确认的产品骨架
 
