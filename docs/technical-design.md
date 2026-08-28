@@ -95,7 +95,7 @@ flowchart LR
 - 节点、边、布局位置和当前议题；
 - 会议产出、时间戳和行动项可选字段；
 - 生成的报告；
-- UI locale、导览完成状态等非敏感偏好。
+- 导览完成状态等非敏感偏好；UI locale 的路由事实源是当前 URL，`NEXT_LOCALE` Cookie 只保存下次访问偏好，不重复写入 IndexedDB。
 
 禁止保存：
 
@@ -152,7 +152,7 @@ interface Meeting {
   startedAt?: string
   endedAt?: string
   activeTopicNodeId?: string
-  brief?: MeetingBrief
+  brief?: MeetingBriefDraft | MeetingBriefSnapshot
   report?: MeetingReport
   createdAt: string
   updatedAt: string
@@ -164,7 +164,7 @@ interface ReadinessDimension {
   summary?: string
 }
 
-interface MeetingBrief {
+interface MeetingBriefContent {
   objective: string
   desiredOutcome: string
   confirmed: string[]
@@ -178,6 +178,13 @@ interface MeetingBrief {
     openingLine: string
     closingChecklist: string[]
   }
+}
+
+interface MeetingBriefDraft extends MeetingBriefContent {
+  confirmedAt?: never
+}
+
+interface MeetingBriefSnapshot extends MeetingBriefContent {
   confirmedAt: string
 }
 
@@ -209,6 +216,7 @@ interface MindMapNode {
   source: 'USER' | 'INITIAL_AI' | 'EXPANSION_AI' | 'QUICK_NOTE'
   strategyId?: StrategyId
   topicPrompt?: string
+  transitionHint?: string
   parentSuggestion?: ParentSuggestion
   createdAt: string
   updatedAt: string
@@ -245,6 +253,8 @@ interface MeetingReport {
 }
 ```
 
+准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 可以保存草稿或已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认只把草稿替换为快照，初始图成功后才转入 `MAP_READY`。
+
 `StrategyId` 的闭集定义在 [AI 任务契约](./ai-contracts.md)。不要以用户可见的翻译文案作为持久化 id。
 
 ## 5. IndexedDB 设计
@@ -256,7 +266,7 @@ db.version(1).stores({
   meetings: 'id, status, preparationStage, scheduledStartAt, updatedAt',
   nodes: 'id, meetingId, [meetingId+kind], updatedAt',
   edges: 'id, meetingId, sourceNodeId, targetNodeId, [meetingId+sourceNodeId]',
-  outcomes: 'id, meetingId, nodeId, [meetingId+origin], markedAt',
+  outcomes: 'id, meetingId, &[meetingId+nodeId], [meetingId+origin], markedAt',
   grillTurns: 'id, meetingId, [meetingId+index]',
   appState: 'key'
 })
@@ -265,9 +275,10 @@ db.version(1).stores({
 `appState` 至少保存：
 
 - `activeMeetingId`：实现唯一 `LIVE`；
-- `uiLocale`；
 - `guideCompleted`；
 - 数据导出 schema 版本。
+
+`uiLocale` 由当前 URL 决定，`NEXT_LOCALE` Cookie 保存下次访问偏好；不在 `appState` 建立可能分叉的另一份持久化事实源。
 
 关键写入使用 Dexie transaction：
 
@@ -275,6 +286,7 @@ db.version(1).stores({
 - 结束会议：更新 Meeting、清空单例状态；
 - 应用 AI 展开：验证图后同时写节点与边；
 - 确认 AI 归类：删除旧边、写新边并再次验证无环；
+- 标记会议产出：同一事务内保证每个 Meeting 的同一 Node 最多一条 Outcome；取消标记时删除该记录；
 - 删除 Meeting：级联删除节点、边、产出和 Grill turns。
 
 跨标签页使用 `BroadcastChannel` 或 Dexie live query 刷新状态；正确性依赖 IndexedDB 事务，不依赖广播消息先后。
@@ -333,7 +345,7 @@ const providerPresets = {
 } as const
 ```
 
-具体模型 id 在实现初期通过真实 sponsor 权益验证后写入。高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。
+具体模型 id 在实现初期通过真实 sponsor 权益验证后写入。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 
@@ -362,6 +374,8 @@ POST /api/ai/classify-note
 POST /api/ai/report
 ```
 
+`classify-note` Route 属于 ST-02 Stretch；其余 Route 是基础 P0。预先定义契约不代表 Stretch 已完成或进入 P0 门禁。
+
 共享处理链：
 
 ```text
@@ -387,10 +401,12 @@ deriveMeetingView(meeting, now): MeetingView
 startMeeting(state, meetingId, attendeeCount, now): StartResult
 endMeeting(state, meetingId, attendeeCount, now): EndResult
 recoverForgottenMeeting(meeting, choice): Meeting
-calculateMeetingEconomics(meeting, outcomes): MeetingEconomics
+calculateMeetingEconomics(meeting, outcomes, now): MeetingEconomics
 ```
 
-纯函数负责状态和成本；组件、模型和报告不能重复实现。
+`recoverForgottenMeeting` 是 ST-04 Stretch 接缝；基础 P0 只推导超时状态并展示 banner，不调用恢复决策。
+
+纯函数负责状态和成本；`now` 必须由调用方显式传入，以便 `LIVE` 累计人时可测试且不读取隐式系统时钟。组件、模型和报告不能重复实现。
 
 ### `mind-map-domain`
 
@@ -444,7 +460,7 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 ## 10. AI 性能与失败策略
 
-- `classify-meeting`、`expand-node`、`classify-note` 使用 fast 模型；
+- `classify-meeting`、`expand-node` 使用 fast 模型；实现 ST-02 时，`classify-note` 也使用 fast 模型；
 - `grill` 使用质量优先模型；
 - `initial-map` 和 `report` 使用结构化输出稳定的模型；
 - 若三个 role 指向同一模型，接口保持不变；

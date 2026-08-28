@@ -99,7 +99,7 @@ Then Grill 使用用户选择，且不要求重新调用分类。
 
 Given 已进入 Grill  
 When 用户尝试直接切换剧本  
-Then 不允许静默切换；只有“重新准备”可以清空准备内容后返回选择。
+Then 不允许静默切换；只有“重新准备”可以保留老板原话、清空剧本与准备内容后返回选择。
 
 ## 5. Grill、准备度与 Brief
 
@@ -141,9 +141,21 @@ Then 仍能生成 Brief，未知信息明确保留。
 
 ### AT-036 Brief 锁定
 
-Given 用户确认 Brief 并成功生成脑图  
-When 返回准备页  
-Then Brief 不可普通编辑；“重新准备”明确提示会清空图。
+Given 用户点击“确认并生成脑图”
+When 初始图仍在生成、生成失败或已经成功
+Then 同一 Brief 快照立即带 `confirmedAt` 并不可普通编辑，不因失败而解锁。
+
+### AT-037 Brief 失败重试
+
+Given 已确认 Brief 的初始图生成失败
+When 用户重试生成
+Then 请求继续使用同一份不可变快照，数据库中没有部分 Node/Edge；界面另提供“继续补问”和“重新准备”。
+
+### AT-038 准备回退
+
+Given Meeting 处于 `BRIEF_READY` 或 `MAP_READY`
+When 选择“继续补问”
+Then 保留原始需求、剧本和既有 Grill 问答，清空 Brief 与脑图后回到 `GRILLING`；选择“重新准备”则只保留原始需求并回到 `DRAFT`。
 
 ## 6. 初始图与树约束
 
@@ -151,7 +163,7 @@ Then Brief 不可普通编辑；“重新准备”明确提示会清空图。
 
 Given 一个已确认 Brief  
 When 初始图通过模型和校验  
-Then 生成一个根、3–5 个一级议题、最多 12 节点、两层和稳定 order。
+Then 生成一个根、3–5 个一级议题、最多 12 节点、两层和稳定 order；每个一级议题保存启动问题与转场提示。
 
 ### AT-041 非法图拒绝
 
@@ -221,15 +233,15 @@ Then 移除骨架节点、保留原图并提供重试；迟到响应不应用。
 
 Given LIVE 且有 Active Topic  
 When 用户输入并按 Enter  
-Then 无需模型即创建 `QUICK_NOTE` 节点并清空输入。
+Then 无需模型即创建 `kind = NOTE`、`source = QUICK_NOTE` 的节点并清空输入。
 
-### AT-064 AI 归类确认
+### AT-064 AI 归类确认（Stretch）
 
 Given 随手记收到合法父节点建议  
 When 用户未确认  
 Then 边不改变；接受后事务化 reparent 并重新验证无环。
 
-### AT-065 归类失败降级
+### AT-065 归类失败降级（Stretch）
 
 Given 未配置 Key或归类请求失败  
 When 创建随手记  
@@ -267,13 +279,13 @@ Given 明确 startedAt、endedAt 和人数
 When 结束会议  
 Then 总人时等于实际时长乘人数，模型输出不参与。
 
-### AT-074 遗忘恢复
+### AT-074 遗忘恢复（Stretch）
 
 Given Meeting 已超过计划结束仍 LIVE  
 When 用户重新打开应用  
 Then 显示按计划结束、填写实际结束、仍在继续三个选择，不自动处理。
 
-### AT-075 结束时间范围
+### AT-075 结束时间范围（Stretch）
 
 Given 遗忘恢复或时间修正  
 When 输入早于 startedAt 或晚于当前时间  
@@ -284,6 +296,12 @@ Then 拒绝并显示本地化校验错误。
 Given Meeting 已经结束  
 When 用户尝试再次开始该 Meeting  
 Then 领域层和界面都拒绝 `ENDED -> LIVE`；用户只能查看、导出或使用允许的会后补记能力。
+
+### AT-077 进行中累计人时
+
+Given Meeting 为 `LIVE` 且有 `startedAt` 和实际人数
+When 时钟推进但会议尚未结束
+Then 累计人时使用 `(now - startedAt) × actualAttendeeCount` 实时推导，不写入伪造的 `endedAt`。
 
 ## 10. 会议产出
 
@@ -305,7 +323,7 @@ Given 多个 `LIVE` outcome 具有标记时间
 When 计算成本  
 Then 首项从 startedAt 算，后续从前项算，结束后剩余为未归属人时。
 
-### AT-083 会后补记
+### AT-083 会后补记（Stretch）
 
 Given Meeting 已 ENDED  
 When 新增 Outcome  
@@ -316,6 +334,12 @@ Then origin 为 `POST_MEETING`，报告标注会后补记且不显示形成成�
 Given 多个会中 Outcome  
 When 用户确认取消其中一个  
 Then 其余成本按标记顺序重算，取消前提示影响。
+
+### AT-085 单节点单产出
+
+Given 同一 Meeting 的某 Node 已有 Outcome
+When 再次尝试为该 Node 创建另一个 Outcome
+Then 领域层和 IndexedDB transaction 拒绝重复记录；用户必须编辑现有标记或先取消它。
 
 ## 11. 散会与报告
 
@@ -442,6 +466,12 @@ Then 焦点可见、顺序合理、Esc 后返回触发元素。
 Given 浏览器缩放 200%  
 When 完成主操作  
 Then 开始、结束、提交、保存等操作不被截断或只能 hover 访问。
+
+### AT-117 手机树状操作（Stretch）
+
+Given 375px viewport 且已实现 ST-05
+When 用户在分组树中新增、移动或重排节点
+Then 操作不依赖完整画布或 hover，写入后仍通过树不变量校验，并可在桌面画布正确恢复。
 
 ## 14. 发布冒烟矩阵
 

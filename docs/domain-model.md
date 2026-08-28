@@ -48,7 +48,7 @@ Convergene 管理的是单个用户在一台设备上筹备、主持和整理会
 |---|---|
 | `DRAFT` | 只有原始需求，尚未确认 AI 推荐的剧本 |
 | `GRILLING` | 已锁定剧本，正在逐轮澄清 |
-| `BRIEF_READY` | Grill 已结束，Brief 等待用户编辑和确认 |
+| `BRIEF_READY` | Grill 已结束；Brief 可能仍可编辑，也可能已确认锁定并等待初始图成功生成 |
 | `MAP_READY` | Brief 已锁定，初始会议图已成功生成 |
 
 ### Timing State（时间状态）
@@ -71,7 +71,7 @@ UI 可以使用分段进度条呈现已覆盖维度，但不能渲染成虚假�
 
 ### Meeting Brief（会议简报）
 
-Grill 的结构化结果，区分已经确认的信息、暂时采用的假设和尚未解决的问题。用户确认生成脑图后，Brief 成为不可变的准备快照。
+Grill 的结构化结果，区分已经确认的信息、暂时采用的假设和尚未解决的问题。点击“确认并生成脑图”时，Brief 立即成为带 `confirmedAt` 的不可变准备快照；初始图失败不会解锁或替换该快照。
 
 ### Meeting Graph（会议图）
 
@@ -137,8 +137,13 @@ stateDiagram-v2
     [*] --> PREPARING_DRAFT: 创建会议
     PREPARING_DRAFT --> PREPARING_GRILLING: 确认会议剧本
     PREPARING_GRILLING --> PREPARING_BRIEF_READY: 结束 Grill
-    PREPARING_BRIEF_READY --> PREPARING_MAP_READY: 确认 Brief 并生成脑图
-    PREPARING_MAP_READY --> PREPARING_GRILLING: 重新准备并清空脑图
+    PREPARING_BRIEF_READY --> PREPARING_BRIEF_READY: 确认并锁定 Brief / 生成失败或重试
+    PREPARING_BRIEF_READY --> PREPARING_MAP_READY: 已确认 Brief 的初始图生成成功
+    PREPARING_BRIEF_READY --> PREPARING_GRILLING: 继续补问
+    PREPARING_MAP_READY --> PREPARING_GRILLING: 继续补问并清空 Brief 与脑图
+    PREPARING_GRILLING --> PREPARING_DRAFT: 重新准备
+    PREPARING_BRIEF_READY --> PREPARING_DRAFT: 重新准备
+    PREPARING_MAP_READY --> PREPARING_DRAFT: 重新准备并清空脑图
     PREPARING_MAP_READY --> LIVE: 开始会议
     LIVE --> ENDED: 二次确认结束
     ENDED --> ENDED: 修正文案或补记产出
@@ -152,6 +157,12 @@ stateDiagram-v2
 - 只有 `MAP_READY` 可以开始会议；
 - 同一浏览器的数据域内最多只有一个 `LIVE` Meeting。
 
+准备回退规则：
+
+- “继续补问”保留原始需求、已锁定剧本和既有 Grill 问答，清空 Brief 快照与脑图后回到 `GRILLING`；
+- “重新准备”只保留原始需求，清空剧本选择、Grill、Brief 与脑图后回到 `DRAFT`；
+- 已确认 Brief 的初始图生成失败时不发生阶段转移，也不能普通编辑；用户只能重试、继续补问或重新准备。
+
 ## 4. 时间状态推导
 
 | 生命周期与时间条件 | 显示状态 |
@@ -163,7 +174,7 @@ stateDiagram-v2
 | `ENDED` 且实际结束不晚于计划结束 | 已结束 · 准时 |
 | `ENDED` 且实际结束晚于计划结束 | 已结束 · 超时 |
 
-用户再次打开应用时，如果会议在计划结束后仍为 `LIVE`，进入遗忘恢复流程；系统仍不能自动选择结束时间。
+用户再次打开应用时，如果会议在计划结束后仍为 `LIVE`，P0 显示不可忽略的超时 banner；实现 ST-04 后才进入遗忘恢复向导。两种情况下系统都不能自动选择结束时间。
 
 ## 5. 会议图不变量
 
@@ -178,17 +189,18 @@ P0 每次写入后必须验证：
 7. 单次 AI 展开只增加 2–4 个节点；
 8. AI 不能删除、移动、重命名或标记已有节点；
 9. AI 归类建议不能自动改边，必须等待用户确认；
-10. UI 坐标不参与领域语义，重新布局不能改变父子关系和议题顺序。
+10. 每个一级 `TOPIC` 都保存一条短启动问题和一条短转场提示；
+11. UI 坐标不参与领域语义，重新布局不能改变父子关系和议题顺序。
 
 ## 6. 人时与产出成本
 
 ### 总人时
 
 ```text
-总人时 = (实际结束时间 - 实际开始时间) × 实际参会人数
+总人时 = (有效计算结束时间 - 实际开始时间) × 实际参会人数
 ```
 
-P0 使用单一实际参会人数。开始时确认，结束前可以修正；修正后统一重算，不记录人员中途进出。
+`LIVE` 时有效计算结束时间取当前时间 `now`，用于展示累计人时；`ENDED` 后固定取 `endedAt`。P0 使用单一实际参会人数。开始时确认，结束前可以修正；修正后统一重算，不记录人员中途进出。
 
 ### 会中产出形成成本
 
@@ -197,7 +209,7 @@ P0 使用单一实际参会人数。开始时确认，结束前可以修正；�
 ```text
 首项成本 = (首项标记时间 - 实际开始时间) × 实际参会人数
 后续成本 = (本项标记时间 - 上一项标记时间) × 实际参会人数
-未归属人时 = (实际结束时间 - 最后一项标记时间) × 实际参会人数
+未归属人时 = (有效计算结束时间 - 最后一项标记时间) × 实际参会人数
 ```
 
 边界规则：
@@ -205,7 +217,7 @@ P0 使用单一实际参会人数。开始时确认，结束前可以修正；�
 - 没有会中产出时，总人时全部为未归属人时；
 - 会后补记不参与排序和成本；
 - 取消会中产出后，对其余产出重新计算；
-- 标记时间必须位于实际开始和实际结束之间；
+- `LIVE` 标记时间必须位于 `startedAt` 与当前时间之间；结束后必须位于 `startedAt` 与 `endedAt` 之间；
 - 显示值可以四舍五入，领域计算保持毫秒或整数分钟精度；
 - 报告必须写“估算”，不得写成精确财务成本。
 
@@ -213,7 +225,7 @@ P0 使用单一实际参会人数。开始时确认，结束前可以修正；�
 
 ```mermaid
 erDiagram
-    MEETING ||--|| MEETING_BRIEF : locks
+    MEETING ||--o| MEETING_BRIEF : locks
     MEETING ||--o{ MIND_MAP_NODE : owns
     MEETING ||--o{ MIND_MAP_EDGE : owns
     MEETING ||--o{ MEETING_OUTCOME : marks
@@ -230,8 +242,10 @@ erDiagram
 
 - `meeting.created`
 - `meeting.scriptConfirmed`
+- `preparation.restarted`
 - `grill.answered`
 - `grill.extended`
+- `grill.resumed`
 - `brief.confirmed`
 - `map.generated`
 - `meeting.started`
@@ -251,6 +265,6 @@ erDiagram
 - 用户操作是会议状态、当前议题、节点移动和会议产出的唯一事实来源。
 - 模型生成建议，不生成事实；时间、人时、父子关系和 Mermaid 均由确定性代码处理。
 - 一个设备同时只主持一场会议。
-- Brief 是生成脑图前的不可变快照，不做双向同步。
+- Brief 在确认前是草稿，点击确认后立即成为不可变快照；生成失败不解锁，也不与脑图双向同步。
 - 会议数据不上传服务端；配置模型不代表开启云同步。
 - 通用讨论是兜底，不削弱三种主剧本的产品表达。
