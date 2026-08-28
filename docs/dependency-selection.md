@@ -160,6 +160,8 @@
 
 Spike 失败时优先降级为已有依赖能稳定完成的方案，不马上引入第二套大型框架。
 
+2026-08-29 验证结论见 [高风险集成验证记录](./integration-validation.md)：现有依赖已通过 AES-256-GCM、真实 Upstash 加密 set/get/续期/delete、12 节点 Dagre LR、真实 Chromium 长英文 DOM 尺寸/换行测量、React Flow subtree bounds/viewport 纯计算和 instance 显式 `fitView`，以及 Mermaid strict flowchart/timeline/pie，不需要替换依赖。Mermaid timeline 的 period 不接受 `10:00` 这类时钟冒号，使用受控 `Minute 15` label 或降级为 flowchart/table。StepFun `step-3.7-flash` 与硅基流动 `deepseek-ai/DeepSeek-V4-Flash` 均通过真实 streaming、JSON Schema、bounded timeout 和 invalid-model 脱敏错误测试；`@ai-sdk/openai-compatible` 必须设置 `supportsStructuredOutputs: true`，且 StepFun 的最小 probe 需为 reasoning token 预留 512 token 输出预算。
+
 ## 11. 给 Coding Agent 的决策检查
 
 实现任务前按顺序判断：

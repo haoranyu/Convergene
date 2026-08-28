@@ -336,16 +336,20 @@ interface EncryptedProviderConfig {
 const providerPresets = {
   STEPFUN: {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
-    defaultModels: { grill: 'TBD_VERIFIED', fast: 'TBD_VERIFIED', report: 'TBD_VERIFIED' }
+    defaultModels: { grill: 'step-3.7-flash', fast: 'step-3.7-flash', report: 'step-3.7-flash' }
   },
   SILICONFLOW: {
     baseURL: 'https://api.siliconflow.cn/v1',
-    defaultModels: { grill: 'TBD_VERIFIED', fast: 'TBD_VERIFIED', report: 'TBD_VERIFIED' }
+    defaultModels: {
+      grill: 'deepseek-ai/DeepSeek-V4-Flash',
+      fast: 'deepseek-ai/DeepSeek-V4-Flash',
+      report: 'deepseek-ai/DeepSeek-V4-Flash'
+    }
   }
 } as const
 ```
 
-具体模型 id 在实现初期通过真实 sponsor 权益验证后写入。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
+2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema；StepFun 还会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。probe 使用 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 
@@ -618,13 +622,15 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 
 开始主功能前完成：
 
-- [ ] 在 Vercel/本地创建 Upstash Redis 并验证 TTL；
-- [ ] 验证 AES-GCM round-trip 和错误密钥失败行为；
-- [ ] 用 sponsor Key 验证两个 Provider 的 Base URL、模型 id 和结构化输出；
+- [x] 创建 Upstash Redis Free 实例，并用临时注入的服务端环境变量验证加密 set/get/续期/delete；
+- [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
+- [x] 用 sponsor Key 验证两个 Provider 的 Base URL、模型 id、streaming、结构化输出、timeout 和错误格式；六个 live case 均通过；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；
-- [ ] 验证 React Flow subtree `fitView` 与 Dagre LR 布局；
-- [ ] 验证 Mermaid 目标图类型；不稳定则切换为 flowchart/table；
+- [x] 在 test-only Vite page 用真实 Chromium 验证 12 节点长文本 DOM 尺寸/换行、Dagre LR、subtree bounds/viewport 和 React Flow instance 显式 `fitView`；
+- [x] 验证 Mermaid flowchart、受控 period label 的 timeline 和 pie；时钟冒号 timeline 降级为 flowchart/table；
 - [ ] 验证 IndexedDB 在目标浏览器和无痕模式的失败提示。
+
+Spike 的测试位置、官方资料、候选 model mapping 和未解除 blocker 统一记录在 [高风险集成验证记录](./integration-validation.md)。
 
 ## 19. 相关决策
 
