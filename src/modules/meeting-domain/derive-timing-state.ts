@@ -1,21 +1,37 @@
 import type { MeetingTiming, TimingState } from './model';
 
+function timestamp(value: string, field: string): number {
+  const parsed = Date.parse(value);
+
+  if (!Number.isFinite(parsed)) {
+    throw new RangeError(`${field} must be a valid ISO timestamp`);
+  }
+
+  return parsed;
+}
+
 export function deriveTimingState(meeting: MeetingTiming, now: Date): TimingState {
-  if (meeting.status === 'ENDED' || meeting.endedAt) {
-    return 'FINISHED';
-  }
-
   const nowTimestamp = now.getTime();
-  const scheduledStart = Date.parse(meeting.scheduledStartAt);
-  const scheduledEnd = Date.parse(meeting.scheduledEndAt);
+  const scheduledStart = timestamp(meeting.scheduledStartAt, 'scheduledStartAt');
+  const scheduledEnd = timestamp(meeting.scheduledEndAt, 'scheduledEndAt');
 
-  if (nowTimestamp < scheduledStart) {
-    return 'BEFORE_SCHEDULE';
+  if (!Number.isFinite(nowTimestamp) || scheduledEnd <= scheduledStart) {
+    throw new RangeError('Meeting timing must contain a valid, increasing schedule');
   }
 
-  if (nowTimestamp > scheduledEnd) {
-    return 'OVERRUN';
+  if (meeting.status === 'ENDED') {
+    if (meeting.endedAt === undefined) {
+      throw new RangeError('An ended meeting must have endedAt');
+    }
+
+    return timestamp(meeting.endedAt, 'endedAt') <= scheduledEnd
+      ? 'ENDED_ON_TIME'
+      : 'ENDED_OVERRUN';
   }
 
-  return 'WITHIN_SCHEDULE';
+  if (meeting.status === 'LIVE') {
+    return nowTimestamp <= scheduledEnd ? 'LIVE' : 'LIVE_OVERRUN';
+  }
+
+  return nowTimestamp < scheduledStart ? 'PREPARING' : 'WAITING_TO_START';
 }
