@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../../messages/en-US.json';
 import type { ProviderConfigClient } from './api-client';
@@ -24,6 +24,8 @@ beforeAll(() => {
     writable: true,
   });
 });
+
+afterEach(cleanup);
 
 function renderPanel(api: ProviderConfigClient) {
   return render(
@@ -125,5 +127,24 @@ describe('ProviderConfigPanel', () => {
     expect(apiKey).toHaveValue('');
     expect(screen.queryByText('rejected-plaintext-key')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save configuration' })).toBeDisabled();
+  });
+
+  it('keeps the reconfiguration form available when the stored envelope is invalid', async () => {
+    const api: ProviderConfigClient = {
+      deleteConfig: vi.fn(),
+      getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
+        error: { code: 'PROVIDER_CONFIG_INVALID' },
+        ok: false,
+      }),
+      saveConfig: vi.fn(),
+      testConnection: vi.fn(),
+    };
+
+    renderPanel(api);
+
+    expect(await screen.findByLabelText('API key')).toBeVisible();
+    expect(
+      screen.getByText('The saved configuration can no longer be used. Enter the key again.'),
+    ).toBeVisible();
   });
 });

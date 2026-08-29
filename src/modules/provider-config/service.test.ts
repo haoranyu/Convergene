@@ -18,7 +18,7 @@ import {
 
 class MemoryProviderConfigStore implements ProviderConfigStore {
   readonly records = new Map<string, EncryptedProviderConfig>();
-  readonly renewed: Array<{ key: string; ttlSeconds: number }> = [];
+  readonly touched: Array<{ key: string; lastUsedAt: string; ttlSeconds: number }> = [];
   readonly rateCounts = new Map<string, number>();
 
   consumeRateLimit(key: string): Promise<number> {
@@ -31,17 +31,26 @@ class MemoryProviderConfigStore implements ProviderConfigStore {
     this.records.delete(key);
   }
 
-  get(key: string): Promise<EncryptedProviderConfig | null> {
+  get(key: string): Promise<unknown> {
     return Promise.resolve(this.records.get(key) ?? null);
   }
 
-  renew(key: string, ttlSeconds: number): Promise<boolean> {
-    this.renewed.push({ key, ttlSeconds });
+  has(key: string): Promise<boolean> {
     return Promise.resolve(this.records.has(key));
   }
 
   async set(key: string, value: EncryptedProviderConfig): Promise<void> {
     this.records.set(key, value);
+  }
+
+  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<boolean> {
+    this.touched.push({ key, lastUsedAt, ttlSeconds });
+    const current = this.records.get(key);
+    if (!current) {
+      return Promise.resolve(false);
+    }
+    this.records.set(key, { ...current, lastUsedAt });
+    return Promise.resolve(true);
   }
 }
 
@@ -142,18 +151,53 @@ describe('provider configuration service', () => {
     });
     await service.save(input);
     session.values.length = 0;
-    store.renewed.length = 0;
+    store.touched.length = 0;
 
     const summary = await service.getStatus();
 
     expect(summary).toMatchObject({ configured: true, keyHint: '••••••••' });
-    expect(store.renewed).toEqual([
-      { key: providerConfigKey(sessionId), ttlSeconds: providerConfigTtlSeconds },
+    expect(store.touched).toEqual([
+      {
+        key: providerConfigKey(sessionId),
+        lastUsedAt: fixedNow.toISOString(),
+        ttlSeconds: providerConfigTtlSeconds,
+      },
     ]);
     expect(session.values).toEqual([sessionId]);
   });
 
-  it('returns a reconfiguration state without exposing a corrupted encrypted record', async () => {
+  it('does not materialize plaintext during status reads and decrypts only for AI resolution', async () => {
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession(sessionId);
+    const savingService = createProviderConfigService({
+      encryptionSecret,
+      session,
+      store,
+      testConnection: vi.fn().mockResolvedValue({
+        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        provider: 'STEPFUN',
+      }),
+    });
+    await savingService.save(input);
+    const serviceWithRotatedSecret = createProviderConfigService({
+      encryptionSecret: randomBytes(32).toString('base64'),
+      session,
+      store,
+      testConnection: vi.fn(),
+    });
+
+    await expect(serviceWithRotatedSecret.getStatus()).resolves.toMatchObject({
+      configured: true,
+      provider: 'STEPFUN',
+      state: 'AVAILABLE',
+    });
+    await expect(serviceWithRotatedSecret.resolve()).rejects.toMatchObject({
+      code: 'PROVIDER_CONFIG_INVALID',
+    });
+  });
+
+  it('rejects a malformed encrypted record without treating it as missing', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
     const session = createMemorySession(sessionId);
@@ -170,16 +214,25 @@ describe('provider configuration service', () => {
       encryptionSecret,
       session,
       store,
-      testConnection: vi.fn(),
+      testConnection: vi.fn().mockResolvedValue({
+        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        provider: 'STEPFUN',
+      }),
     });
 
-    expect(await service.getStatus()).toMatchObject({
-      configured: true,
-      keyHint: '••••••••',
-      provider: 'SILICONFLOW',
-      state: 'NEEDS_RECONFIGURATION',
+    await expect(service.getStatus()).rejects.toMatchObject({
+      code: 'PROVIDER_CONFIG_INVALID',
     });
-    expect(store.renewed).toHaveLength(0);
+    expect(store.touched).toHaveLength(0);
+
+    await expect(service.save(input)).resolves.toMatchObject({
+      configured: true,
+      provider: 'STEPFUN',
+      state: 'AVAILABLE',
+    });
+    expect(JSON.stringify(store.records.get(providerConfigKey(sessionId)))).not.toContain(
+      input.apiKey,
+    );
   });
 
   it('resolves plaintext only in request memory and renews the sliding TTL', async () => {
@@ -196,14 +249,18 @@ describe('provider configuration service', () => {
       }),
     });
     await service.save(input);
-    store.renewed.length = 0;
+    store.touched.length = 0;
 
     await expect(service.resolve()).resolves.toMatchObject({
       apiKey: input.apiKey,
       provider: 'STEPFUN',
     });
-    expect(store.renewed).toEqual([
-      { key: providerConfigKey(sessionId), ttlSeconds: providerConfigTtlSeconds },
+    expect(store.touched).toEqual([
+      {
+        key: providerConfigKey(sessionId),
+        lastUsedAt: expect.any(String),
+        ttlSeconds: providerConfigTtlSeconds,
+      },
     ]);
   });
 

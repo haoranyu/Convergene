@@ -1,4 +1,13 @@
-export { providerConfigInputSchema, providerIdSchema, providerIds } from './model';
+export {
+  providerConfigApiResponseSchema,
+  providerConfigErrorCodeSchema,
+  providerConfigInputSchema,
+  providerConfigSummarySchema,
+  providerConnectionResultSchema,
+  providerIdSchema,
+  providerIds,
+  providerModelMappingSchema,
+} from './model';
 export { providerPresets } from './presets';
 export type {
   ProviderConfigApiResponse,

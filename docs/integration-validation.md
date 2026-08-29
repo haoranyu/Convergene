@@ -69,6 +69,12 @@ P0-07/P0-08 产品实现完成后，另以 production build 的本地 server 对
 与 Cookie TTL 续至 30 天并只返回恒定掩码；两次 `DELETE` 均成功且 record 最终不存在。探针只
 输出状态码和布尔断言，测试 record 已删除，凭据仍只存在于注入它的子进程环境。
 
+审查加固后又对真实 Provider 做了无效模型校准：StepFun 返回 HTTP 404；SiliconFlow 返回
+HTTP 400 且安全业务码为 `20012`。产品 adapter 因此只把 StepFun 固定 endpoint 的 404 和
+SiliconFlow 的 400/`20012` 归一化为 `PROVIDER_MODEL_NOT_FOUND`；其他 400 保留为结构化输出
+无效，避免把任意客户端错误误报成模型不存在。adapter 只解析有界错误体中的安全业务码，不
+返回或记录原始 body。
+
 提供三个变量后可运行同一测试；代码不会输出它们：
 
 ```bash

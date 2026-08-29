@@ -1,13 +1,15 @@
+import 'server-only';
+
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { APICallError, Output, streamText } from 'ai';
 import type { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
 import { providerPresets } from '../provider-config';
-import type { ProviderModelMapping } from '../provider-config/model';
+import type { ProviderModelMapping } from '../provider-config';
 
-const defaultTimeoutMs = 30_000;
-const maximumTimeoutMs = 60_000;
+const defaultTimeoutMs = 15_000;
+const maximumTimeoutMs = 30_000;
 const minimumMaxOutputTokens = 512;
 
 export type ProviderTaskRole = keyof ProviderModelMapping;
@@ -45,7 +47,13 @@ interface StructuredProviderCallOptions<Schema extends z.ZodType> {
   timeoutMs?: number;
 }
 
-function findStatusCode(error: unknown): number | undefined {
+interface SafeApiErrorMetadata {
+  data?: unknown;
+  responseBody?: string;
+  statusCode?: number;
+}
+
+function findApiErrorMetadata(error: unknown): SafeApiErrorMetadata | undefined {
   let current = error;
   const seen = new Set<unknown>();
 
@@ -53,12 +61,26 @@ function findStatusCode(error: unknown): number | undefined {
     seen.add(current);
 
     if (APICallError.isInstance(current)) {
-      return current.statusCode;
+      return {
+        data: current.data,
+        responseBody: current.responseBody,
+        statusCode: current.statusCode,
+      };
     }
 
-    const candidate = current as { cause?: unknown; statusCode?: unknown };
+    const candidate = current as {
+      cause?: unknown;
+      data?: unknown;
+      responseBody?: unknown;
+      statusCode?: unknown;
+    };
     if (typeof candidate.statusCode === 'number') {
-      return candidate.statusCode;
+      return {
+        data: candidate.data,
+        responseBody:
+          typeof candidate.responseBody === 'string' ? candidate.responseBody : undefined,
+        statusCode: candidate.statusCode,
+      };
     }
 
     current = candidate.cause;
@@ -67,8 +89,65 @@ function findStatusCode(error: unknown): number | undefined {
   return undefined;
 }
 
+function safeProviderResponseCode(responseBody: string | undefined): string | number | undefined {
+  if (!responseBody || responseBody.length > 4_096) {
+    return undefined;
+  }
+
+  try {
+    return safeProviderErrorCode(JSON.parse(responseBody));
+  } catch {
+    return undefined;
+  }
+}
+
+function hasTypeError(error: unknown): boolean {
+  let current = error;
+  const seen = new Set<unknown>();
+
+  while (typeof current === 'object' && current !== null && !seen.has(current)) {
+    if (current instanceof TypeError) {
+      return true;
+    }
+    seen.add(current);
+    current = (current as { cause?: unknown }).cause;
+  }
+
+  return false;
+}
+
+function safeProviderErrorCode(data: unknown): string | number | undefined {
+  if (typeof data !== 'object' || data === null) {
+    return undefined;
+  }
+
+  if ('code' in data && (typeof data.code === 'string' || typeof data.code === 'number')) {
+    return data.code;
+  }
+
+  return 'error' in data ? safeProviderErrorCode(data.error) : undefined;
+}
+
+function isKnownMissingModel(
+  provider: ProviderId,
+  metadata: SafeApiErrorMetadata | undefined,
+): boolean {
+  if (metadata?.statusCode === 404) {
+    return true;
+  }
+
+  return (
+    provider === 'SILICONFLOW' &&
+    metadata?.statusCode === 400 &&
+    String(
+      safeProviderErrorCode(metadata.data) ?? safeProviderResponseCode(metadata.responseBody),
+    ) === '20012'
+  );
+}
+
 function normalizeProviderError(
   error: unknown,
+  provider: ProviderId,
   callerAborted: boolean,
   timeoutAborted: boolean,
 ): ProviderGatewayError {
@@ -80,17 +159,24 @@ function normalizeProviderError(
     return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
   }
 
-  const statusCode = findStatusCode(error);
+  const metadata = findApiErrorMetadata(error);
+  const statusCode = metadata?.statusCode;
   if (statusCode === 401 || statusCode === 403) {
     return new ProviderGatewayError('PROVIDER_AUTH_FAILED');
   }
-  if (statusCode === 400 || statusCode === 404) {
+  if (isKnownMissingModel(provider, metadata)) {
     return new ProviderGatewayError('PROVIDER_MODEL_NOT_FOUND');
   }
   if (statusCode === 429) {
     return new ProviderGatewayError('PROVIDER_RATE_LIMITED');
   }
   if (statusCode !== undefined && statusCode >= 500) {
+    return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
+  }
+  if (metadata && statusCode === undefined) {
+    return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
+  }
+  if (hasTypeError(error)) {
     return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
   }
 
@@ -142,6 +228,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
   } catch (error) {
     throw normalizeProviderError(
       streamedError ?? error,
+      config.provider,
       abortSignal?.aborted === true,
       timeoutController.signal.aborted,
     );

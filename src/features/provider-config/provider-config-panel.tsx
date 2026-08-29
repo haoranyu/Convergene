@@ -112,7 +112,11 @@ export function ProviderConfigPanel({
         return;
       }
 
-      setStatus(null);
+      setStatus(
+        result.error.code === 'PROVIDER_CONFIG_INVALID'
+          ? { configured: false, state: 'NOT_CONFIGURED' }
+          : null,
+      );
       setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
     },
     [form, t],

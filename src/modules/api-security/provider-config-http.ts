@@ -1,12 +1,22 @@
+import 'server-only';
+
 import type { ProviderConfigInput } from '../provider-config';
 import { providerConfigInputSchema } from '../provider-config';
-import { parseProviderSessionId, providerSessionCookieName } from '../provider-config/session';
-import { rateLimitKey, type ProviderConfigStore } from '../provider-config/store';
+import {
+  parseProviderSessionId,
+  providerConfigKey,
+  providerSessionCookieName,
+  rateLimitKey,
+  type ProviderConfigStore,
+} from '../provider-config/server';
 
 const maximumRequestBodyBytes = 2_048;
 
 export class ApiSecurityError extends Error {
-  constructor(readonly code: 'INPUT_INVALID' | 'ORIGIN_INVALID' | 'RATE_LIMITED') {
+  constructor(
+    readonly code:
+      'INPUT_INVALID' | 'ORIGIN_INVALID' | 'PROVIDER_CONFIG_UNAVAILABLE' | 'RATE_LIMITED',
+  ) {
     super(code);
     this.name = 'ApiSecurityError';
   }
@@ -100,16 +110,18 @@ function getCookie(request: Request, name: string): string | undefined {
   return undefined;
 }
 
-function requestRateLimitScope(request: Request): string {
+async function requestRateLimitScope(
+  request: Request,
+  store: ProviderConfigStore,
+): Promise<string> {
   const sessionId = parseProviderSessionId(getCookie(request, providerSessionCookieName));
-  if (sessionId) {
+  if (sessionId && (await store.has(providerConfigKey(sessionId)))) {
     return `session:${sessionId}`;
   }
 
-  const forwardedFor =
-    request.headers.get('x-vercel-forwarded-for') ??
-    request.headers.get('x-forwarded-for')?.split(',', 1)[0]?.trim() ??
-    'unknown-client';
+  const forwardedForHeader =
+    request.headers.get('x-vercel-forwarded-for') ?? request.headers.get('x-forwarded-for');
+  const forwardedFor = forwardedForHeader?.split(',', 1)[0]?.trim() || 'unknown-client';
   return `client:${forwardedFor}`;
 }
 
@@ -120,11 +132,8 @@ export async function enforceProviderConfigRateLimit(
   windowSeconds = 60,
 ): Promise<void> {
   try {
-    const count = await store.consumeRateLimit(
-      rateLimitKey(requestRateLimitScope(request)),
-      limit,
-      windowSeconds,
-    );
+    const scope = await requestRateLimitScope(request, store);
+    const count = await store.consumeRateLimit(rateLimitKey(scope), limit, windowSeconds);
     if (count > limit) {
       throw new ApiSecurityError('RATE_LIMITED');
     }
@@ -132,6 +141,6 @@ export async function enforceProviderConfigRateLimit(
     if (error instanceof ApiSecurityError) {
       throw error;
     }
-    throw new ApiSecurityError('RATE_LIMITED');
+    throw new ApiSecurityError('PROVIDER_CONFIG_UNAVAILABLE');
   }
 }

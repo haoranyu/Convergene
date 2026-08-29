@@ -18,4 +18,25 @@ describe('providerConfigClient', () => {
 
     expect(result).toEqual({ error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false });
   });
+
+  it('rejects malformed success values instead of trusting a TypeScript cast', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        ok: true,
+        value: {
+          configured: true,
+          keyHint: 'provider-key-suffix',
+          lastUsedAt: 'not-a-timestamp',
+          models: { fast: 'unsafe-only-one-role' },
+          provider: 'UNKNOWN',
+          state: 'AVAILABLE',
+        },
+      }),
+    );
+
+    await expect(createProviderConfigClient(fetchImplementation).getStatus()).resolves.toEqual({
+      error: { code: 'PROVIDER_UNAVAILABLE' },
+      ok: false,
+    });
+  });
 });

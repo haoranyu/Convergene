@@ -1,10 +1,15 @@
 import type {
   ProviderConfigApiResponse,
-  ProviderConfigErrorCode,
   ProviderConfigInput,
   ProviderConfigSummary,
   ProviderConnectionResult,
 } from '@/modules/provider-config';
+import {
+  providerConfigApiResponseSchema,
+  providerConfigSummarySchema,
+  providerConnectionResultSchema,
+} from '@/modules/provider-config';
+import type { z } from 'zod';
 
 type FetchImplementation = typeof fetch;
 
@@ -22,50 +27,19 @@ const fallbackFailure = {
   ok: false as const,
 };
 
-const errorCodes = new Set<ProviderConfigErrorCode>([
-  'INPUT_INVALID',
-  'ORIGIN_INVALID',
-  'PROVIDER_AUTH_FAILED',
-  'PROVIDER_CONFIG_INVALID',
-  'PROVIDER_CONFIG_UNAVAILABLE',
-  'PROVIDER_MODEL_NOT_FOUND',
-  'PROVIDER_RATE_LIMITED',
-  'PROVIDER_UNAVAILABLE',
-  'RATE_LIMITED',
-]);
-
-function normalizeApiResponse<Value>(value: unknown): ProviderConfigApiResponse<Value> | null {
-  if (typeof value !== 'object' || value === null || !('ok' in value)) {
-    return null;
-  }
-
-  if (value.ok === true && 'value' in value) {
-    return { ok: true, value: value.value as Value };
-  }
-
-  const candidateError = 'error' in value ? value.error : null;
-
-  if (
-    value.ok !== false ||
-    typeof candidateError !== 'object' ||
-    candidateError === null ||
-    !('code' in candidateError) ||
-    typeof candidateError.code !== 'string' ||
-    !errorCodes.has(candidateError.code as ProviderConfigErrorCode)
-  ) {
-    return null;
-  }
-
-  return {
-    error: { code: candidateError.code as ProviderConfigErrorCode },
-    ok: false,
-  };
+function normalizeApiResponse<Value>(
+  value: unknown,
+  valueSchema: z.ZodType<Value>,
+): ProviderConfigApiResponse<Value> | null {
+  const parsed = providerConfigApiResponseSchema(valueSchema).safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 async function request<Value>(
   fetchImplementation: FetchImplementation,
   path: string,
   init: RequestInit,
+  valueSchema: z.ZodType<Value>,
 ): Promise<ProviderConfigApiResponse<Value>> {
   try {
     const response = await fetchImplementation(path, {
@@ -79,7 +53,7 @@ async function request<Value>(
     });
     const payload: unknown = await response.json().catch(() => null);
 
-    return normalizeApiResponse<Value>(payload) ?? fallbackFailure;
+    return normalizeApiResponse(payload, valueSchema) ?? fallbackFailure;
   } catch {
     return fallbackFailure;
   }
@@ -90,25 +64,45 @@ export function createProviderConfigClient(
 ): ProviderConfigClient {
   return {
     deleteConfig: () =>
-      request(fetchImplementation, '/api/provider-config', {
-        method: 'DELETE',
-      }),
+      request(
+        fetchImplementation,
+        '/api/provider-config',
+        {
+          method: 'DELETE',
+        },
+        providerConfigSummarySchema,
+      ),
     getStatus: () =>
-      request(fetchImplementation, '/api/provider-config/status', {
-        method: 'GET',
-      }),
+      request(
+        fetchImplementation,
+        '/api/provider-config/status',
+        {
+          method: 'GET',
+        },
+        providerConfigSummarySchema,
+      ),
     saveConfig: (input) =>
-      request(fetchImplementation, '/api/provider-config', {
-        body: JSON.stringify(input),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'PUT',
-      }),
+      request(
+        fetchImplementation,
+        '/api/provider-config',
+        {
+          body: JSON.stringify(input),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'PUT',
+        },
+        providerConfigSummarySchema,
+      ),
     testConnection: (input) =>
-      request(fetchImplementation, '/api/provider-config/test', {
-        body: JSON.stringify(input),
-        headers: { 'Content-Type': 'application/json' },
-        method: 'POST',
-      }),
+      request(
+        fetchImplementation,
+        '/api/provider-config/test',
+        {
+          body: JSON.stringify(input),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+        },
+        providerConnectionResultSchema,
+      ),
   };
 }
 

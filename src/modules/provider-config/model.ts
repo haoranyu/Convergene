@@ -14,11 +14,15 @@ export const providerConfigInputSchema = z
 
 export type ProviderConfigInput = z.infer<typeof providerConfigInputSchema>;
 
-export interface ProviderModelMapping {
-  fast: string;
-  grill: string;
-  report: string;
-}
+export const providerModelMappingSchema = z
+  .object({
+    fast: z.string().min(1).max(128),
+    grill: z.string().min(1).max(128),
+    report: z.string().min(1).max(128),
+  })
+  .strict();
+
+export type ProviderModelMapping = z.infer<typeof providerModelMappingSchema>;
 
 export type ProviderConfigSummary =
   | {
@@ -44,6 +48,50 @@ export type ProviderConfigErrorCode =
   | 'PROVIDER_RATE_LIMITED'
   | 'PROVIDER_UNAVAILABLE'
   | 'RATE_LIMITED';
+
+export const providerConfigErrorCodeSchema = z.enum([
+  'INPUT_INVALID',
+  'ORIGIN_INVALID',
+  'PROVIDER_AUTH_FAILED',
+  'PROVIDER_CONFIG_INVALID',
+  'PROVIDER_CONFIG_UNAVAILABLE',
+  'PROVIDER_MODEL_NOT_FOUND',
+  'PROVIDER_RATE_LIMITED',
+  'PROVIDER_UNAVAILABLE',
+  'RATE_LIMITED',
+] satisfies ProviderConfigErrorCode[]);
+
+export const providerConfigSummarySchema = z.discriminatedUnion('configured', [
+  z.object({ configured: z.literal(false), state: z.literal('NOT_CONFIGURED') }).strict(),
+  z
+    .object({
+      configured: z.literal(true),
+      keyHint: z.literal('••••••••').optional(),
+      lastUsedAt: z.iso.datetime(),
+      models: providerModelMappingSchema,
+      provider: providerIdSchema,
+      state: z.enum(['AVAILABLE', 'NEEDS_RECONFIGURATION']),
+    })
+    .strict(),
+]);
+
+export const providerConnectionResultSchema = z
+  .object({ models: providerModelMappingSchema, provider: providerIdSchema })
+  .strict();
+
+export function providerConfigApiResponseSchema<ValueSchema extends z.ZodType>(
+  valueSchema: ValueSchema,
+) {
+  return z.discriminatedUnion('ok', [
+    z.object({ ok: z.literal(true), value: valueSchema }).strict(),
+    z
+      .object({
+        error: z.object({ code: providerConfigErrorCodeSchema }).strict(),
+        ok: z.literal(false),
+      })
+      .strict(),
+  ]);
+}
 
 export type ProviderConfigApiResponse<Value> =
   { ok: true; value: Value } | { error: { code: ProviderConfigErrorCode }; ok: false };

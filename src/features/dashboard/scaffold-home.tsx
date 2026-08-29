@@ -38,7 +38,7 @@ interface ScaffoldHomeProps {
 
 export function ScaffoldHome({ copy }: ScaffoldHomeProps) {
   const pathname = usePathname();
-  const providerCopy = useTranslations('ProviderConfig');
+  const providerCopy = useTranslations('providerConfig');
 
   return (
     <main className={styles.shell}>

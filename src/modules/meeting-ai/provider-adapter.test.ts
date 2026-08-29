@@ -83,6 +83,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
   it.each([
     [401, 'PROVIDER_AUTH_FAILED'],
     [403, 'PROVIDER_AUTH_FAILED'],
+    [400, 'OUTPUT_INVALID'],
     [404, 'PROVIDER_MODEL_NOT_FOUND'],
     [429, 'PROVIDER_RATE_LIMITED'],
     [503, 'PROVIDER_UNAVAILABLE'],
@@ -114,6 +115,41 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       consoleError.mockRestore();
       stderrWrite.mockRestore();
     }
+  });
+
+  it('recognizes only the verified SiliconFlow missing-model code on HTTP 400', async () => {
+    if (provider !== 'SILICONFLOW') {
+      return;
+    }
+
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch: () =>
+          Promise.resolve(
+            new Response(JSON.stringify({ code: 20012, message: 'safe fixture' }), {
+              status: 400,
+            }),
+          ),
+        prompt: 'Return status=ok.',
+        role: 'fast',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).rejects.toEqual(new ProviderGatewayError('PROVIDER_MODEL_NOT_FOUND'));
+  });
+
+  it('normalizes network failures as provider unavailable', async () => {
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch: () => Promise.reject(new TypeError('synthetic network failure')),
+        prompt: 'Return status=ok.',
+        role: 'fast',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).rejects.toEqual(new ProviderGatewayError('PROVIDER_UNAVAILABLE'));
   });
 
   it('distinguishes caller cancellation from the bounded timeout', async () => {

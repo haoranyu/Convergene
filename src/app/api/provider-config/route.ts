@@ -7,7 +7,7 @@ import {
   createProviderConfigRuntime,
   providerConfigErrorResponse,
   providerConfigJson,
-} from '@/modules/provider-config/http-runtime';
+} from '@/modules/provider-config/server';
 
 export const runtime = 'nodejs';
 

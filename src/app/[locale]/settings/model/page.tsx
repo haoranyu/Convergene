@@ -10,7 +10,7 @@ interface ModelSettingsPageProps {
 
 export async function generateMetadata({ params }: ModelSettingsPageProps): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: 'ProviderConfig.page' });
+  const t = await getTranslations({ locale, namespace: 'providerConfig.page' });
 
   return {
     description: t('metadataDescription'),

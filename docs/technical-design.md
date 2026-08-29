@@ -300,7 +300,7 @@ db.version(1).stores({
 - 属性：`HttpOnly; Secure; SameSite=Strict; Path=/`；
 - 服务端只在用户保存模型配置时创建；浏览导览不创建会话；
 - Redis key 使用 `provider-config:${sha256(sessionId)}`，不直接使用 Cookie 值；
-- 每次成功读取配置后同步续期 Cookie 与 Redis TTL，最长空闲 30 天。
+- 每次成功读取配置后原子更新 Redis `lastUsedAt` 与 30 天 TTL，并同步续期 Cookie；状态读取只校验加密 envelope 结构，不能为展示状态而解密 Key。
 
 ### 6.2 加密记录
 
@@ -363,7 +363,7 @@ DELETE /api/provider-config
 ```
 
 - `test` 使用用户提交的 Key 做一次最小调用，不提前持久化；
-- `status` 只返回是否已配置、Provider、掩码提示和模型覆盖，不返回 Key；
+- `status` 只做加密 envelope 的结构校验，并返回是否已配置、Provider、固定掩码提示和模型覆盖；不解密也不返回 Key；
 - `PUT` 测试成功后创建/更新匿名会话和加密记录；
 - `DELETE` 幂等删除 Redis 记录并清除 Cookie。
 
@@ -453,8 +453,11 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 生产实现位于 `src/modules/provider-config/`：Cookie 使用 32-byte base64url 随机 id，Redis key
 只含其 SHA-256；Key 由 AES-256-GCM envelope 保存，状态接口只返回固定掩码。PUT 在每次写入前
-重新执行最小结构化 Provider 调用，失败不覆盖旧 record；成功读取同时续期 Cookie 与 Redis 的
-30 天 TTL。`src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
+重新执行最小结构化 Provider 调用，失败不覆盖旧 record；成功读取会原子更新 `lastUsedAt` 和
+Redis 的 30 天 TTL，并续期 Cookie。只有真正调用模型的 `resolve` 路径会在服务端内存解密 Key，
+状态读取不会解密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
+使用 IP bucket；Redis/Lua 故障返回配置不可用，不能伪装为用户触发限流。
+`src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
 Schema、超时/取消及错误归一化的唯一共享边界。
 
 ## 9. 画布与布局

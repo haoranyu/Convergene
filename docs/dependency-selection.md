@@ -62,6 +62,7 @@
 | 模型调用      | `ai`、`@ai-sdk/openai-compatible` | StepFun 与硅基流动都提供 OpenAI 兼容接口，可复用流式调用和结构化输出接口 | Provider 差异收口在 adapter；不能把 SDK 对象泄漏到领域层                |
 | 运行时校验    | `zod`                             | 校验 API、模型输出、导入 JSON 和环境边界                                 | Zod 通过后还要检查图约束、ID 引用与业务不变量                           |
 | Provider 配置 | `@upstash/redis`                  | HTTP 接口适合 Vercel Functions，免费层足够黑客松演示                     | 只保存匿名设备的加密 Provider 配置，不保存会议内容                      |
+| 服务端边界    | `server-only`                     | 让 Next 构建在服务端模块误入客户端依赖图时立即失败                       | 只作为 Redis、加密、环境变量和 Provider 模块的标记，不承载业务状态      |
 | 报告 Markdown | `react-markdown`、`remark-gfm`    | 安全渲染 Markdown 与表格/任务列表等 GFM 内容                             | 不启用原始 HTML；事实报告先由程序组装再交给渲染器                       |
 | 报告图        | `mermaid`                         | 让结构化会议结果形成丰富但可复制的图                                     | 只渲染程序生成的模板，使用 `securityLevel: 'strict'`，失败回退表格/源码 |
 
@@ -95,7 +96,7 @@
 | ----------------------------------------------------------- | ---------------------------------------- | ------------------------------------------- | ------------------------------------------ |
 | Provider 设置或创建会议表单出现跨步骤校验、脏状态和大量联动 | `react-hook-form`、`@hookform/resolvers` | 减少表单状态样板代码，直接复用 Zod schema   | 简单表单先用 Arco Form；避免两个表单状态源 |
 | AI Route Handler 对公网开放                                 | `@upstash/ratelimit`                     | 基于现有 Redis 做匿名设备/IP 的基础限流     | API 未形成前没有实际收益                   |
-| 服务端环境变量增多                                          | `@t3-oss/env-nextjs`、`server-only`      | 构建期校验变量，防止服务端模块误入客户端    | 只有少量变量时可先用小型 Zod schema        |
+| 服务端环境变量增多                                          | `@t3-oss/env-nextjs`                     | 集中做构建期环境变量校验                    | 只有少量变量时可先用小型校验函数           |
 | Dexie repository 开始集成测试                               | `fake-indexeddb`                         | 在 Vitest 中稳定模拟 IndexedDB              | 纯领域测试不需要它                         |
 | AI route/adapter 开始集成测试                               | `msw`                                    | 在网络边界模拟两个 Provider、超时与畸形响应 | 不用于模拟纯函数                           |
 | Playwright 基础流程稳定                                     | `@axe-core/playwright`                   | 自动检查一部分 WCAG 问题                    | 不能取代键盘、焦点与读屏人工检查           |

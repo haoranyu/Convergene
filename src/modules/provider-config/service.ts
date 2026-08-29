@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { decryptCredential, encryptCredential } from './credential-crypto';
 import type {
   ProviderConfigErrorCode,
@@ -15,6 +17,7 @@ import {
   providerConfigKey,
   providerConfigTtlSeconds,
   toEncryptedProviderConfig,
+  encryptedProviderConfigSchema,
   type EncryptedProviderConfig,
   type ProviderConfigStore,
 } from './store';
@@ -71,42 +74,25 @@ function availableSummary(record: EncryptedProviderConfig): ProviderConfigSummar
   };
 }
 
-function invalidSummary(record: EncryptedProviderConfig): ProviderConfigSummary {
-  return {
-    configured: true,
-    keyHint: constantKeyHint,
-    lastUsedAt: record.lastUsedAt,
-    models: providerPresets[record.provider].models,
-    provider: record.provider,
-    state: 'NEEDS_RECONFIGURATION',
-  };
-}
-
-function isEncryptedProviderConfig(value: unknown): value is EncryptedProviderConfig {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const record = value as Partial<EncryptedProviderConfig>;
-  return (
-    record.version === 1 &&
-    (record.provider === 'STEPFUN' || record.provider === 'SILICONFLOW') &&
-    typeof record.authTag === 'string' &&
-    typeof record.ciphertext === 'string' &&
-    typeof record.iv === 'string' &&
-    typeof record.createdAt === 'string' &&
-    typeof record.lastUsedAt === 'string'
-  );
-}
-
 async function readRecord(
   store: ProviderConfigStore,
   sessionId: string,
 ): Promise<EncryptedProviderConfig | null> {
   try {
-    const value: unknown = await store.get(providerConfigKey(sessionId));
-    return isEncryptedProviderConfig(value) ? value : null;
-  } catch {
+    const value = await store.get(providerConfigKey(sessionId));
+    if (value === null) {
+      return null;
+    }
+
+    const parsed = encryptedProviderConfigSchema.safeParse(value);
+    if (!parsed.success) {
+      throw new ProviderConfigServiceError('PROVIDER_CONFIG_INVALID');
+    }
+    return parsed.data;
+  } catch (error) {
+    if (error instanceof ProviderConfigServiceError) {
+      throw error;
+    }
     throw unavailable();
   }
 }
@@ -152,14 +138,9 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         return { configured: false, state: 'NOT_CONFIGURED' };
       }
 
+      const touchedRecord = { ...record, lastUsedAt: now().toISOString() };
       try {
-        decryptCredential(record, encryptionSecret);
-      } catch {
-        return invalidSummary(record);
-      }
-
-      try {
-        if (!(await store.renew(key, providerConfigTtlSeconds))) {
+        if (!(await store.touch(key, touchedRecord.lastUsedAt, providerConfigTtlSeconds))) {
           session.clear();
           return { configured: false, state: 'NOT_CONFIGURED' };
         }
@@ -168,7 +149,7 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       }
 
       session.set(sessionId);
-      return availableSummary(record);
+      return availableSummary(touchedRecord);
     },
 
     async resolve(): Promise<ResolvedStoredProviderConfig> {
@@ -180,7 +161,13 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       let record: EncryptedProviderConfig | null;
       try {
         record = await readRecord(store, sessionId);
-      } catch {
+      } catch (error) {
+        if (
+          error instanceof ProviderConfigServiceError &&
+          error.code === 'PROVIDER_CONFIG_INVALID'
+        ) {
+          throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
+        }
         throw new ResolvedProviderConfigError('PROVIDER_CONFIG_UNAVAILABLE');
       }
       if (!record) {
@@ -194,9 +181,15 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       } catch {
         throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
       }
-
+      const touchedRecord = { ...record, lastUsedAt: now().toISOString() };
       try {
-        if (!(await store.renew(providerConfigKey(sessionId), providerConfigTtlSeconds))) {
+        if (
+          !(await store.touch(
+            providerConfigKey(sessionId),
+            touchedRecord.lastUsedAt,
+            providerConfigTtlSeconds,
+          ))
+        ) {
           session.clear();
           throw new ResolvedProviderConfigError('PROVIDER_NOT_CONFIGURED');
         }
@@ -208,7 +201,11 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       }
 
       session.set(sessionId);
-      return { apiKey, models: providerPresets[record.provider].models, provider: record.provider };
+      return {
+        apiKey,
+        models: providerPresets[touchedRecord.provider].models,
+        provider: touchedRecord.provider,
+      };
     },
 
     async save(input: ProviderConfigInput, signal?: AbortSignal): Promise<ProviderConfigSummary> {
@@ -220,7 +217,16 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       let existingRecord: EncryptedProviderConfig | null = null;
 
       if (existingSessionId) {
-        existingRecord = await readRecord(store, existingSessionId);
+        try {
+          existingRecord = await readRecord(store, existingSessionId);
+        } catch (error) {
+          if (
+            !(error instanceof ProviderConfigServiceError) ||
+            error.code !== 'PROVIDER_CONFIG_INVALID'
+          ) {
+            throw error;
+          }
+        }
       }
 
       let encryptedRecord: EncryptedProviderConfig;
