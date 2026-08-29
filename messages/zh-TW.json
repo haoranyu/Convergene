@@ -410,6 +410,141 @@
     },
     "summaryTitle": "已確認的會議設定"
   },
+  "preparation": {
+    "actions": {
+      "back": "返回會議列表",
+      "confirmGenerate": "確認、鎖定並產生心智圖",
+      "continueGrill": "繼續拷問我 · {current} / {limit}",
+      "finish": "結束拷問",
+      "generateBrief": "產生 Brief",
+      "restart": "重新準備",
+      "retry": "重試",
+      "retryMap": "重試產生心智圖",
+      "returnGrill": "繼續補問",
+      "saveDraft": "儲存修改",
+      "skip": "跳過",
+      "submit": "提交回答",
+      "unknown": "不知道"
+    },
+    "brief": {
+      "editDescription": "鎖定前可以修改這份結構化 Brief。",
+      "editable": "可編輯草稿",
+      "eyebrow": "會前準備快照",
+      "fields": {
+        "assumptions": "合理假設 · 每行一項",
+        "confirmed": "已確認 · 每行一項",
+        "desiredOutcome": "期望產出",
+        "objective": "會議目標",
+        "openingLine": "建議開場白",
+        "unknowns": "仍待確認 · 每行一項"
+      },
+      "lockWarning": "按下確認會立即鎖定目前 Brief。即使心智圖產生失敗，它也不會解鎖；重試仍使用同一份快照。",
+      "locked": "已鎖定快照",
+      "lockedDescription": "這份 Brief 已鎖定；產生或重試心智圖時會一直保留在頁面上。",
+      "title": "會議 Brief"
+    },
+    "dimensions": {
+      "challenge": "核心挑戰",
+      "constraints": "限制條件",
+      "creative_constraints": "創意邊界",
+      "criteria": "判斷標準",
+      "decision_deadline": "決策期限",
+      "decision_owner": "拍板人",
+      "desired_improvement": "期望改善",
+      "desired_outcome": "期望產出",
+      "expected_vs_actual": "預期與實際",
+      "facts": "共同事實",
+      "inputs": "所需資料",
+      "minimum_outcome": "最低可接受結果",
+      "objective": "會議目標",
+      "options": "可行選項",
+      "participants_and_authority": "參與角色與權限",
+      "scope": "復盤範圍",
+      "selection_method": "篩選方式",
+      "target_audience": "目標對象"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "這份 Brief 已經鎖定。",
+      "INPUT_INVALID": "部分會議資訊無效，請檢查後重試。",
+      "INVALID_BRIEF": "請補全會議目標、期望產出和開場白。",
+      "INVALID_GRILL_TURN": "已儲存的拷問輪次不連續，請重新整理後重試。",
+      "INVALID_MEETING_STATE": "會議狀態已被其他操作改變，請重新整理後重試。",
+      "INVALID_STORED_DATA": "無法從本機儲存安全恢復這場會議。",
+      "OUTPUT_INVALID": "模型回傳未通過驗證；已儲存內容沒有變化。",
+      "OUTPUT_LANGUAGE_MISMATCH": "模型使用了錯誤語言，請重試。",
+      "PROVIDER_AUTH_FAILED": "模型 Key 被拒絕，請重新連接供應商。",
+      "PROVIDER_CONFIG_INVALID": "已儲存的模型設定需要重新填寫。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型設定暫時無法使用，本機會議資料仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "目前帳號無法使用已設定模型。",
+      "PROVIDER_NOT_CONFIGURED": "請先連接模型供應商。",
+      "PROVIDER_RATE_LIMITED": "供應商正在限流，請稍後重試。",
+      "PROVIDER_UNAVAILABLE": "暫時無法連接供應商；已儲存內容沒有變化。",
+      "REQUEST_CANCELLED": "請求已取消；已儲存內容沒有變化。",
+      "STALE_WRITE": "另一個分頁更新了會議，本機最新版本仍然安全。",
+      "UNKNOWN": "發生錯誤；已儲存內容沒有變化。",
+      "title": "準備流程已暫停"
+    },
+    "grill": {
+      "answerLabel": "你的回答",
+      "answerPlaceholder": "盡量具體，也可以使用下方的快速操作。",
+      "critical": "臨門一問",
+      "defaultComplete": "預設拷問已完成",
+      "defaultCompleteDescription": "現在可以產生 Brief，也可以再主動增加一輪；總輪次不會超過 10。",
+      "dispositions": {
+        "ANSWERED": "已回答",
+        "SKIPPED": "已跳過",
+        "UNKNOWN": "不知道"
+      },
+      "history": "過往回答（{count}）",
+      "nextQuestion": "正在準備下一問…",
+      "resumeDescription": "既有回答都已儲存；模型連線可用後即可繼續。",
+      "resumeTitle": "可以繼續下一問",
+      "round": "第 {current} 輪 · 最多 10 輪",
+      "why": "為什麼問：{reason}"
+    },
+    "loading": "正在恢復本機會前準備…",
+    "localOnly": "本機儲存",
+    "map": {
+      "description": "包含 {count} 個節點的合法初始圖已儲存在本機，可以開始會議。",
+      "ready": "心智圖已就緒",
+      "title": "會前準備完成"
+    },
+    "metadata": {
+      "description": "把會議問清楚、鎖定 Brief，並產生受控初始心智圖。",
+      "title": "準備會議 · Convergene"
+    },
+    "modeSelection": {
+      "action": "返回會議建立",
+      "description": "開始拷問前，請先確認 AI 建議或手動選擇的會議劇本。",
+      "title": "請先選擇會議劇本"
+    },
+    "modes": {
+      "BRAINSTORM": "腦暴共創",
+      "DECISION": "決策對齊",
+      "GENERAL": "通用討論",
+      "RETRO": "復盤改善"
+    },
+    "notFound": "找不到這場本機會議。",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "勉強能開",
+        "INSUFFICIENT": "資訊不足",
+        "READY": "可以開了"
+      },
+      "prioritySelected": "下一次請求會優先追問這個缺口。",
+      "statuses": {
+        "MISSING": "缺少",
+        "PARTIAL": "部分具備",
+        "READY": "已具備"
+      },
+      "title": "開會準備度"
+    },
+    "rollback": {
+      "continueConfirm": "繼續補問？會議劇本和既有回答會保留，Brief 和心智圖會清空。",
+      "restartConfirm": "回到劇本選擇重新準備？只保留老闆原話，劇本、拷問、Brief 和心智圖都會清空。"
+    },
+    "working": "正在儲存準備內容…"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",
