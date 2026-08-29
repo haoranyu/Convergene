@@ -417,6 +417,7 @@
       "continueGrill": "Keep grilling me · {current} / {limit}",
       "finish": "Finish Grill",
       "generateBrief": "Generate Brief",
+      "openCanvas": "Open meeting canvas",
       "restart": "Prepare again",
       "retry": "Try again",
       "retryMap": "Retry map generation",

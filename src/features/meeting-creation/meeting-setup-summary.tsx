@@ -15,6 +15,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
+import { PersistedMeetingCanvas } from '@/features/meeting-room';
 import { Link } from '@/i18n/navigation';
 import type { Meeting } from '@/modules/meeting-domain';
 import { getBrowserMeetingDatabase, observeMeetingAggregate } from '@/modules/meeting-db/client';
@@ -45,6 +46,15 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
       ),
     [meetingId, reloadToken],
   );
+
+  if (!loading && !error && meeting?.preparationStage === 'MAP_READY') {
+    return (
+      <>
+        <AppHeader title={meeting.title} />
+        <PersistedMeetingCanvas meetingId={meetingId} />
+      </>
+    );
+  }
 
   return (
     <>

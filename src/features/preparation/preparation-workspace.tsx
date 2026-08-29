@@ -640,8 +640,8 @@ function PreparationWorkspaceBody({
           {t('map.description', { count: aggregate.nodes.length })}
         </Typography.Paragraph>
         <div className={styles.actionRow}>
-          <Link className={styles.primaryLink} href="/">
-            {t('actions.back')}
+          <Link className={styles.primaryLink} href={`/meetings/${meeting?.id}`}>
+            {t('actions.openCanvas')}
           </Link>
           <Button disabled={busy} onClick={() => void rollback('GRILL')}>
             {t('actions.returnGrill')}

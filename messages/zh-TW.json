@@ -417,6 +417,7 @@
       "continueGrill": "繼續拷問我 · {current} / {limit}",
       "finish": "結束拷問",
       "generateBrief": "產生 Brief",
+      "openCanvas": "開啟會議畫布",
       "restart": "重新準備",
       "retry": "重試",
       "retryMap": "重試產生心智圖",
