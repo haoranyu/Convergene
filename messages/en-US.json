@@ -246,23 +246,23 @@
     "steps": {
       "focus": {
         "cheatTitle": "Facilitator cheat sheet",
-        "description": "The active topic and its subtree come forward; other branches remain visible and clickable instead of disappearing.",
-        "title": "Focus one branch"
+        "description": "Bring the current question and its related points forward. You can still view and switch to the others.",
+        "title": "Focus one question and prep facilitator notes"
       },
       "grill": {
-        "title": "Grill for readiness"
+        "title": "Ask until the gaps are clear"
       },
       "outcomes": {
         "outputTitle": "Meeting outcomes",
         "reportTitle": "Portable report",
-        "title": "Leave with something"
+        "title": "Align on decisions and actions before leaving"
       },
       "play": {
-        "description": "A node play adds two to four controlled children. The tour uses a preset result and never sends a model request.",
-        "title": "Play the selected node"
+        "description": "For the current question, AI can suggest two to four ways to keep talking. This tour shows a preset result and does not call a model.",
+        "title": "When the room gets stuck, ask AI what to try"
       },
       "type": {
-        "title": "The script changes the questions"
+        "title": "Start with what this meeting must solve"
       }
     },
     "title": "See the meeting workflow before trusting it with a real one"

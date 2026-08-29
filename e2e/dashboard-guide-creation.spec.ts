@@ -88,6 +88,9 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
   await page.goto('/en-US/guide');
   await expect(page.getByRole('tab')).toHaveCount(3);
   await expect(page.getByText('Fictional exercise · no key · no local write')).toBeVisible();
+  await expect(
+    page.getByText('Start with what this meeting must solve', { exact: true }).first(),
+  ).toBeVisible();
   const rootBox = await page
     .getByText("Choose JT's public-response plan", { exact: true })
     .boundingBox();
@@ -102,14 +105,26 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
   await page.getByRole('tab', { name: 'Align on a decision' }).click();
 
   await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(
+    page.getByText('Ask until the gaps are clear', { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText(/who has enough authority to make the final call/u)).toBeVisible();
   await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(
+    page.getByText('Focus one question and prep facilitator notes', { exact: true }).first(),
+  ).toBeVisible();
   await expect(
     page.getByText(/best and worst cases for fighting back and settling/u),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(
+    page.getByText('When the room gets stuck, ask AI what to try', { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText('Verify first and hold comment')).toBeVisible();
   await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(
+    page.getByText('Align on decisions and actions before leaving', { exact: true }).first(),
+  ).toBeVisible();
   await expect(page.getByText('Portable report')).toBeVisible();
   await expect(page.getByText(/JT public-response decision/)).toBeVisible();
   await expect(
@@ -439,7 +454,7 @@ test('keeps the in-memory tour available when IndexedDB cannot be opened', async
   await page.goto('/en-US/guide');
 
   await page.getByRole('button', { name: 'Next step' }).click();
-  await expect(page.getByRole('heading', { name: 'Grill for readiness' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Ask until the gaps are clear' })).toBeVisible();
   await page.getByRole('button', { name: 'Start from this example' }).click();
   await page.locator('.arco-popconfirm').getByRole('button', { name: 'OK' }).click();
 
