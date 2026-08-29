@@ -10,6 +10,9 @@ import {
   restartPreparation,
   resumeGrill,
   startMeeting,
+  updateBriefDraft as updateMeetingBriefDraft,
+  validateGrillHistory,
+  validateGrillTurn,
   validateMeeting,
 } from '@/modules/meeting-domain';
 import type {
@@ -306,6 +309,33 @@ export class MeetingRepository {
     });
   }
 
+  async updateBriefDraft(
+    meetingId: string,
+    brief: MeetingBriefDraft,
+    expectedUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<Meeting, MeetingRepositoryErrorCode>> {
+    const briefSnapshot = deepSnapshot(brief);
+    if (briefSnapshot === undefined) return failure('INVALID_BRIEF');
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction('rw', this.database.meetings, async () => {
+      const current = await this.database.meetings.get(meetingId);
+      if (current === undefined) return failure('MEETING_NOT_FOUND');
+      const revision = validNextRevision(current, expectedUpdatedAt, nowSnapshot);
+      if (!revision.ok) return revision;
+      const updatedBrief = updateMeetingBriefDraft(
+        current,
+        briefSnapshot,
+        new Date(revision.value),
+      );
+      if (!updatedBrief.ok) return updatedBrief;
+      const value = validProjectedMeeting(updatedBrief.value);
+      if (value === undefined) return failure('INVALID_MEETING');
+      await this.database.meetings.put(value);
+      return { ok: true, value };
+    });
+  }
+
   async savePreparationTransition(
     meeting: Meeting,
     expectedUpdatedAt: string,
@@ -349,6 +379,13 @@ export class MeetingRepository {
           snapshot.brief !== undefined &&
           snapshot.brief.confirmedAt === undefined
         ) {
+          const turns = await this.database.grillTurns
+            .where('meetingId')
+            .equals(snapshot.id)
+            .sortBy('index');
+          if (turns.some(({ disposition }) => disposition === 'PENDING')) {
+            return failure('INVALID_MEETING_STATE');
+          }
           expected = completeGrill(current, snapshot.brief as MeetingBriefDraft, transitionTime);
         } else if (transition === 'BRIEF_READY->GRILLING' || transition === 'MAP_READY->GRILLING') {
           expected = resumeGrill(current, transitionTime);
@@ -907,25 +944,6 @@ export class MeetingRepository {
   ): Promise<Result<GrillTurnWrite, MeetingRepositoryErrorCode>> {
     const snapshot = safeProject(turn, projectGrillTurn);
     if (snapshot === undefined) return failure('INVALID_GRILL_TURN');
-    if (
-      typeof snapshot.id !== 'string' ||
-      snapshot.id.trim() === '' ||
-      typeof snapshot.meetingId !== 'string' ||
-      snapshot.meetingId.trim() === '' ||
-      typeof snapshot.question !== 'string' ||
-      snapshot.question.trim() === '' ||
-      !Number.isInteger(snapshot.index) ||
-      snapshot.index < 0 ||
-      snapshot.index > 9 ||
-      (snapshot.reason !== undefined && typeof snapshot.reason !== 'string') ||
-      (snapshot.answer !== undefined && typeof snapshot.answer !== 'string') ||
-      (snapshot.disposition !== 'ANSWERED' &&
-        snapshot.disposition !== 'UNKNOWN' &&
-        snapshot.disposition !== 'SKIPPED') ||
-      !isCanonicalUtcTimestamp(snapshot.createdAt)
-    ) {
-      return failure('INVALID_GRILL_TURN');
-    }
     const nowSnapshot = new Date(now.getTime());
 
     try {
@@ -938,7 +956,9 @@ export class MeetingRepository {
           if (meeting.status !== 'PREPARING' || meeting.preparationStage !== 'GRILLING') {
             return failure('INVALID_MEETING_STATE');
           }
-
+          if (meeting.mode === undefined || !validateGrillTurn(snapshot, meeting.mode).ok) {
+            return failure('INVALID_GRILL_TURN');
+          }
           const sameId = await this.database.grillTurns.get(snapshot.id);
           if (
             sameId !== undefined &&
@@ -954,8 +974,37 @@ export class MeetingRepository {
             return failure('GRILL_TURN_ALREADY_EXISTS');
           }
 
+          if (sameId !== undefined) {
+            const unchangedPrompt =
+              sameId.disposition === 'PENDING' &&
+              snapshot.disposition !== 'PENDING' &&
+              sameId.answer === undefined &&
+              sameId.criticalExtraReason === snapshot.criticalExtraReason &&
+              sameId.createdAt === snapshot.createdAt &&
+              sameId.index === snapshot.index &&
+              JSON.stringify(sameId.knownState) === JSON.stringify(snapshot.knownState) &&
+              sameId.meetingId === snapshot.meetingId &&
+              sameId.phase === snapshot.phase &&
+              sameId.question === snapshot.question &&
+              JSON.stringify(sameId.readiness) === JSON.stringify(snapshot.readiness) &&
+              sameId.reason === snapshot.reason;
+            if (!unchangedPrompt) return failure('GRILL_TURN_ALREADY_EXISTS');
+          }
+
           const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
           if (!revision.ok) return revision;
+
+          const existingTurns = await this.database.grillTurns
+            .where('meetingId')
+            .equals(snapshot.meetingId)
+            .sortBy('index');
+          const candidateTurns = sameId
+            ? existingTurns.map((existing) => (existing.id === snapshot.id ? snapshot : existing))
+            : [...existingTurns, snapshot];
+          if (!validateGrillHistory(candidateTurns, meeting.mode).ok) {
+            return failure('INVALID_GRILL_TURN');
+          }
+
           const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
           if (meetingValue === undefined) return failure('INVALID_MEETING');
           await this.database.grillTurns.put(snapshot);

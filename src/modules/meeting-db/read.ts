@@ -1,5 +1,5 @@
 import { isCanonicalUtcTimestamp, type Result } from '@/modules/shared';
-import { outcomeKinds, validateMeeting } from '@/modules/meeting-domain';
+import { outcomeKinds, validateGrillHistory, validateMeeting } from '@/modules/meeting-domain';
 import type { GrillTurn, Meeting, MeetingOutcome } from '@/modules/meeting-domain';
 import { validateTree } from '@/modules/mind-map-domain';
 import type { MeetingGraph, MindMapEdge, MindMapNode } from '@/modules/mind-map-domain';
@@ -79,23 +79,6 @@ function validOutcome(outcome: MeetingOutcome, meeting: Meeting, nodeIds: Set<st
   );
 }
 
-function validGrillTurn(turn: GrillTurn, meeting: Meeting): boolean {
-  return (
-    nonEmptyString(turn.id) &&
-    turn.meetingId === meeting.id &&
-    Number.isInteger(turn.index) &&
-    turn.index >= 0 &&
-    turn.index <= 9 &&
-    nonEmptyString(turn.question) &&
-    optionalString(turn.reason) &&
-    optionalString(turn.answer) &&
-    (turn.disposition === 'ANSWERED' ||
-      turn.disposition === 'UNKNOWN' ||
-      turn.disposition === 'SKIPPED') &&
-    isCanonicalUtcTimestamp(turn.createdAt)
-  );
-}
-
 function projectAggregate(
   meetingRecord: Meeting,
   nodeRecords: MindMapNode[],
@@ -131,7 +114,8 @@ function projectAggregate(
     const nodeIds = new Set(nodes.map((node) => node.id));
     if (
       !outcomes.every((outcome) => validOutcome(outcome, meeting, nodeIds)) ||
-      !grillTurns.every((turn) => validGrillTurn(turn, meeting))
+      (grillTurns.length > 0 &&
+        (meeting.mode === undefined || !validateGrillHistory(grillTurns, meeting.mode).ok))
     ) {
       return undefined;
     }

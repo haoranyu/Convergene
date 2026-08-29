@@ -46,6 +46,35 @@ function meeting(id: string, overrides: Partial<Meeting> = {}): Meeting {
   };
 }
 
+function grillTurn(meetingId: string, overrides: Partial<GrillTurn> = {}): GrillTurn {
+  return {
+    createdAt: timestamp,
+    disposition: 'UNKNOWN',
+    id: `${meetingId}-turn-1`,
+    index: 0,
+    knownState: { assumptions: [], confirmed: [], unknowns: [] },
+    meetingId,
+    phase: 'DEFAULT',
+    question: 'Who decides?',
+    readiness: {
+      dimensions: [
+        'objective',
+        'desired_outcome',
+        'participants_and_authority',
+        'inputs',
+        'constraints',
+        'minimum_outcome',
+        'decision_owner',
+        'options',
+        'criteria',
+        'decision_deadline',
+      ].map((key) => ({ key, status: 'MISSING' as const })),
+      level: 'INSUFFICIENT',
+    },
+    ...overrides,
+  };
+}
+
 function node(
   meetingId: string,
   id: string,
@@ -331,15 +360,11 @@ describe('MeetingRepository', () => {
     const firstDatabase = openDatabase();
     const firstRepository = new MeetingRepository(firstDatabase);
 
-    const turn: GrillTurn = {
+    const turn = grillTurn('meeting-1', {
       answer: 'The sponsor',
-      createdAt: timestamp,
       disposition: 'ANSWERED',
       id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    });
     await createPreparedMeetingWithGrillTurn(firstRepository, 'meeting-1', turn);
     const started = await startStoredMeeting(
       firstRepository,
@@ -567,14 +592,10 @@ describe('MeetingRepository', () => {
     await expect(
       putStoredGrillTurn(
         repository,
-        {
+        grillTurn('meeting-1', {
           createdAt: '2026-08-29T17:30:00+08:00',
-          disposition: 'UNKNOWN',
           id: 'turn-1',
-          index: 0,
-          meetingId: 'meeting-1',
-          question: 'Who decides?',
-        },
+        }),
         new Date('2026-08-29T09:36:00.000Z'),
       ),
     ).resolves.toMatchObject({ error: { code: 'INVALID_GRILL_TURN' }, ok: false });
@@ -654,13 +675,8 @@ describe('MeetingRepository', () => {
 
     const grilling = await createGrillingMeeting(repository, 'meeting-3');
     const contaminatedTurn = {
+      ...grillTurn('meeting-3', { id: 'turn-1' }),
       apiKey: 'grill-secret',
-      createdAt: '2026-08-29T09:36:00.000Z',
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-3',
-      question: 'Who decides?',
       tempUi: { active: true },
     } as unknown as GrillTurn;
     await expect(
@@ -1075,14 +1091,7 @@ describe('MeetingRepository', () => {
 
   it('clears aggregate content according to the two distinct preparation rollback rules', async () => {
     const repository = new MeetingRepository(openDatabase());
-    const turn: GrillTurn = {
-      createdAt: timestamp,
-      disposition: 'ANSWERED',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    const turn = grillTurn('meeting-1', { disposition: 'UNKNOWN', id: 'turn-1' });
     await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', turn);
     const prepared = await readStoredAggregate(repository, 'meeting-1');
     expect(prepared).toBeDefined();
@@ -1378,14 +1387,7 @@ describe('MeetingRepository', () => {
     await createGrillingMeeting(firstRepository, 'meeting-2');
     await firstRepository.createMeeting(meeting('meeting-3'));
 
-    const turn: GrillTurn = {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    const turn = grillTurn('meeting-1', { id: 'turn-1' });
     await expect(
       putStoredGrillTurn(firstRepository, turn, new Date('2026-08-29T09:36:00.000Z')),
     ).resolves.toMatchObject({ ok: true });
@@ -1431,12 +1433,12 @@ describe('MeetingRepository', () => {
     const concurrent = await Promise.all([
       putStoredGrillTurn(
         firstRepository,
-        { ...turn, id: 'turn-a', index: 2 },
+        { ...turn, id: 'turn-a', index: 1 },
         new Date('2026-08-29T09:38:00.000Z'),
       ),
       putStoredGrillTurn(
         secondRepository,
-        { ...turn, id: 'turn-b', index: 2 },
+        { ...turn, id: 'turn-b', index: 1 },
         new Date('2026-08-29T09:38:00.000Z'),
       ),
     ]);
@@ -1537,14 +1539,11 @@ describe('MeetingRepository', () => {
     const observedDatabase = openDatabase();
     const writerDatabase = openDatabase();
     const repository = new MeetingRepository(writerDatabase);
-    await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await createPreparedMeetingWithGrillTurn(
+      repository,
+      'meeting-1',
+      grillTurn('meeting-1', { id: 'turn-1' }),
+    );
     const storedMeeting = await writerDatabase.meetings.get('meeting-1');
     const storedNode = await writerDatabase.nodes.get('meeting-1-detail');
     const storedTurn = await writerDatabase.grillTurns.get('turn-1');
@@ -1690,14 +1689,11 @@ describe('JSON export', () => {
   it('exports a consistent versioned snapshot without app state or credentials', async () => {
     const database = openDatabase();
     const repository = new MeetingRepository(database);
-    await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await createPreparedMeetingWithGrillTurn(
+      repository,
+      'meeting-1',
+      grillTurn('meeting-1', { id: 'turn-1' }),
+    );
     await startStoredMeeting(repository, 'meeting-1', 4, new Date('2026-08-29T10:00:00.000Z'));
     await endStoredMeeting(repository, 'meeting-1', new Date('2026-08-29T10:45:00.000Z'));
     await database.appState.put({ key: 'guideCompleted', value: true });
@@ -1834,14 +1830,7 @@ describe('JSON export', () => {
     const database = openDatabase();
     const repository = new MeetingRepository(database);
     await repository.createMeeting(meeting('meeting-1'));
-    await database.grillTurns.add({
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await database.grillTurns.add(grillTurn('meeting-1', { id: 'turn-1' }));
 
     await expect(
       createExportSnapshot(database, new Date('2026-08-29T12:00:00.000Z')),

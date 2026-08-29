@@ -1,6 +1,15 @@
 export { deriveTimingState } from './derive-timing-state';
 export { calculateMeetingEconomics } from './economics';
 export type { MeetingEconomics, OutcomeFormationCost } from './economics';
+export {
+  answerGrillTurn,
+  modeReadinessDimensionKeys,
+  nextGrillPhase,
+  sharedReadinessDimensionKeys,
+  validateGrillHistory,
+  validateGrillTurn,
+} from './grill';
+export type { GrillPolicyErrorCode } from './grill';
 export { correctMeetingEndTime, endMeeting, startMeeting } from './lifecycle';
 export { markOutcome, unmarkOutcome } from './outcomes';
 export type { MarkOutcomeInput } from './outcomes';
@@ -12,6 +21,8 @@ export {
   markMapReady,
   restartPreparation,
   resumeGrill,
+  updateBriefDraft,
+  validateMeetingBriefDraft,
 } from './preparation';
 export {
   isSupportedLocale,
@@ -25,6 +36,8 @@ export {
 export type {
   GrillTurn,
   GrillTurnDisposition,
+  GrillKnownState,
+  GrillPhase,
   Meeting,
   MeetingBriefContent,
   MeetingBriefDraft,
