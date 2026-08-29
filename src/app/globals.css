@@ -5,7 +5,10 @@
   --color-foreground: #0f172a;
   --color-muted-foreground: #475569;
   --color-primary: #1d4ed8;
+  --color-primary-hover: #1e40af;
   --color-primary-subtle: #dbeafe;
+  --color-success: #166534;
+  --color-success-subtle: #ecfdf3;
   --color-surface: #ffffff;
   --radius-lg: 14px;
   --radius-md: 10px;

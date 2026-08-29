@@ -27,10 +27,7 @@ import { AppHeader } from '@/features/app-shell';
 import { ProviderConfigGate } from '@/features/provider-config';
 import { Link, useRouter } from '@/i18n/navigation';
 import { supportedLocales, type MeetingMode, type SupportedLocale } from '@/modules/meeting-domain';
-import type {
-  ClassifyMeetingOutput,
-  MeetingAIErrorCode,
-} from '@/modules/meeting-ai/classify-meeting';
+import type { ClassifyMeetingOutput, MeetingAIErrorCode } from '@/modules/meeting-ai';
 import { getBrowserMeetingDatabase, MeetingRepository } from '@/modules/meeting-db/client';
 
 import { classifyMeetingClient } from './classify-client';
@@ -245,8 +242,10 @@ export function MeetingCreation() {
           rawRequest: values.rawRequest.trim(),
           ...(values.title?.trim() ? { userTitle: values.title.trim() } : {}),
         },
+        values.contentLocale,
         controller.signal,
       );
+      if (requestController.current !== controller) return;
       if (!result.ok) {
         if (!handleAIError(result)) setNotice(result.error.code);
         return;
@@ -257,8 +256,10 @@ export function MeetingCreation() {
       setManual(false);
       setShowRecommendation(true);
     } finally {
-      if (requestController.current === controller) requestController.current = null;
-      setClassifying(false);
+      if (requestController.current === controller) {
+        requestController.current = null;
+        setClassifying(false);
+      }
     }
   }
 

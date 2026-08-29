@@ -28,8 +28,8 @@
         "manageModel": "管理模型配置"
       },
       "clear": {
-        "confirmDescription": "这会永久删除当前浏览器里的会议、脑图、笔记、产出和报告；模型配置仍会保持连接。",
-        "confirmTitle": "清除全部本机会议数据？"
+        "confirmDescription": "这会永久删除当前浏览器里的 {count} 场会议及其脑图、笔记、产出和报告；模型配置仍会保持连接。",
+        "confirmTitle": "清除 {count} 场本机会议？"
       },
       "cloud": {
         "comingSoon": "后续支持",
@@ -38,7 +38,8 @@
       },
       "errors": {
         "clear": "暂时无法清除本机会议。请关闭其他 Convergene 标签页后重试。",
-        "export": "暂时无法生成导出文件。本机数据没有改变。"
+        "export": "暂时无法生成导出文件。本机数据没有改变。",
+        "read": "暂时无法统计本机会议。已保存的数据没有被修改。"
       },
       "feedback": {
         "cleared": "本机会议数据已清除，模型配置没有改变。",
@@ -105,6 +106,12 @@
       }
     },
     "loading": "正在加载本机会议",
+    "live": {
+      "currentTopic": "当前议题 · {topic}",
+      "duration": "已进行 {minutes} 分钟",
+      "noActiveTopic": "尚未选择议题",
+      "personHours": "已累计 {hours, number} 人时"
+    },
     "modes": {
       "brainstorm": "脑暴共创",
       "decision": "决策对齐",
@@ -143,6 +150,7 @@
     "eyebrow": "无需 Key · 不写本机数据",
     "fixtures": {
       "brainstorm": {
+        "cheat": "先用目标受众和挑战开场，每次只追一个大胆方向；进入收敛时，明确提醒大家按触达、清晰度和成本筛选。",
         "copyReason": "团队需要先打开可能性空间，再做选择。",
         "expansion1": "借专业人士建立信任",
         "expansion2": "展示产品真实使用",
@@ -164,6 +172,7 @@
         "topic3": "筛选方法"
       },
       "decision": {
+        "cheat": "开场先说清要做的决定和拍板人；依次推进备选、标准与关键风险，最后复述由谁做出选择。",
         "copyReason": "这项需求需要在多个方案中做出明确选择。",
         "expansion1": "先发布一个区域",
         "expansion2": "运行邀请制 Beta",
@@ -185,6 +194,7 @@
         "topic3": "风险与拍板人"
       },
       "retro": {
+        "cheat": "从共同事实开场，把原因与责备分开；主动寻找一个反例，最后收口到一项有负责人的改进。",
         "copyReason": "团队需要理解过去的结果并确定改进动作。",
         "expansion1": "告警晚于实际影响",
         "expansion2": "回滚路径不清楚",
@@ -223,6 +233,7 @@
     "scenarioLabel": "导览剧本",
     "steps": {
       "focus": {
+        "cheatTitle": "主持人小抄",
         "description": "当前议题及其子树被突出，其他分支仍然可见、可点击，而不是凭空消失。",
         "title": "聚焦一个分支"
       },
@@ -264,6 +275,7 @@
         "INPUT_INVALID": "暂时无法分类。请检查老板原话和可选标题后重试。",
         "ORIGIN_INVALID": "无法验证这次请求。请刷新 Convergene 后重试。",
         "OUTPUT_INVALID": "模型返回的推荐无法使用。可以重试一次，或直接手动选择剧本。",
+        "OUTPUT_LANGUAGE_MISMATCH": "模型没有使用所选内容语言。输入没有改变，可以重试或手动选择剧本。",
         "PROVIDER_AUTH_FAILED": "供应商拒绝了已保存的 Key。请重新连接后重试。",
         "PROVIDER_CONFIG_INVALID": "已保存的模型配置无法继续使用。请更换配置后重试。",
         "PROVIDER_CONFIG_UNAVAILABLE": "模型配置存储暂时不可用。表单仍然保留，可以稍后重试或手动选择。",
@@ -272,7 +284,8 @@
         "PROVIDER_RATE_LIMITED": "供应商正在限流。请稍等后重试，或手动选择剧本。",
         "PROVIDER_UNAVAILABLE": "暂时无法连接供应商。输入已经保留，可以重试或手动选择。",
         "RATE_LIMITED": "当前会话尝试过于频繁。请等待一分钟，或手动选择。",
-        "REQUEST_CANCELLED": "上一次推荐已取消，准备好后可以重试。"
+        "REQUEST_CANCELLED": "上一次推荐已取消，准备好后可以重试。",
+        "UNKNOWN": "推荐被意外中断。输入没有改变，可以重试或手动选择剧本。"
       },
       "form": "请检查下方标出的会议信息。当前输入已经完整保留。",
       "save": "暂时无法创建本机会议。内容没有写入后端，请重试。"

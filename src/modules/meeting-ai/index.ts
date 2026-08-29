@@ -1,3 +1,1 @@
-import 'server-only';
-
-export * from './server';
+export * from './classify-meeting';

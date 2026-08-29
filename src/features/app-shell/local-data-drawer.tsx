@@ -3,7 +3,7 @@
 import { Alert, Button, Drawer, Popconfirm, Space, Tag, Typography } from '@arco-design/web-react';
 import { IconDelete, IconDownload, IconSafe, IconStorage } from '@arco-design/web-react/icon';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Link } from '@/i18n/navigation';
 import {
@@ -11,6 +11,7 @@ import {
   exportFilename,
   getBrowserMeetingDatabase,
   MeetingRepository,
+  observeMeetings,
   serializeExport,
 } from '@/modules/meeting-db/client';
 
@@ -32,6 +33,17 @@ export function LocalDataDrawer() {
   const [open, setOpen] = useState(false);
   const [operation, setOperation] = useState<DataOperation>(null);
   const [notice, setNotice] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  const [meetingCount, setMeetingCount] = useState(0);
+
+  useEffect(() => {
+    if (!open) return;
+
+    return observeMeetings(
+      getBrowserMeetingDatabase(),
+      (meetings) => setMeetingCount(meetings.length),
+      () => setNotice({ kind: 'error', text: t('errors.read') }),
+    );
+  }, [open, t]);
 
   async function exportData() {
     setOperation('export');
@@ -107,12 +119,13 @@ export function LocalDataDrawer() {
                   {t('actions.export')}
                 </Button>
                 <Popconfirm
-                  content={t('clear.confirmDescription')}
-                  disabled={operation !== null}
+                  content={t('clear.confirmDescription', { count: meetingCount })}
+                  disabled={operation !== null || meetingCount === 0}
                   onOk={() => void clearMeetings()}
-                  title={t('clear.confirmTitle')}
+                  title={t('clear.confirmTitle', { count: meetingCount })}
                 >
                   <Button
+                    disabled={meetingCount === 0}
                     icon={<IconDelete aria-hidden="true" />}
                     loading={operation === 'clear'}
                     status="danger"

@@ -1,7 +1,14 @@
 import 'server-only';
 
 export { buildClassifyMeetingPrompt } from './classify-prompt';
-export { classifyMeetingInputSchema, classifyMeetingOutputSchema } from './classify-meeting';
+export {
+  classifyMeetingInputSchema,
+  classifyMeetingMaximumRequestBodyBytes,
+  classifyMeetingOutputMatchesLocale,
+  classifyMeetingOutputSchema,
+  classifyMeetingRequestSchema,
+  MeetingAIContractError,
+} from './classify-meeting';
 export { meetingAIErrorResponse, meetingAIJson } from './http';
 export {
   ProviderGatewayError,

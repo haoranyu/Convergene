@@ -53,6 +53,8 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
 
   await page.goto('/en-US/guide');
   await expect(page.getByRole('tab')).toHaveCount(3);
+  await page.getByRole('tab', { name: 'Brainstorm together' }).click();
+  await expect(page.getByText('Find a memorable launch angle')).toBeVisible();
   await page.getByRole('tab', { name: 'Reflect and improve' }).click();
   await expect(page.getByText('Reduce repeat release incidents')).toBeVisible();
 
@@ -116,15 +118,17 @@ test('applies an AI recommendation only after user confirmation and allows overr
   let classifyBody: unknown;
   await page.route('**/api/ai/classify-meeting', async (route) => {
     classifyBody = route.request().postDataJSON();
+    const request = classifyBody as { requestId: string };
     await route.fulfill({
       json: {
-        ok: true,
-        value: {
+        output: {
           confidence: 'HIGH',
           reason: 'The request requires a concrete choice.',
           recommendedMode: 'DECISION',
           suggestedTitle: 'Choose the launch plan',
         },
+        requestId: request.requestId,
+        task: 'classify-meeting',
       },
     });
   });
@@ -148,8 +152,13 @@ test('applies an AI recommendation only after user confirmation and allows overr
 
   await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
   expect(classifyBody).toEqual({
-    rawRequest: 'Choose one launch plan for the September release.',
-    userTitle: 'September launch choice',
+    input: {
+      rawRequest: 'Choose one launch plan for the September release.',
+      userTitle: 'September launch choice',
+    },
+    outputLocale: 'en-US',
+    requestId: expect.any(String),
+    task: 'classify-meeting',
   });
   expect(await readMeetings(page)).toEqual([
     expect.objectContaining({
@@ -208,4 +217,28 @@ test('keeps the first-use flow operable at a 375px viewport', async ({ page }) =
 
   await expect(page.getByLabel('The original meeting request')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Recommend a meeting script' })).toBeVisible();
+});
+
+test('preserves query state when switching locale and flags model reconfiguration', async ({
+  page,
+}) => {
+  await page.route('**/api/provider-config/status', async (route) => {
+    await route.fulfill({
+      json: {
+        ok: true,
+        value: { ...available.value, state: 'NEEDS_RECONFIGURATION' },
+      },
+    });
+  });
+
+  await page.goto('/en-US?focus=meeting-1&panel=notes');
+  await expect(page.getByRole('button', { name: 'Model needs a new key' })).toBeVisible();
+  await expect(page.getByRole('link', { name: '繁體中文' })).toHaveAttribute(
+    'href',
+    '/zh-TW?focus=meeting-1&panel=notes',
+  );
+  await page.getByRole('link', { name: '繁體中文' }).click();
+  await expect(page).toHaveURL('/zh-TW?focus=meeting-1&panel=notes');
+  await expect(page.getByRole('heading', { name: '讓下一場會配得上佔用的時間' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');
 });

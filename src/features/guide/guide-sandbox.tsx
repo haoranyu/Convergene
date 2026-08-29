@@ -106,12 +106,17 @@ function GuideStep({ scenario, step }: { scenario: ScenarioId; step: number }) {
           <Tag>{t('sampleAnswer')}</Tag>
         </Card>
         <Card className={styles.readinessCard} title={t('readiness.title')}>
-          <Progress percent={68} status="normal" />
           <Typography.Paragraph>{t(`fixtures.${scenario}.readinessSummary`)}</Typography.Paragraph>
           <ul>
-            <li>{t('readiness.confirmed')}</li>
-            <li>{t('readiness.partial')}</li>
-            <li>{t('readiness.missing')}</li>
+            <li>
+              <Tag color="green">{t('readiness.confirmed')}</Tag>
+            </li>
+            <li>
+              <Tag color="orange">{t('readiness.partial')}</Tag>
+            </li>
+            <li>
+              <Tag color="red">{t('readiness.missing')}</Tag>
+            </li>
           </ul>
         </Card>
       </div>
@@ -127,6 +132,9 @@ function GuideStep({ scenario, step }: { scenario: ScenarioId; step: number }) {
           title={t('steps.focus.title')}
           type="info"
         />
+        <Card className={styles.cheatCard} title={t('steps.focus.cheatTitle')}>
+          <Typography.Paragraph>{t(`fixtures.${scenario}.cheat`)}</Typography.Paragraph>
+        </Card>
         <ExampleMap focused scenario={scenario} />
       </div>
     );

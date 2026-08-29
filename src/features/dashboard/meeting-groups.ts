@@ -1,4 +1,4 @@
-import type { Meeting } from '@/modules/meeting-domain';
+import { deriveTimingState, type Meeting } from '@/modules/meeting-domain';
 
 export type MeetingGroupId = 'active' | 'waiting' | 'preparing' | 'ended';
 
@@ -9,7 +9,7 @@ export interface MeetingGroup {
 
 const groupOrder: MeetingGroupId[] = ['active', 'waiting', 'preparing', 'ended'];
 
-export function groupMeetings(meetings: readonly Meeting[]): MeetingGroup[] {
+export function groupMeetings(meetings: readonly Meeting[], now: Date): MeetingGroup[] {
   const grouped: Record<MeetingGroupId, Meeting[]> = {
     active: [],
     ended: [],
@@ -18,11 +18,12 @@ export function groupMeetings(meetings: readonly Meeting[]): MeetingGroup[] {
   };
 
   for (const meeting of meetings) {
-    if (meeting.status === 'LIVE') {
+    const timingState = deriveTimingState(meeting, now);
+    if (timingState === 'LIVE' || timingState === 'LIVE_OVERRUN') {
       grouped.active.push(meeting);
-    } else if (meeting.status === 'ENDED') {
+    } else if (timingState === 'ENDED_ON_TIME' || timingState === 'ENDED_OVERRUN') {
       grouped.ended.push(meeting);
-    } else if (meeting.preparationStage === 'MAP_READY') {
+    } else if (meeting.preparationStage === 'MAP_READY' && timingState === 'WAITING_TO_START') {
       grouped.waiting.push(meeting);
     } else {
       grouped.preparing.push(meeting);
@@ -33,11 +34,5 @@ export function groupMeetings(meetings: readonly Meeting[]): MeetingGroup[] {
 }
 
 export function staleLiveMeetings(meetings: readonly Meeting[], now: Date): Meeting[] {
-  const timestamp = now.getTime();
-  return meetings.filter(
-    (meeting) =>
-      meeting.status === 'LIVE' &&
-      Number.isFinite(timestamp) &&
-      timestamp > Date.parse(meeting.scheduledEndAt),
-  );
+  return meetings.filter((meeting) => deriveTimingState(meeting, now) === 'LIVE_OVERRUN');
 }

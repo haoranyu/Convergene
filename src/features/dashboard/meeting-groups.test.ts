@@ -28,12 +28,31 @@ describe('dashboard meeting groups', () => {
     ];
 
     expect(
-      groupMeetings(meetings).map((group) => [group.id, group.meetings.map((m) => m.id)]),
+      groupMeetings(meetings, new Date('2026-08-29T10:30:00.000Z')).map((group) => [
+        group.id,
+        group.meetings.map((m) => m.id),
+      ]),
     ).toEqual([
       ['active', ['live']],
       ['waiting', ['waiting']],
       ['preparing', ['draft']],
       ['ended', ['ended']],
+    ]);
+  });
+
+  it('keeps a map-ready meeting in preparation until its scheduled start', () => {
+    const waiting = createMapReadyMeeting({ id: 'waiting' });
+
+    expect(
+      groupMeetings([waiting], new Date('2026-08-29T09:59:59.000Z')).map((group) => [
+        group.id,
+        group.meetings.map((meeting) => meeting.id),
+      ]),
+    ).toEqual([
+      ['active', []],
+      ['waiting', []],
+      ['preparing', ['waiting']],
+      ['ended', []],
     ]);
   });
 

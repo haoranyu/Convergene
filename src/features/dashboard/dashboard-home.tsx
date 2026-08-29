@@ -13,6 +13,7 @@ import {
 } from '@arco-design/web-react';
 import {
   IconCalendar,
+  IconBranch,
   IconClockCircle,
   IconDelete,
   IconExperiment,
@@ -25,11 +26,16 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
 import { Link } from '@/i18n/navigation';
-import type { Meeting, MeetingMode } from '@/modules/meeting-domain';
+import {
+  calculateMeetingEconomics,
+  type Meeting,
+  type MeetingMode,
+} from '@/modules/meeting-domain';
 import {
   getBrowserMeetingDatabase,
   MeetingRepository,
-  observeMeetings,
+  observeDashboardMeetings,
+  type DashboardMeeting,
 } from '@/modules/meeting-db/client';
 
 import styles from './dashboard-home.module.css';
@@ -53,16 +59,27 @@ function stageKey(meeting: Meeting): string {
 }
 
 interface MeetingCardProps {
+  activeTopicTitle?: string;
   meeting: Meeting;
+  now: Date;
   onDelete: (meeting: Meeting) => Promise<void>;
 }
 
-function MeetingCard({ meeting, onDelete }: MeetingCardProps) {
+function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardProps) {
   const t = useTranslations('dashboard');
   const format = useFormatter();
   const [deleting, setDeleting] = useState(false);
   const start = new Date(meeting.scheduledStartAt);
   const end = new Date(meeting.scheduledEndAt);
+  const economics =
+    meeting.status === 'LIVE' ? calculateMeetingEconomics(meeting, [], now) : undefined;
+  const liveDurationMinutes =
+    economics?.ok && meeting.actualAttendeeCount
+      ? Math.max(0, Math.round(economics.value.totalPersonMinutes / meeting.actualAttendeeCount))
+      : undefined;
+  const livePersonHours = economics?.ok
+    ? Math.round((economics.value.totalPersonMinutes / 60) * 10) / 10
+    : undefined;
 
   return (
     <Card className={styles.meetingCard} hoverable>
@@ -85,6 +102,7 @@ function MeetingCard({ meeting, onDelete }: MeetingCardProps) {
         >
           <Button
             aria-label={t('delete.actionLabel', { title: meeting.title })}
+            className={styles.deleteButton}
             icon={<IconDelete aria-hidden="true" />}
             loading={deleting}
             size="small"
@@ -102,6 +120,26 @@ function MeetingCard({ meeting, onDelete }: MeetingCardProps) {
             <IconCalendar aria-hidden="true" />
             {format.dateTime(start, { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
+          {meeting.status === 'LIVE' && liveDurationMinutes !== undefined ? (
+            <span>
+              <IconClockCircle aria-hidden="true" />
+              {t('live.duration', { minutes: liveDurationMinutes })}
+            </span>
+          ) : null}
+          {meeting.status === 'LIVE' ? (
+            <span>
+              <IconBranch aria-hidden="true" />
+              {t('live.currentTopic', {
+                topic: activeTopicTitle ?? t('live.noActiveTopic'),
+              })}
+            </span>
+          ) : null}
+          {meeting.status === 'LIVE' && livePersonHours !== undefined ? (
+            <span>
+              <IconUserGroup aria-hidden="true" />
+              {t('live.personHours', { hours: livePersonHours })}
+            </span>
+          ) : null}
           <span>
             <IconClockCircle aria-hidden="true" />
             {format.dateTimeRange(start, end, { timeStyle: 'short' })}
@@ -124,16 +162,16 @@ export function DashboardHome() {
   const t = useTranslations('dashboard');
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [dashboardMeetings, setDashboardMeetings] = useState<DashboardMeeting[]>([]);
   const [now, setNow] = useState(() => new Date());
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(
     () =>
-      observeMeetings(
+      observeDashboardMeetings(
         getBrowserMeetingDatabase(),
         (value) => {
-          setMeetings(value);
+          setDashboardMeetings(value);
           setLoading(false);
         },
         () => {
@@ -148,7 +186,18 @@ export function DashboardHome() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const groups = useMemo(() => groupMeetings(meetings), [meetings]);
+  const meetings = useMemo(
+    () => dashboardMeetings.map(({ meeting }) => meeting),
+    [dashboardMeetings],
+  );
+  const activeTopicTitles = useMemo(
+    () =>
+      new Map(
+        dashboardMeetings.map(({ activeTopicTitle, meeting }) => [meeting.id, activeTopicTitle]),
+      ),
+    [dashboardMeetings],
+  );
+  const groups = useMemo(() => groupMeetings(meetings, now), [meetings, now]);
   const stale = useMemo(() => staleLiveMeetings(meetings, now), [meetings, now]);
 
   async function deleteMeeting(meeting: Meeting) {
@@ -231,7 +280,13 @@ export function DashboardHome() {
                   </div>
                   <div className={styles.meetingGrid}>
                     {group.meetings.map((meeting) => (
-                      <MeetingCard key={meeting.id} meeting={meeting} onDelete={deleteMeeting} />
+                      <MeetingCard
+                        activeTopicTitle={activeTopicTitles.get(meeting.id)}
+                        key={meeting.id}
+                        meeting={meeting}
+                        now={now}
+                        onDelete={deleteMeeting}
+                      />
                     ))}
                   </div>
                 </section>

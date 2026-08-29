@@ -28,8 +28,8 @@
         "manageModel": "管理模型設定"
       },
       "clear": {
-        "confirmDescription": "這會永久刪除目前瀏覽器裡的會議、心智圖、筆記、產出與報告；模型設定仍會保持連線。",
-        "confirmTitle": "清除全部本機會議資料？"
+        "confirmDescription": "這會永久刪除目前瀏覽器裡的 {count} 場會議及其心智圖、筆記、產出與報告；模型設定仍會保持連線。",
+        "confirmTitle": "清除 {count} 場本機會議？"
       },
       "cloud": {
         "comingSoon": "後續支援",
@@ -38,7 +38,8 @@
       },
       "errors": {
         "clear": "暫時無法清除本機會議。請關閉其他 Convergene 分頁後再試一次。",
-        "export": "暫時無法產生匯出檔案。本機資料沒有變更。"
+        "export": "暫時無法產生匯出檔案。本機資料沒有變更。",
+        "read": "暫時無法統計本機會議。已儲存的資料沒有被修改。"
       },
       "feedback": {
         "cleared": "本機會議資料已清除，模型設定沒有變更。",
@@ -105,6 +106,12 @@
       }
     },
     "loading": "正在載入本機會議",
+    "live": {
+      "currentTopic": "目前議題 · {topic}",
+      "duration": "已進行 {minutes} 分鐘",
+      "noActiveTopic": "尚未選擇議題",
+      "personHours": "已累計 {hours, number} 人時"
+    },
     "modes": {
       "brainstorm": "腦暴共創",
       "decision": "決策對齊",
@@ -143,6 +150,7 @@
     "eyebrow": "無需 Key · 不寫本機資料",
     "fixtures": {
       "brainstorm": {
+        "cheat": "先用目標受眾與挑戰開場，每次只追一個大膽方向；進入收斂時，明確提醒大家按觸及、清晰度與成本篩選。",
         "copyReason": "團隊需要先打開可能性空間，再做選擇。",
         "expansion1": "借專業人士建立信任",
         "expansion2": "展示產品實際使用",
@@ -164,6 +172,7 @@
         "topic3": "篩選方法"
       },
       "decision": {
+        "cheat": "開場先說清楚要做的決定與拍板人；依序推進備選、標準與關鍵風險，最後重述由誰做出選擇。",
         "copyReason": "這項需求需要在多個方案中做出明確選擇。",
         "expansion1": "先發布一個區域",
         "expansion2": "執行邀請制 Beta",
@@ -185,6 +194,7 @@
         "topic3": "風險與拍板人"
       },
       "retro": {
+        "cheat": "從共同事實開場，把原因與責怪分開；主動尋找一個反例，最後收束到一項有負責人的改進。",
         "copyReason": "團隊需要理解過去的結果並確定改進行動。",
         "expansion1": "警示晚於實際影響",
         "expansion2": "回復路徑不清楚",
@@ -223,6 +233,7 @@
     "scenarioLabel": "導覽劇本",
     "steps": {
       "focus": {
+        "cheatTitle": "主持人小抄",
         "description": "目前議題及其子樹被突出，其他分支仍然可見、可點擊，而不是憑空消失。",
         "title": "聚焦一個分支"
       },
@@ -264,6 +275,7 @@
         "INPUT_INVALID": "暫時無法分類。請檢查老闆原話與可選標題後再試一次。",
         "ORIGIN_INVALID": "無法驗證這次請求。請重新整理 Convergene 後再試一次。",
         "OUTPUT_INVALID": "模型回傳的推薦無法使用。可以重試一次，或直接手動選擇劇本。",
+        "OUTPUT_LANGUAGE_MISMATCH": "模型沒有使用所選內容語言。輸入沒有變更，可以再試一次或手動選擇劇本。",
         "PROVIDER_AUTH_FAILED": "供應商拒絕了已儲存的 Key。請重新連接後再試一次。",
         "PROVIDER_CONFIG_INVALID": "已儲存的模型設定無法繼續使用。請更換設定後再試一次。",
         "PROVIDER_CONFIG_UNAVAILABLE": "模型設定儲存暫時無法使用。表單仍然保留，可以稍後重試或手動選擇。",
@@ -272,7 +284,8 @@
         "PROVIDER_RATE_LIMITED": "供應商正在限制請求。請稍候再試，或手動選擇劇本。",
         "PROVIDER_UNAVAILABLE": "暫時無法連接供應商。輸入已經保留，可以重試或手動選擇。",
         "RATE_LIMITED": "目前工作階段嘗試過於頻繁。請等待一分鐘，或手動選擇。",
-        "REQUEST_CANCELLED": "上一次推薦已取消，準備好後可以重試。"
+        "REQUEST_CANCELLED": "上一次推薦已取消，準備好後可以重試。",
+        "UNKNOWN": "推薦被意外中斷。輸入沒有變更，可以再試一次或手動選擇劇本。"
       },
       "form": "請檢查下方標出的會議資訊。目前輸入已完整保留。",
       "save": "暫時無法建立本機會議。內容沒有寫入後端，請再試一次。"

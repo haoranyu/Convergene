@@ -28,8 +28,8 @@
         "manageModel": "Manage model configuration"
       },
       "clear": {
-        "confirmDescription": "This permanently removes meetings, maps, notes, outcomes, and reports from this browser. Your model configuration stays connected.",
-        "confirmTitle": "Clear all local meeting data?"
+        "confirmDescription": "This permanently removes {count, plural, one {this meeting} other {all # meetings}}, maps, notes, outcomes, and reports from this browser. Your model configuration stays connected.",
+        "confirmTitle": "{count, plural, one {Clear 1 local meeting?} other {Clear all # local meetings?}}"
       },
       "cloud": {
         "comingSoon": "Coming later",
@@ -38,7 +38,8 @@
       },
       "errors": {
         "clear": "Local meetings could not be cleared. Close other Convergene tabs and try again.",
-        "export": "The export could not be created. Your local data was not changed."
+        "export": "The export could not be created. Your local data was not changed.",
+        "read": "Local meeting data could not be counted. Your stored data was not modified."
       },
       "feedback": {
         "cleared": "Local meeting data cleared. Your model configuration was not changed.",
@@ -105,6 +106,12 @@
       }
     },
     "loading": "Loading local meetings",
+    "live": {
+      "currentTopic": "Current topic · {topic}",
+      "duration": "{minutes, plural, one {# minute live} other {# minutes live}}",
+      "noActiveTopic": "No topic selected",
+      "personHours": "{hours, number} person-hours so far"
+    },
     "modes": {
       "brainstorm": "Brainstorm",
       "decision": "Decision",
@@ -143,6 +150,7 @@
     "eyebrow": "No key · no local write",
     "fixtures": {
       "brainstorm": {
+        "cheat": "Open with the audience challenge. Ask for one bold direction at a time, then transition into the agreed reach, clarity, and cost screen.",
         "copyReason": "The team needs to open the possibility space before choosing.",
         "expansion1": "Borrow trust from specialists",
         "expansion2": "Show the product in use",
@@ -164,6 +172,7 @@
         "topic3": "Selection method"
       },
       "decision": {
+        "cheat": "Open by naming the decision and owner. Move from options to criteria, surface the deciding risk, then restate who makes the call.",
         "copyReason": "The request requires a concrete choice among alternatives.",
         "expansion1": "Ship one region first",
         "expansion2": "Run a gated beta",
@@ -185,6 +194,7 @@
         "topic3": "Risks and owner"
       },
       "retro": {
+        "cheat": "Open with shared facts. Keep causes separate from blame, ask for a counterexample, then close on one owned improvement.",
         "copyReason": "The team needs to understand a past result and agree on an improvement.",
         "expansion1": "Alerts arrived after impact",
         "expansion2": "Rollback path was unclear",
@@ -223,6 +233,7 @@
     "scenarioLabel": "Tour scenario",
     "steps": {
       "focus": {
+        "cheatTitle": "Facilitator cheat sheet",
         "description": "The active topic and its subtree come forward; other branches remain visible and clickable instead of disappearing.",
         "title": "Focus one branch"
       },
@@ -264,6 +275,7 @@
         "INPUT_INVALID": "The request could not be classified. Check the raw request and optional title, then retry.",
         "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
         "OUTPUT_INVALID": "The model returned an unusable recommendation. Retry once or choose a script manually.",
+        "OUTPUT_LANGUAGE_MISMATCH": "The recommendation used the wrong language. Retry or choose a script manually; your input is unchanged.",
         "PROVIDER_AUTH_FAILED": "The provider rejected the saved key. Reconnect it, then retry.",
         "PROVIDER_CONFIG_INVALID": "The saved model configuration can no longer be used. Replace it, then retry.",
         "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your form is still here; retry later or choose manually.",
@@ -272,7 +284,8 @@
         "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment, then retry or choose manually.",
         "PROVIDER_UNAVAILABLE": "The provider could not be reached. Your inputs are preserved; retry or choose manually.",
         "RATE_LIMITED": "Too many attempts were made from this session. Wait a minute or choose manually.",
-        "REQUEST_CANCELLED": "The prior recommendation was cancelled. You can retry when ready."
+        "REQUEST_CANCELLED": "The prior recommendation was cancelled. You can retry when ready.",
+        "UNKNOWN": "Something unexpected interrupted the recommendation. Your input is unchanged; retry or choose manually."
       },
       "form": "Check the highlighted meeting details below. Your current input has been preserved.",
       "save": "The local meeting could not be created. Nothing was sent to the backend; try again."

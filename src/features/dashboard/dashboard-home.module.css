@@ -64,11 +64,11 @@
 
 .primaryLink {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .primaryLink:hover {
-  background: #1e40af;
+  background: var(--color-primary-hover);
 }
 
 .secondaryLink {
@@ -141,6 +141,11 @@
 
 .meetingCard:hover {
   border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border)) !important;
+}
+
+.deleteButton:global(.arco-btn) {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 .cardTopline,

@@ -1,7 +1,11 @@
 'use client';
 
 import { Button, Spin } from '@arco-design/web-react';
-import { IconCheckCircleFill, IconSafe } from '@arco-design/web-react/icon';
+import {
+  IconCheckCircleFill,
+  IconExclamationCircleFill,
+  IconSafe,
+} from '@arco-design/web-react/icon';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -40,7 +44,7 @@ export function ModelStatusControl() {
     );
   }
 
-  if (status?.configured) {
+  if (status?.configured && status.state === 'AVAILABLE') {
     const provider = providerT(
       status.provider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name',
     );
@@ -49,6 +53,23 @@ export function ModelStatusControl() {
         <IconCheckCircleFill aria-hidden="true" />
         <span>{provider}</span>
       </Link>
+    );
+  }
+
+  if (status?.configured && status.state === 'NEEDS_RECONFIGURATION') {
+    return (
+      <ProviderConfigGate onConfigured={setStatus}>
+        {({ open }) => (
+          <Button
+            className={styles.modelNeedsAttention}
+            icon={<IconExclamationCircleFill aria-hidden="true" />}
+            onClick={open}
+            status="warning"
+          >
+            {providerT('status.needsReconfiguration')}
+          </Button>
+        )}
+      </ProviderConfigGate>
     );
   }
 

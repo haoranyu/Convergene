@@ -16,7 +16,7 @@ import type { MeetingGraph, MindMapEdge, MindMapNode } from '@/modules/mind-map-
 
 import { MeetingDatabase } from './database';
 import { createExportSnapshot, exportFilename, serializeExport } from './export';
-import { observeMeetingAggregate, observeMeetings } from './observe';
+import { observeDashboardMeetings, observeMeetingAggregate, observeMeetings } from './observe';
 import { MeetingRepository } from './repository';
 
 const timestamp = '2026-08-29T09:30:00.000Z';
@@ -1467,6 +1467,33 @@ describe('MeetingRepository', () => {
 
     expect(await writerRepository.createMeeting(meeting('meeting-1'))).toMatchObject({ ok: true });
     await expect(observed).resolves.toMatchObject([{ id: 'meeting-1' }]);
+  });
+
+  it('projects the active topic title for live dashboard cards', async () => {
+    const observedDatabase = openDatabase();
+    const writerRepository = new MeetingRepository(openDatabase());
+    await createPreparedMeeting(writerRepository, 'meeting-1');
+
+    const observed = new Promise<string | undefined>((resolve, reject) => {
+      const stop = observeDashboardMeetings(
+        observedDatabase,
+        (meetings) => {
+          const live = meetings.find(({ meeting: item }) => item.status === 'LIVE');
+          if (!live) return;
+          stop();
+          resolve(live.activeTopicTitle);
+        },
+        reject,
+      );
+    });
+    await startStoredMeeting(
+      writerRepository,
+      'meeting-1',
+      4,
+      new Date('2026-08-29T10:00:00.000Z'),
+    );
+
+    await expect(observed).resolves.toBe('Options');
   });
 
   it('refreshes an observed aggregate when another instance writes only an outcome row', async () => {

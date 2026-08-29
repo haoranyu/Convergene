@@ -34,7 +34,7 @@
 .formCard {
   border-color: var(--color-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: 0 12px 36px rgb(15 23 42 / 7%);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--color-foreground) 7%, transparent);
   padding: clamp(4px, 2vw, 16px);
 }
 
@@ -144,7 +144,7 @@
 
 .modeSelected {
   background: var(--color-primary-subtle);
-  box-shadow: 0 0 0 3px rgb(29 78 216 / 10%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .modeCard > span:last-child,
