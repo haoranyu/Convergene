@@ -1062,6 +1062,61 @@ describe('MeetingRepository', () => {
     });
   });
 
+  it('writes quick notes atomically with their required source and rejects stale retries', async () => {
+    const database = openDatabase();
+    const repository = new MeetingRepository(database);
+    await createPreparedMeeting(repository, 'meeting-quick-note');
+    const started = await startStoredMeeting(
+      repository,
+      'meeting-quick-note',
+      4,
+      new Date('2026-08-29T10:00:00.000Z'),
+    );
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+
+    const inserted = await repository.insertQuickNote(
+      'meeting-quick-note',
+      {
+        edgeId: 'quick-note-edge',
+        id: 'quick-note',
+        parentNodeId: 'meeting-quick-note-topic-1',
+        position: { x: 500, y: 120 },
+        title: 'Confirm the rollout owner',
+      },
+      started.value.updatedAt,
+      new Date('2026-08-29T10:01:00.000Z'),
+    );
+
+    expect(inserted).toMatchObject({ ok: true });
+    expect(await database.nodes.get('quick-note')).toMatchObject({
+      kind: 'NOTE',
+      source: 'QUICK_NOTE',
+      strategyId: undefined,
+    });
+    expect(await database.edges.get('quick-note-edge')).toMatchObject({
+      sourceNodeId: 'meeting-quick-note-topic-1',
+      targetNodeId: 'quick-note',
+    });
+
+    await expect(
+      repository.insertQuickNote(
+        'meeting-quick-note',
+        {
+          edgeId: 'stale-note-edge',
+          id: 'stale-note',
+          parentNodeId: 'meeting-quick-note-topic-1',
+          position: { x: 500, y: 240 },
+          title: 'This must not be partially saved',
+        },
+        started.value.updatedAt,
+        new Date('2026-08-29T10:02:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'STALE_WRITE' }, ok: false });
+    expect(await database.nodes.get('stale-note')).toBeUndefined();
+    expect(await database.edges.get('stale-note-edge')).toBeUndefined();
+  });
+
   it('forbids structural graph changes after ENDED but permits narrow node text correction', async () => {
     const repository = new MeetingRepository(openDatabase());
     await createPreparedMeeting(repository, 'meeting-1');

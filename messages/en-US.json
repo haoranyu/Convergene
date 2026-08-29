@@ -614,7 +614,86 @@
       "parent": "New parent node",
       "parentPlaceholder": "Choose a new parent"
     },
-    "workspaceLabel": "Meeting discussion canvas"
+    "workspaceLabel": "Meeting discussion canvas",
+    "quickNote": {
+      "title": "Quick note",
+      "hint": "Press Enter to save locally",
+      "inputLabel": "Quick note input",
+      "placeholder": "Capture what was just said…",
+      "rootFallback": "Saved under the meeting objective because no topic is active."
+    },
+    "expansion": {
+      "groupLabel": "AI suggestions for {node}",
+      "cancel": "Cancel",
+      "retry": "Retry",
+      "loading": "Generating suggestions",
+      "saved": "Suggestions added to this browser",
+      "errors": {
+        "stale": "This meeting changed. Nothing was added; try again.",
+        "storage": "Could not save suggestions in this browser.",
+        "notConfigured": "Connect a model to use AI suggestions.",
+        "reconfigure": "Reconnect your model, then try again.",
+        "rateLimited": "The model is limiting requests. Try again shortly.",
+        "invalidOutput": "The model returned unusable suggestions. Try again.",
+        "unavailable": "AI suggestions are unavailable. Your meeting is still safe."
+      }
+    }
+  },
+  "facilitation": {
+    "title": "Host cheat sheet",
+    "opening": "Opening",
+    "activeTopic": "Start this topic with",
+    "transition": "Transition cue",
+    "closing": "Before closing",
+    "empty": "Nothing added yet.",
+    "advisory": "AI suggestions are advisory. You decide what to say and what to keep."
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": {
+      "label": "Add an option",
+      "description": "Find a distinct alternative."
+    },
+    "DECISION_SURFACE_RISK": {
+      "label": "Surface risk",
+      "description": "Expose assumptions and failure modes."
+    },
+    "DECISION_DRIVE_CHOICE": {
+      "label": "Drive a choice",
+      "description": "Clarify trade-offs and decision questions."
+    },
+    "BRAINSTORM_GO_WILDER": { "label": "Go wilder", "description": "Push beyond the obvious." },
+    "BRAINSTORM_CHANGE_LENS": {
+      "label": "Change lens",
+      "description": "Try another audience or constraint."
+    },
+    "BRAINSTORM_CONVERGE": {
+      "label": "Converge",
+      "description": "Find differences and screening questions."
+    },
+    "RETRO_FIND_CAUSE": {
+      "label": "Find cause",
+      "description": "Probe mechanisms and conditions."
+    },
+    "RETRO_FIND_COUNTEREXAMPLE": {
+      "label": "Find counterexample",
+      "description": "Challenge the current narrative."
+    },
+    "RETRO_TURN_INTO_ACTION": {
+      "label": "Turn into action",
+      "description": "Draft concrete next steps."
+    },
+    "GENERAL_DIVERGE": {
+      "label": "Open directions",
+      "description": "Add meaningfully different paths."
+    },
+    "GENERAL_DECOMPOSE": {
+      "label": "Break it down",
+      "description": "Split this into discussable questions."
+    },
+    "GENERAL_CHALLENGE": {
+      "label": "Challenge it",
+      "description": "Test assumptions and counterexamples."
+    }
   },
   "meeting": {
     "actions": {

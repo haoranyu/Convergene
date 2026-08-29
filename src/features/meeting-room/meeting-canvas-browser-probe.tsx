@@ -11,6 +11,7 @@ import { layoutMeetingGraph } from '@/modules/mind-map-layout';
 import { AppProviders } from '@/ui/app-providers';
 
 import type { CanvasCommandResult, CanvasCommands } from './canvas-contract';
+import type { ExpandNodeResponse, ExpandNodeRequest } from '@/modules/meeting-ai/expand-node';
 import { meetingGraph } from './canvas-view-model';
 import { createMeetingCanvasTestFixture } from './meeting-canvas-test-fixture';
 import { MeetingCanvasView } from './meeting-canvas-view';
@@ -41,6 +42,7 @@ function MeetingCanvasBrowserFixture() {
   const [aggregate, setAggregate] = useState(createMeetingCanvasTestFixture);
   const commands = useMemo<CanvasCommands>(
     () => ({
+      applyExpansion: () => success(),
       deleteSubtree: (nodeId) => {
         commandLog.push({ name: 'deleteSubtree', nodeId });
         setAggregate((current) => {
@@ -87,6 +89,7 @@ function MeetingCanvasBrowserFixture() {
         }));
         return success();
       },
+      insertQuickNote: () => success(),
       persistPosition: (nodeId, position) => {
         commandLog.push({ name: 'persistPosition', nodeId });
         setAggregate((current) => ({
@@ -149,7 +152,18 @@ function MeetingCanvasBrowserFixture() {
     <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
       <AppProviders locale="en-US">
         <main className="meeting-canvas-test-shell">
-          <MeetingCanvasView aggregate={aggregate} commands={commands} />
+          <MeetingCanvasView
+            aggregate={aggregate}
+            commands={commands}
+            expandNode={async (_request: ExpandNodeRequest) => ({
+              ok: true,
+              value: {
+                output: { children: [] },
+                requestId: _request.requestId,
+                task: 'expand-node',
+              } satisfies ExpandNodeResponse,
+            })}
+          />
         </main>
       </AppProviders>
     </NextIntlClientProvider>

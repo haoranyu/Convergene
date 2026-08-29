@@ -10,6 +10,13 @@ export {
   generatedTextMatchesLocale,
   MeetingAIContractError,
 } from './classify-meeting';
+export {
+  expandNodeMaximumRequestBodyBytes,
+  expandNodeOutputMatchesLocale,
+  expandNodeOutputSchema,
+  expandNodeRequestSchema,
+} from './expand-node';
+export { buildExpandNodePrompt } from './expand-node-prompt';
 export { meetingAIErrorResponse, meetingAIJson } from './http';
 export {
   ProviderGatewayError,

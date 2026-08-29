@@ -1,5 +1,11 @@
 import type { MeetingAggregate } from '@/modules/meeting-db';
-import type { MeetingGraph, MindMapNode, NodeKind } from '@/modules/mind-map-domain';
+import type {
+  ExpandNodeChild,
+  ExpandNodeRequest,
+  ExpandNodeResponse,
+  MeetingAIResult,
+} from '@/modules/meeting-ai/expand-node';
+import type { MeetingGraph, MindMapNode, NodeKind, StrategyId } from '@/modules/mind-map-domain';
 
 export type CanvasCommandErrorCode = 'INVALID_OPERATION' | 'STALE_WRITE' | 'STORAGE_ERROR';
 
@@ -16,8 +22,28 @@ export interface ManualCanvasNodeDraft {
   transitionHint?: string;
 }
 
+export interface ApplyExpansionDraft {
+  children: readonly ExpandNodeChild[];
+  expectedMeetingUpdatedAt: string;
+  parentNodeId: string;
+  strategyId: StrategyId;
+}
+
+export interface QuickNoteDraft {
+  parentNodeId: string;
+  position: { x: number; y: number };
+  title: string;
+}
+
+export type ExpandNodePort = (
+  request: ExpandNodeRequest,
+  options: { signal: AbortSignal },
+) => Promise<MeetingAIResult<ExpandNodeResponse>>;
+
 export interface CanvasCommands {
+  applyExpansion(input: ApplyExpansionDraft): Promise<CanvasCommandResult>;
   deleteSubtree(nodeId: string): Promise<CanvasCommandResult>;
+  insertQuickNote(input: QuickNoteDraft): Promise<CanvasCommandResult>;
   insertNode(input: ManualCanvasNodeDraft): Promise<CanvasCommandResult>;
   persistPosition(nodeId: string, position: { x: number; y: number }): Promise<CanvasCommandResult>;
   relayout(graph: MeetingGraph): Promise<CanvasCommandResult>;
@@ -29,5 +55,6 @@ export interface CanvasCommands {
 export interface MeetingCanvasViewProps {
   aggregate: MeetingAggregate;
   commands: CanvasCommands;
+  expandNode: ExpandNodePort;
   onSelectedNodeChange?: (node?: MindMapNode) => void;
 }

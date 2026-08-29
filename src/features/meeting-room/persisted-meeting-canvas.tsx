@@ -23,9 +23,17 @@ import { getBrowserMeetingDatabase } from '@/modules/meeting-db/client';
 import type { MindMapNode } from '@/modules/mind-map-domain';
 import { layoutMeetingGraph } from '@/modules/mind-map-layout';
 
-import type { CanvasCommandResult, CanvasCommands, ManualCanvasNodeDraft } from './canvas-contract';
+import type {
+  ApplyExpansionDraft,
+  CanvasCommandResult,
+  CanvasCommands,
+  ManualCanvasNodeDraft,
+  QuickNoteDraft,
+} from './canvas-contract';
+import { requestNodeExpansion } from './expand-node-client';
 import { MeetingCanvasView } from './meeting-canvas-view';
 import styles from './meeting-canvas.module.css';
+import { buildExpansionChildren } from './node-assistance';
 
 export interface PersistedMeetingCanvasProps {
   meetingId: string;
@@ -101,8 +109,54 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
     [refresh],
   );
 
+  const executeAtRevision = useCallback(
+    async (
+      expectedMeetingUpdatedAt: string,
+      operation: () => Promise<{
+        ok: boolean;
+        error?: { code: MeetingRepositoryErrorCode };
+      }>,
+    ): Promise<CanvasCommandResult> => {
+      if (aggregateRef.current?.meeting.updatedAt !== expectedMeetingUpdatedAt) {
+        return { error: { code: 'STALE_WRITE' }, ok: false };
+      }
+      try {
+        const result = await operation();
+        if (!result.ok) return commandFailure(result.error!.code);
+        return (await refresh()) ? { ok: true } : { error: { code: 'STORAGE_ERROR' }, ok: false };
+      } catch {
+        return { error: { code: 'STORAGE_ERROR' }, ok: false };
+      }
+    },
+    [refresh],
+  );
+
   const commands = useMemo<CanvasCommands>(
     () => ({
+      applyExpansion: (input: ApplyExpansionDraft) => {
+        const current = aggregateRef.current;
+        const parent = current?.nodes.find((node) => node.id === input.parentNodeId);
+        if (current === undefined || parent === undefined) {
+          return Promise.resolve({ error: { code: 'INVALID_OPERATION' }, ok: false });
+        }
+        const now = new Date();
+        const children = buildExpansionChildren({
+          drafts: input.children,
+          meetingId,
+          parent,
+          strategyId: input.strategyId,
+          timestamp: now.toISOString(),
+        });
+        return executeAtRevision(input.expectedMeetingUpdatedAt, () =>
+          repository.applyExpansion(
+            meetingId,
+            input.parentNodeId,
+            children,
+            input.expectedMeetingUpdatedAt,
+            now,
+          ),
+        );
+      },
       deleteSubtree: (nodeId) =>
         execute((current) =>
           repository.deleteNodeSubtree(meetingId, nodeId, current.meeting.updatedAt, new Date()),
@@ -110,6 +164,19 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
       insertNode: (input: ManualCanvasNodeDraft) =>
         execute((current) =>
           repository.insertNode(
+            meetingId,
+            {
+              ...input,
+              edgeId: crypto.randomUUID(),
+              id: crypto.randomUUID(),
+            },
+            current.meeting.updatedAt,
+            new Date(),
+          ),
+        ),
+      insertQuickNote: (input: QuickNoteDraft) =>
+        execute((current) =>
+          repository.insertQuickNote(
             meetingId,
             {
               ...input,
@@ -166,7 +233,7 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
           ),
         ),
     }),
-    [execute, meetingId, repository],
+    [execute, executeAtRevision, meetingId, repository],
   );
 
   const liveCommands = useMemo(
@@ -208,6 +275,7 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
       <MeetingCanvasView
         aggregate={aggregate}
         commands={commands}
+        expandNode={requestNodeExpansion}
         onSelectedNodeChange={setSelectedNode}
       />
       {aggregate.meeting.status === 'LIVE' && selectedNode && liveCommands ? (

@@ -614,7 +614,53 @@
       "parent": "新父节点",
       "parentPlaceholder": "选择新的父节点"
     },
-    "workspaceLabel": "会议讨论画布"
+    "workspaceLabel": "会议讨论画布",
+    "quickNote": {
+      "title": "随手记",
+      "hint": "按 Enter 立即保存到本机",
+      "inputLabel": "随手记输入",
+      "placeholder": "记下刚才说了什么……",
+      "rootFallback": "当前没有议题，已保存到会议目标下。"
+    },
+    "expansion": {
+      "groupLabel": "为“{node}”提供 AI 建议",
+      "cancel": "取消",
+      "retry": "重试",
+      "loading": "正在生成建议",
+      "saved": "建议已保存到本机",
+      "errors": {
+        "stale": "会议已有变化，未添加内容，请重试。",
+        "storage": "无法保存到本机。",
+        "notConfigured": "连接模型后才能使用 AI 建议。",
+        "reconfigure": "重新连接模型后再试。",
+        "rateLimited": "模型正在限流，请稍后再试。",
+        "invalidOutput": "模型返回的建议不可用，请重试。",
+        "unavailable": "AI 建议暂不可用，本机会议仍安全。"
+      }
+    }
+  },
+  "facilitation": {
+    "title": "主持人小抄",
+    "opening": "开场",
+    "activeTopic": "本议题启动问题",
+    "transition": "转场提示",
+    "closing": "散会前",
+    "empty": "暂未添加。",
+    "advisory": "AI 建议仅供参考。由你决定说什么、保留什么。"
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": { "label": "补一个选项", "description": "寻找不同的备选方案。" },
+    "DECISION_SURFACE_RISK": { "label": "查风险", "description": "暴露假设和失败条件。" },
+    "DECISION_DRIVE_CHOICE": { "label": "逼近选择", "description": "厘清取舍和决策问题。" },
+    "BRAINSTORM_GO_WILDER": { "label": "再野一点", "description": "跳出显而易见的方向。" },
+    "BRAINSTORM_CHANGE_LENS": { "label": "换个视角", "description": "尝试另一类对象或限制。" },
+    "BRAINSTORM_CONVERGE": { "label": "收敛", "description": "找差异和筛选问题。" },
+    "RETRO_FIND_CAUSE": { "label": "追根因", "description": "追问机制和条件。" },
+    "RETRO_FIND_COUNTEREXAMPLE": { "label": "找反例", "description": "挑战当前叙事。" },
+    "RETRO_TURN_INTO_ACTION": { "label": "转成行动", "description": "拟定具体下一步。" },
+    "GENERAL_DIVERGE": { "label": "打开方向", "description": "增加不同路径。" },
+    "GENERAL_DECOMPOSE": { "label": "往下拆", "description": "拆成可讨论的问题。" },
+    "GENERAL_CHALLENGE": { "label": "反方挑战", "description": "检验假设和反例。" }
   },
   "meeting": {
     "actions": {

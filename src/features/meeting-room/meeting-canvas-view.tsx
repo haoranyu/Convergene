@@ -43,8 +43,14 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  expandNodeRequestSchema,
+  strategyIdsForMode,
+  type MeetingAIErrorCode,
+} from '@/modules/meeting-ai/expand-node';
 import type { MindMapNode, NodeKind } from '@/modules/mind-map-domain';
 import { orderedTopicIds, subtreeNodeIds } from '@/modules/mind-map-domain';
+import type { StrategyId } from '@/modules/mind-map-domain';
 
 import type { CanvasCommandErrorCode, MeetingCanvasViewProps } from './canvas-contract';
 import {
@@ -61,6 +67,7 @@ import {
   subtreeSize,
 } from './canvas-view-model';
 import styles from './meeting-canvas.module.css';
+import { buildExpandNodeInput, quickNoteParent } from './node-assistance';
 import { useReducedMotion } from './use-reduced-motion';
 
 const childNodeKinds = ['OPTION', 'IDEA', 'RISK', 'INSIGHT', 'ACTION', 'NOTE', 'PARKING'] as const;
@@ -76,8 +83,81 @@ function errorKey(code: CanvasCommandErrorCode): string {
   return 'errors.invalidOperation';
 }
 
-function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCanvasViewProps) {
+function expansionErrorKey(code: MeetingAIErrorCode | CanvasCommandErrorCode): string {
+  if (code === 'STALE_WRITE') return 'expansion.errors.stale';
+  if (code === 'STORAGE_ERROR') return 'expansion.errors.storage';
+  if (code === 'PROVIDER_NOT_CONFIGURED') return 'expansion.errors.notConfigured';
+  if (code === 'PROVIDER_AUTH_FAILED' || code === 'PROVIDER_CONFIG_INVALID') {
+    return 'expansion.errors.reconfigure';
+  }
+  if (code === 'PROVIDER_RATE_LIMITED' || code === 'RATE_LIMITED') {
+    return 'expansion.errors.rateLimited';
+  }
+  if (code === 'OUTPUT_INVALID' || code === 'OUTPUT_LANGUAGE_MISMATCH') {
+    return 'expansion.errors.invalidOutput';
+  }
+  return 'expansion.errors.unavailable';
+}
+
+interface ExpansionState {
+  errorCode?: MeetingAIErrorCode | CanvasCommandErrorCode;
+  expectedMeetingUpdatedAt: string;
+  nodeId: string;
+  requestId: string;
+  status: 'error' | 'loading';
+  strategyId: StrategyId;
+}
+
+function HostCheats({ aggregate }: Pick<MeetingCanvasViewProps, 'aggregate'>) {
+  const t = useTranslations('facilitation');
+  const activeTopic = aggregate.nodes.find(
+    (node) => node.id === aggregate.meeting.activeTopicNodeId,
+  );
+  const openingLine = aggregate.meeting.brief?.facilitation.openingLine;
+  const closingChecklist = aggregate.meeting.brief?.facilitation.closingChecklist ?? [];
+  return (
+    <Card bordered={false} className={styles.cheatCard} title={t('title')}>
+      <div className={styles.cheatSections}>
+        <section>
+          <Typography.Text bold>{t('opening')}</Typography.Text>
+          <p>{openingLine || t('empty')}</p>
+        </section>
+        <section>
+          <Typography.Text bold>{t('activeTopic')}</Typography.Text>
+          <p>{activeTopic?.topicPrompt || t('empty')}</p>
+        </section>
+        <section>
+          <Typography.Text bold>{t('transition')}</Typography.Text>
+          <p>{activeTopic?.transitionHint || t('empty')}</p>
+        </section>
+        <section>
+          <Typography.Text bold>{t('closing')}</Typography.Text>
+          {closingChecklist.length > 0 ? (
+            <ul>
+              {closingChecklist.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>{t('empty')}</p>
+          )}
+        </section>
+      </div>
+      <Typography.Text className={styles.cheatAdvisory}>{t('advisory')}</Typography.Text>
+    </Card>
+  );
+}
+
+function CanvasContent({
+  aggregate,
+  commands,
+  expandNode,
+  onSelectedNodeChange,
+}: MeetingCanvasViewProps) {
   const t = useTranslations('mindMap');
+  const tStrategy = useTranslations('strategy');
+  const tQuickNote = useTranslations('mindMap.quickNote');
+  const tFacilitation = useTranslations('facilitation');
   const reducedMotion = useReducedMotion();
   const instanceRef = useRef<ReactFlowInstance<MeetingCanvasNode, MeetingCanvasEdge> | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
@@ -92,6 +172,10 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
   const [editTitle, setEditTitle] = useState('');
   const [editNote, setEditNote] = useState('');
   const [nextParentId, setNextParentId] = useState<string>();
+  const [quickNote, setQuickNote] = useState('');
+  const [expansion, setExpansion] = useState<ExpansionState>();
+  const expansionAbortRef = useRef<AbortController | undefined>(undefined);
+  const clearingSelectionRef = useRef(false);
 
   const nodeKindLabels = useMemo<Record<NodeKind, string>>(
     () => ({
@@ -124,16 +208,26 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
 
   useEffect(() => setNodes(elements.nodes), [elements.nodes, setNodes]);
   const selectedNode = aggregate.nodes.find((node) => node.id === selectedNodeId);
+  const cancelExpansion = useCallback(() => {
+    expansionAbortRef.current?.abort();
+    expansionAbortRef.current = undefined;
+    setExpansion(undefined);
+  }, []);
+
+  useEffect(() => () => expansionAbortRef.current?.abort(), []);
+
   const selectNode = useCallback(
     (nodeId?: string) => {
       const node = aggregate.nodes.find((candidate) => candidate.id === nodeId);
+      if (node === undefined) clearingSelectionRef.current = true;
+      if (node?.id !== selectedNodeId) cancelExpansion();
       setSelectedNodeId(node?.id);
       onSelectedNodeChange?.(node);
       setEditTitle(node?.title ?? '');
       setEditNote(node?.note ?? '');
       setNextParentId(undefined);
     },
-    [aggregate.nodes, onSelectedNodeChange],
+    [aggregate.nodes, cancelExpansion, onSelectedNodeChange, selectedNodeId],
   );
 
   const topicsResult = useMemo(() => orderedTopicIds(graph), [graph]);
@@ -168,6 +262,150 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
     },
     [pendingAction, t],
   );
+
+  const startNodeExpansion = useCallback(
+    async (strategyId: StrategyId) => {
+      if (selectedNode === undefined || pendingAction !== undefined) return;
+      cancelExpansion();
+      const requestId = crypto.randomUUID();
+      const expectedMeetingUpdatedAt = aggregate.meeting.updatedAt;
+      const controller = new AbortController();
+      const nextExpansion: ExpansionState = {
+        expectedMeetingUpdatedAt,
+        nodeId: selectedNode.id,
+        requestId,
+        status: 'loading',
+        strategyId,
+      };
+      expansionAbortRef.current = controller;
+      setExpansion(nextExpansion);
+      setNotice(undefined);
+
+      let request;
+      try {
+        request = expandNodeRequestSchema.parse({
+          input: buildExpandNodeInput(aggregate, selectedNode.id, strategyId),
+          outputLocale: aggregate.meeting.contentLocale,
+          requestId,
+          task: 'expand-node',
+        });
+      } catch {
+        expansionAbortRef.current = undefined;
+        setExpansion({ ...nextExpansion, errorCode: 'OUTPUT_INVALID', status: 'error' });
+        return;
+      }
+
+      const result = await expandNode(request, { signal: controller.signal });
+      if (expansionAbortRef.current !== controller) return;
+      if (!result.ok) {
+        expansionAbortRef.current = undefined;
+        if (result.error.code === 'REQUEST_CANCELLED') {
+          setExpansion(undefined);
+          return;
+        }
+        setExpansion({ ...nextExpansion, errorCode: result.error.code, status: 'error' });
+        return;
+      }
+
+      const saved = await commands.applyExpansion({
+        children: result.value.output.children,
+        expectedMeetingUpdatedAt,
+        parentNodeId: selectedNode.id,
+        strategyId,
+      });
+      if (expansionAbortRef.current !== controller) return;
+      expansionAbortRef.current = undefined;
+      if (!saved.ok) {
+        setExpansion({ ...nextExpansion, errorCode: saved.error.code, status: 'error' });
+        return;
+      }
+      setExpansion(undefined);
+      setNotice({ kind: 'success', text: t('expansion.saved') });
+    },
+    [aggregate, cancelExpansion, commands, expandNode, pendingAction, selectedNode, t],
+  );
+
+  const displayNodes = useMemo<MeetingCanvasNode[]>(() => {
+    const mode = aggregate.meeting.mode;
+    const strategies = mode === undefined ? [] : strategyIdsForMode[mode];
+    const cardsVisible =
+      selectedNode !== undefined && isStructuralEditingAllowed && strategies.length === 3;
+    const decorated = nodes.map((node) =>
+      cardsVisible && node.id === selectedNode.id
+        ? {
+            ...node,
+            data: {
+              ...node.data,
+              assistance: {
+                cancelLabel: t('expansion.cancel'),
+                cards: strategies.map((strategyId) => ({
+                  description: tStrategy(`${strategyId}.description`),
+                  disabled: expansion?.status === 'loading' || pendingAction !== undefined,
+                  id: strategyId,
+                  label: tStrategy(`${strategyId}.label`),
+                  loading:
+                    expansion?.status === 'loading' &&
+                    expansion.nodeId === selectedNode.id &&
+                    expansion.strategyId === strategyId,
+                  onActivate: () => void startNodeExpansion(strategyId),
+                })),
+                error:
+                  expansion?.status === 'error' && expansion.nodeId === selectedNode.id
+                    ? {
+                        message: t(expansionErrorKey(expansion.errorCode ?? 'UNKNOWN')),
+                        onRetry: () => void startNodeExpansion(expansion.strategyId),
+                        retryLabel: t('expansion.retry'),
+                      }
+                    : undefined,
+                groupLabel: t('expansion.groupLabel', { node: selectedNode.title }),
+                onCancel: cancelExpansion,
+              },
+            },
+          }
+        : node,
+    );
+    if (expansion?.status !== 'loading' || selectedNode?.id !== expansion.nodeId) {
+      return decorated;
+    }
+    return [
+      ...decorated,
+      ...Array.from({ length: 3 }, (_, index): MeetingCanvasNode => ({
+        ariaLabel: t('expansion.loading'),
+        data: {
+          activeLabel: '',
+          dimmed: false,
+          isActiveTopic: false,
+          isOutcome: false,
+          kindLabel: '',
+          outcomeLabel: '',
+          skeleton: true,
+          title: '',
+        },
+        draggable: false,
+        focusable: false,
+        id: `expansion-skeleton-${expansion.requestId}-${index}`,
+        position: {
+          x: selectedNode.position.x + 384,
+          y: selectedNode.position.y + index * 112 - 112,
+        },
+        selectable: false,
+        style: { height: 88, width: 280 },
+        type: 'meetingNode',
+        zIndex: 3,
+      })),
+    ];
+  }, [
+    aggregate.meeting.mode,
+    cancelExpansion,
+    expansion,
+    isStructuralEditingAllowed,
+    nodes,
+    pendingAction,
+    selectedNode,
+    startNodeExpansion,
+    t,
+    tStrategy,
+  ]);
 
   const focusSubtree = useCallback(
     (topicNodeId: string) => {
@@ -259,7 +497,13 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
   );
 
   const onSelectionChange = useCallback(
-    ({ nodes: selected }: OnSelectionChangeParams) => selectNode(selected.at(-1)?.id),
+    ({ nodes: selected }: OnSelectionChangeParams) => {
+      if (clearingSelectionRef.current) {
+        clearingSelectionRef.current = false;
+        return;
+      }
+      if (selected.length > 0) selectNode(selected.at(-1)?.id);
+    },
     [selectNode],
   );
 
@@ -307,6 +551,33 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
       }),
     );
     if (saved) setAddOpen(false);
+  }
+
+  async function saveQuickNote() {
+    const title = quickNote.trim();
+    if (title === '' || aggregate.meeting.status !== 'LIVE' || pendingAction !== undefined) return;
+    try {
+      const parentInfo = quickNoteParent(aggregate);
+      const parent = aggregate.nodes.find((node) => node.id === parentInfo.parentNodeId);
+      if (parent === undefined) return;
+      const siblingCount = aggregate.edges.filter(
+        (edge) => edge.sourceNodeId === parentInfo.parentNodeId,
+      ).length;
+      const saved = await runCommand('quick-note', () =>
+        commands.insertQuickNote({
+          parentNodeId: parentInfo.parentNodeId,
+          position: { x: parent.position.x + 384, y: parent.position.y + siblingCount * 112 },
+          title,
+        }),
+      );
+      if (saved) {
+        setQuickNote('');
+        if (parentInfo.fallbackToRoot)
+          setNotice({ kind: 'success', text: tQuickNote('rootFallback') });
+      }
+    } catch {
+      setNotice({ kind: 'error', text: t('errors.invalidOperation') });
+    }
   }
 
   const activePosition =
@@ -412,6 +683,29 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
         ) : null}
       </div>
 
+      <HostCheats aggregate={aggregate} />
+
+      <Card bordered={false} className={styles.quickNoteCard}>
+        <div className={styles.quickNoteHeading}>
+          <Typography.Text bold>{tQuickNote('title')}</Typography.Text>
+          <Typography.Text type="secondary">{tQuickNote('hint')}</Typography.Text>
+        </div>
+        <Input
+          aria-label={tQuickNote('inputLabel')}
+          disabled={aggregate.meeting.status !== 'LIVE' || pendingAction !== undefined}
+          onChange={setQuickNote}
+          onPressEnter={(event) => {
+            event.preventDefault();
+            void saveQuickNote();
+          }}
+          placeholder={tQuickNote('placeholder')}
+          value={quickNote}
+        />
+        <Typography.Text className={styles.quickNoteAdvisory} type="secondary">
+          {tFacilitation('advisory')}
+        </Typography.Text>
+      </Card>
+
       <div className={styles.desktopWorkspace}>
         <div className={styles.canvasPane} data-testid="meeting-canvas-pane">
           <ReactFlow<MeetingCanvasNode, MeetingCanvasEdge>
@@ -424,7 +718,7 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
             isValidConnection={isValidConnection}
             maxZoom={1.6}
             minZoom={0.3}
-            nodes={nodes}
+            nodes={displayNodes}
             nodesConnectable={isStructuralEditingAllowed}
             nodeTypes={meetingNodeTypes}
             onConnect={onConnect}
@@ -435,7 +729,12 @@ function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCan
             onNodeDragStop={(_event, node) => {
               void runCommand('position', () => commands.persistPosition(node.id, node.position));
             }}
-            onNodesChange={onNodesChange}
+            onNodesChange={(changes) => {
+              if (changes.some((change) => change.type === 'select' && !change.selected)) {
+                selectNode();
+              }
+              onNodesChange(changes);
+            }}
             onSelectionChange={onSelectionChange}
             panOnDrag
             selectNodesOnDrag={false}

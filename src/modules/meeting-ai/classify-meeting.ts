@@ -118,10 +118,11 @@ export function generatedTextMatchesLocale(
 }
 
 export class MeetingAIContractError extends Error {
-  readonly code = 'OUTPUT_LANGUAGE_MISMATCH' as const;
+  readonly code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH';
 
-  constructor() {
-    super('OUTPUT_LANGUAGE_MISMATCH');
+  constructor(code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH' = 'OUTPUT_LANGUAGE_MISMATCH') {
+    super(code);
+    this.code = code;
     this.name = 'MeetingAIContractError';
   }
 }

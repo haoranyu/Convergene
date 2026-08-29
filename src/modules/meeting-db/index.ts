@@ -15,4 +15,5 @@ export type {
   NodeTextPatch,
   NodePositionPatch,
   OutcomeMetadataPatch,
+  QuickNoteInput,
 } from './repository';

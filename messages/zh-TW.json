@@ -614,7 +614,53 @@
       "parent": "新父節點",
       "parentPlaceholder": "選擇新的父節點"
     },
-    "workspaceLabel": "會議討論畫布"
+    "workspaceLabel": "會議討論畫布",
+    "quickNote": {
+      "title": "隨手記",
+      "hint": "按 Enter 立即儲存到本機",
+      "inputLabel": "隨手記輸入",
+      "placeholder": "記下剛才說了什麼……",
+      "rootFallback": "目前沒有議題，已儲存到會議目標下。"
+    },
+    "expansion": {
+      "groupLabel": "為「{node}」提供 AI 建議",
+      "cancel": "取消",
+      "retry": "重試",
+      "loading": "正在產生建議",
+      "saved": "建議已儲存到本機",
+      "errors": {
+        "stale": "會議已有變更，未新增內容，請重試。",
+        "storage": "無法儲存到本機。",
+        "notConfigured": "連接模型後才能使用 AI 建議。",
+        "reconfigure": "重新連接模型後再試。",
+        "rateLimited": "模型正在限制請求，請稍後再試。",
+        "invalidOutput": "模型回傳的建議不可用，請重試。",
+        "unavailable": "AI 建議暫時無法使用，本機會議仍安全。"
+      }
+    }
+  },
+  "facilitation": {
+    "title": "主持人小抄",
+    "opening": "開場",
+    "activeTopic": "本議題啟動問題",
+    "transition": "轉場提示",
+    "closing": "散會前",
+    "empty": "尚未新增。",
+    "advisory": "AI 建議僅供參考。由你決定說什麼、保留什麼。"
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": { "label": "補一個選項", "description": "尋找不同的備選方案。" },
+    "DECISION_SURFACE_RISK": { "label": "查風險", "description": "揭露假設和失敗條件。" },
+    "DECISION_DRIVE_CHOICE": { "label": "逼近選擇", "description": "釐清取捨和決策問題。" },
+    "BRAINSTORM_GO_WILDER": { "label": "再野一點", "description": "跳出顯而易見的方向。" },
+    "BRAINSTORM_CHANGE_LENS": { "label": "換個視角", "description": "嘗試另一類對象或限制。" },
+    "BRAINSTORM_CONVERGE": { "label": "收斂", "description": "找差異和篩選問題。" },
+    "RETRO_FIND_CAUSE": { "label": "追根因", "description": "追問機制和條件。" },
+    "RETRO_FIND_COUNTEREXAMPLE": { "label": "找反例", "description": "挑戰目前敘事。" },
+    "RETRO_TURN_INTO_ACTION": { "label": "轉成行動", "description": "擬定具體下一步。" },
+    "GENERAL_DIVERGE": { "label": "打開方向", "description": "增加不同路徑。" },
+    "GENERAL_DECOMPOSE": { "label": "往下拆", "description": "拆成可討論的問題。" },
+    "GENERAL_CHALLENGE": { "label": "反方挑戰", "description": "檢驗假設和反例。" }
   },
   "meeting": {
     "actions": {

@@ -109,6 +109,121 @@
   display: none;
 }
 
+.quickNoteCard {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.quickNoteHeading {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: space-between;
+}
+
+.quickNoteAdvisory {
+  font-size: 12px;
+}
+
+.cheatCard {
+  border-left: 3px solid var(--color-primary);
+}
+
+.cheatSections {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.cheatSections section {
+  min-width: 0;
+}
+
+.cheatSections p,
+.cheatSections ul {
+  margin: var(--space-1) 0 0;
+}
+
+.cheatAdvisory {
+  display: block;
+  font-size: 12px;
+  margin-top: var(--space-2);
+}
+
+.strategyGroup {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2);
+  width: min(720px, 90vw);
+}
+
+.strategyCards {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.strategyCard {
+  height: auto;
+  min-height: 56px;
+  text-align: left;
+}
+
+.strategyCardCopy {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.strategyCardCopy small {
+  color: var(--color-muted-foreground);
+  white-space: normal;
+}
+
+.strategyError {
+  align-items: center;
+  color: var(--color-danger);
+  display: flex;
+  font-size: 12px;
+  gap: var(--space-2);
+  justify-content: space-between;
+  margin-top: var(--space-2);
+}
+
+.skeletonNode {
+  animation: pulse 1.2s ease-in-out infinite;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.skeletonNode span {
+  background: var(--color-border);
+  border-radius: 3px;
+  height: 10px;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 900px) {
+  .cheatSections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .strategyCards {
+    grid-template-columns: 1fr;
+  }
+}
+
 .desktopWorkspace {
   display: grid;
   gap: var(--space-3);

@@ -92,6 +92,14 @@ export interface ManualNodeInput {
   transitionHint?: string;
 }
 
+export interface QuickNoteInput {
+  edgeId: string;
+  id: string;
+  parentNodeId: string;
+  position: { x: number; y: number };
+  title: string;
+}
+
 export interface DeleteSubtreeWrite {
   deletedNodeIds: string[];
   graph: MeetingGraph;
@@ -718,6 +726,60 @@ export class MeetingRepository {
             title: inputSnapshot.title,
             topicPrompt: inputSnapshot.topicPrompt,
             transitionHint: inputSnapshot.transitionHint,
+            updatedAt: revision.value,
+          },
+          projectNode,
+        );
+        if (node === undefined) return failure('INVALID_INSERT');
+        const inserted = insertNode(graph, inputSnapshot.parentNodeId, node, inputSnapshot.edgeId);
+        if (!inserted.ok) return graphError(inserted);
+        const insertedEdge = inserted.value.edges.find((edge) => edge.id === inputSnapshot.edgeId);
+        if (insertedEdge === undefined) return failure('INVALID_INSERT');
+        const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
+        if (meetingValue === undefined) return failure('INVALID_MEETING');
+
+        await this.database.nodes.add(projectNode(node));
+        await this.database.edges.add(projectEdge(insertedEdge));
+        await this.database.meetings.put(meetingValue);
+        return inserted;
+      },
+    );
+  }
+
+  async insertQuickNote(
+    meetingId: string,
+    input: QuickNoteInput,
+    expectedMeetingUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<MeetingGraph, MeetingRepositoryErrorCode>> {
+    const inputSnapshot = deepSnapshot(input);
+    if (inputSnapshot === undefined) return failure('INVALID_INSERT');
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.nodes, this.database.edges],
+      async () => {
+        const meeting = await this.database.meetings.get(meetingId);
+        if (meeting === undefined) return failure('MEETING_NOT_FOUND');
+        if (meeting.preparationStage !== 'MAP_READY' || meeting.status === 'ENDED') {
+          return failure('INVALID_MEETING_STATE');
+        }
+        const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
+        if (!revision.ok) return revision;
+        const graph = graphFromRecords(
+          meetingId,
+          await this.database.nodes.where('meetingId').equals(meetingId).toArray(),
+          await this.database.edges.where('meetingId').equals(meetingId).toArray(),
+        );
+        const node = safeProject(
+          {
+            createdAt: revision.value,
+            id: inputSnapshot.id,
+            kind: 'NOTE' as const,
+            meetingId,
+            position: inputSnapshot.position,
+            source: 'QUICK_NOTE' as const,
+            title: inputSnapshot.title,
             updatedAt: revision.value,
           },
           projectNode,
