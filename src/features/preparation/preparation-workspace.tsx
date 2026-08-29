@@ -1,10 +1,10 @@
 'use client';
 
 import { Alert, Button, Card, Empty, Input, Spin, Tag, Typography } from '@arco-design/web-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { AppHeader } from '@/features/app-shell';
 import { Link } from '@/i18n/navigation';
 import {
   MeetingDatabase,
@@ -78,23 +78,6 @@ function updatedBrief(brief: MeetingBriefDraft, fields: BriefFields): MeetingBri
     objective: fields.objective.trim(),
     unknowns: lines(fields.unknowns),
   };
-}
-
-function Brand() {
-  return (
-    <strong className={styles.brand}>
-      <Image
-        alt=""
-        aria-hidden="true"
-        className={styles.brandMark}
-        height={24}
-        src="/brand/convergene-mark.svg"
-        unoptimized
-        width={24}
-      />
-      <span>Convergene</span>
-    </strong>
-  );
 }
 
 function PreparationWorkspaceBody({
@@ -249,7 +232,7 @@ function PreparationWorkspaceBody({
       <main className={styles.shell}>
         <h1 className={styles.srOnly}>{t('modeSelection.title')}</h1>
         <header className={styles.topbar}>
-          <Brand />
+          <strong>{meeting.title}</strong>
           <Tag>{t('localOnly')}</Tag>
         </header>
         <section className={styles.centeredPanel}>
@@ -381,7 +364,6 @@ function PreparationWorkspaceBody({
         <h1 className={styles.srOnly}>{meeting.title}</h1>
         <header className={styles.topbar}>
           <div className={styles.brandCluster}>
-            <Brand />
             <div className={styles.meetingIdentity}>
               <strong>{meeting.title}</strong>
               <span>{t(`modes.${meeting.mode}`)}</span>
@@ -529,7 +511,6 @@ function PreparationWorkspaceBody({
         <h1 className={styles.srOnly}>{meeting.title}</h1>
         <header className={styles.topbar}>
           <div className={styles.brandCluster}>
-            <Brand />
             <div className={styles.meetingIdentity}>
               <strong>{meeting.title}</strong>
               <span>{t(`modes.${meeting.mode}`)}</span>
@@ -646,7 +627,6 @@ function PreparationWorkspaceBody({
       <h1 className={styles.srOnly}>{meeting?.title}</h1>
       <header className={styles.topbar}>
         <div className={styles.brandCluster}>
-          <Brand />
           <strong>{meeting?.title}</strong>
         </div>
         <Tag color="green">{t('map.ready')}</Tag>
@@ -676,9 +656,14 @@ function PreparationWorkspaceBody({
 }
 
 export function PreparationWorkspace(props: PreparationWorkspaceProps) {
+  const t = useTranslations('preparation.metadata');
+
   return (
-    <ProviderConfigGate>
-      {(controller) => <PreparationWorkspaceBody {...props} controller={controller} />}
-    </ProviderConfigGate>
+    <>
+      <AppHeader title={t('title')} />
+      <ProviderConfigGate>
+        {(controller) => <PreparationWorkspaceBody {...props} controller={controller} />}
+      </ProviderConfigGate>
+    </>
   );
 }

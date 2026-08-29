@@ -26,6 +26,11 @@ vi.mock('@/i18n/navigation', () => ({
       {children}
     </a>
   ),
+  usePathname: () => '/meetings/meeting-1/prepare',
+}));
+
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 beforeAll(() => {

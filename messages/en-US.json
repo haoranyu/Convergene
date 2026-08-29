@@ -33,7 +33,7 @@
       },
       "cloud": {
         "comingSoon": "Coming later",
-        "description": "Accounts and cloud sync are not available in P0. Nothing on this page is currently uploaded or synced.",
+        "description": "Accounts and cloud sync are not available in P0. No meeting content on this page is currently uploaded or synced.",
         "title": "Sign in and enable cloud sync"
       },
       "errors": {
@@ -472,6 +472,7 @@
       "INVALID_STORED_DATA": "This meeting could not be restored safely from local storage.",
       "OUTPUT_INVALID": "The model response did not pass validation. Your saved work is unchanged.",
       "OUTPUT_LANGUAGE_MISMATCH": "The model answered in the wrong language. Try again.",
+      "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
       "PROVIDER_AUTH_FAILED": "The model key was rejected. Reconnect the provider to continue.",
       "PROVIDER_CONFIG_INVALID": "The saved model configuration needs to be replaced.",
       "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration is temporarily unavailable. Local meeting data is safe.",
@@ -479,6 +480,7 @@
       "PROVIDER_NOT_CONFIGURED": "Connect a model provider to continue.",
       "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment and retry.",
       "PROVIDER_UNAVAILABLE": "The provider could not be reached. Your saved work is unchanged.",
+      "RATE_LIMITED": "Too many preparation requests were sent. Wait a moment and retry.",
       "REQUEST_CANCELLED": "The request was cancelled. Your saved work is unchanged.",
       "STALE_WRITE": "This meeting changed in another tab. The latest local version is still safe.",
       "UNKNOWN": "Something went wrong. Your saved work is unchanged.",

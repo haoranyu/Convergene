@@ -1,4 +1,4 @@
-import type { Meeting, MeetingMode, SupportedLocale } from '@/modules/meeting-domain';
+import type { Meeting, SupportedLocale } from '@/modules/meeting-domain';
 import { validateMeeting } from '@/modules/meeting-domain';
 
 export interface LocalMeetingDraftInput {
@@ -34,10 +34,4 @@ export function buildLocalMeetingDraft(
     throw new RangeError('Invalid local meeting draft');
   }
   return meeting;
-}
-
-export interface MeetingRecommendation {
-  mode: MeetingMode;
-  reason?: string;
-  title: string;
 }

@@ -77,7 +77,7 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
     : undefined;
 
   return (
-    <Card className={styles.meetingCard} hoverable>
+    <Card className={styles.meetingCard}>
       <div className={styles.cardTopline}>
         <Space size="small" wrap>
           <Tag color={meeting.mode ? modeColor[meeting.mode] : 'gray'}>

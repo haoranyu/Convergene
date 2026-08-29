@@ -9,7 +9,6 @@ import {
   type GrillKnownState,
   type GrillPhase,
   type MeetingBriefDraft,
-  type MeetingBriefSnapshot,
   type MeetingMode,
   type ReadinessDimension,
   type SupportedLocale,
@@ -19,6 +18,11 @@ import { nodeKinds, type NodeKind } from '@/modules/mind-map-domain';
 const boundedText = (maximum: number) => z.string().trim().min(1).max(maximum);
 const boundedList = (maximumItems: number, maximumLength: number) =>
   z.array(boundedText(maximumLength)).max(maximumItems);
+
+export const grillTask = 'grill' as const;
+export const initialMapTask = 'initial-map' as const;
+export const grillMaximumRequestBodyBytes = 393_216;
+export const initialMapMaximumRequestBodyBytes = 262_144;
 
 export const grillHistoryDispositionSchema = z.enum(['ANSWERED', 'UNKNOWN', 'SKIPPED']);
 export const grillPhaseSchema = z.enum(['DEFAULT', 'CRITICAL_EXTRA', 'USER_EXTENDED']);
@@ -43,6 +47,24 @@ export const readinessSchema = z
   .object({
     dimensions: z.array(readinessDimensionSchema).min(6).max(10),
     level: z.enum(readinessLevels),
+  })
+  .strict();
+
+export const meetingBriefSnapshotSchema = z
+  .object({
+    assumptions: boundedList(30, 500),
+    confirmed: boundedList(30, 500),
+    confirmedAt: z.iso.datetime({ offset: true }),
+    desiredOutcome: boundedText(2_000),
+    facilitation: z
+      .object({
+        closingChecklist: boundedList(12, 300),
+        openingLine: boundedText(600),
+      })
+      .strict(),
+    objective: boundedText(2_000),
+    readiness: readinessSchema,
+    unknowns: boundedList(30, 500),
   })
   .strict();
 
@@ -231,16 +253,19 @@ export const initialMapOutputSchema = z
 
 export const initialMapInputSchema = z
   .object({
-    brief: z.custom<MeetingBriefSnapshot>(
-      (value) =>
-        value !== null &&
-        typeof value === 'object' &&
-        'confirmedAt' in value &&
-        typeof value.confirmedAt === 'string',
-    ),
+    brief: meetingBriefSnapshotSchema,
     mode: z.enum(meetingModes),
   })
-  .strict();
+  .strict()
+  .superRefine((input, context) => {
+    if (!validReadinessForMode(input.mode, input.brief.readiness.dimensions)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Brief readiness dimensions are invalid for the mode',
+        path: ['brief', 'readiness', 'dimensions'],
+      });
+    }
+  });
 
 export type InitialMapInput = z.infer<typeof initialMapInputSchema>;
 export type InitialMapNodeDraft = z.infer<typeof initialMapNodeDraftSchema> & {
@@ -252,17 +277,67 @@ export interface AIRequest<TInput> {
   input: TInput;
   outputLocale: SupportedLocale;
   requestId: string;
-  task: 'grill' | 'initial-map';
+  task: typeof grillTask | typeof initialMapTask;
 }
 
 export interface AIResponse<TOutput> {
   output: TOutput;
   requestId: string;
-  task: 'grill' | 'initial-map';
+  task: typeof grillTask | typeof initialMapTask;
   usage?: { inputTokens?: number; outputTokens?: number };
 }
 
+export const grillRequestSchema = z
+  .object({
+    input: grillInputSchema,
+    outputLocale: z.enum(supportedLocales),
+    requestId: z.uuid(),
+    task: z.literal(grillTask),
+  })
+  .strict();
+
+export const initialMapRequestSchema = z
+  .object({
+    input: initialMapInputSchema,
+    outputLocale: z.enum(supportedLocales),
+    requestId: z.uuid(),
+    task: z.literal(initialMapTask),
+  })
+  .strict();
+
+export const grillResponseSchema = z
+  .object({
+    output: grillOutputSchema,
+    requestId: z.uuid(),
+    task: z.literal(grillTask),
+    usage: z
+      .object({
+        inputTokens: z.number().int().nonnegative().optional(),
+        outputTokens: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+export const initialMapResponseSchema = z
+  .object({
+    output: initialMapOutputSchema,
+    requestId: z.uuid(),
+    task: z.literal(initialMapTask),
+    usage: z
+      .object({
+        inputTokens: z.number().int().nonnegative().optional(),
+        outputTokens: z.number().int().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 export const preparationAIErrorCodes = [
+  'ORIGIN_INVALID',
+  'RATE_LIMITED',
   'PROVIDER_NOT_CONFIGURED',
   'PROVIDER_AUTH_FAILED',
   'PROVIDER_CONFIG_INVALID',
