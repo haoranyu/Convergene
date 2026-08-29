@@ -20,6 +20,396 @@
     },
     "title": "打工人会议作弊器"
   },
+  "appShell": {
+    "data": {
+      "actions": {
+        "clear": "清除本机会议",
+        "export": "导出全部 JSON",
+        "manageModel": "管理模型配置"
+      },
+      "clear": {
+        "confirmDescription": "这会永久删除当前浏览器里的 {count} 场会议及其脑图、笔记、产出和报告；模型配置仍会保持连接。",
+        "confirmTitle": "清除 {count} 场本机会议？"
+      },
+      "cloud": {
+        "comingSoon": "后续支持",
+        "description": "P0 尚未提供账号和云同步。当前页面没有任何会议内容被上传或同步。",
+        "title": "登录并开启云同步"
+      },
+      "errors": {
+        "clear": "暂时无法清除本机会议。请关闭其他 Convergene 标签页后重试。",
+        "export": "暂时无法生成导出文件。本机数据没有改变。",
+        "read": "暂时无法统计本机会议。已保存的数据没有被修改。"
+      },
+      "feedback": {
+        "cleared": "本机会议数据已清除，模型配置没有改变。",
+        "exported": "已下载完整的版本化 JSON 导出文件。"
+      },
+      "localNotice": "会议内容只保存在当前浏览器，不会写入 Convergene 后端。",
+      "meetingData": {
+        "description": "会议、脑图、笔记、产出和报告保存在本机 IndexedDB。JSON 导出绝不包含供应商 Key 或会话。",
+        "title": "会议数据 · 当前浏览器"
+      },
+      "modelData": {
+        "description": "服务端只为匿名会话保存加密后的供应商 Key，绝不会把会议内容和它存在一起。",
+        "title": "模型配置 · 加密保险箱"
+      },
+      "title": "本机数据与带走方式",
+      "trigger": "本机保存"
+    },
+    "languageLabel": "界面语言",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "model": {
+      "configure": "配置模型",
+      "loading": "正在检查模型连接",
+      "retry": "重试模型状态"
+    },
+    "navigationLabel": "应用控制",
+    "settings": "打开模型设置"
+  },
+  "dashboard": {
+    "actions": {
+      "guide": "体验 90 秒导览",
+      "new": "新建会议",
+      "retry": "重新加载本机会议"
+    },
+    "attendees": "预计 {count} 人",
+    "delete": {
+      "actionLabel": "删除 {title}",
+      "description": "只会删除当前浏览器里的这场会议及其关联数据，模型配置仍保持连接。",
+      "title": "删除「{title}」？"
+    },
+    "description": "把老板原话变成一场真能开完的会。所有会议内容留在这个浏览器里，每条 AI 建议都由你确认。",
+    "empty": {
+      "description": "还没有会议。可以从真实需求开始，也可以先体验不需要 Key 的示例。",
+      "modes": "决策对齐 · 脑暴共创 · 复盘改进"
+    },
+    "errors": {
+      "load": "暂时无法读取本机会议数据，已保存的数据没有被修改。"
+    },
+    "eyebrow": "你的私人会议作弊器",
+    "groups": {
+      "active": {
+        "count": "{count} 场",
+        "title": "进行中"
+      },
+      "ended": {
+        "count": "{count} 场",
+        "title": "已结束"
+      },
+      "preparing": {
+        "count": "{count} 场",
+        "title": "会前筹备"
+      },
+      "waiting": {
+        "count": "{count} 场",
+        "title": "待开始"
+      }
+    },
+    "loading": "正在加载本机会议",
+    "live": {
+      "currentTopic": "当前议题 · {topic}",
+      "duration": "已进行 {minutes} 分钟",
+      "noActiveTopic": "尚未选择议题",
+      "personHours": "已累计 {hours, number} 人时"
+    },
+    "localMarker": "已保存到本机",
+    "modes": {
+      "brainstorm": "脑暴共创",
+      "decision": "决策对齐",
+      "general": "通用讨论",
+      "retro": "复盘改进",
+      "unselected": "正在选择剧本"
+    },
+    "pageTitle": "会议",
+    "stages": {
+      "brief_ready": "Brief 已就绪",
+      "draft": "需求已保存",
+      "grilling": "会前拷问中",
+      "map_ready": "会前准备已完成"
+    },
+    "staleLive": {
+      "description": "{count, plural, one {有一场进行中会议已经超过计划结束时间，请先打开处理，再开始下一场。} other {有 # 场进行中会议已经超过计划结束时间，请先处理，再开始下一场。}}",
+      "title": "可能有会议忘记结束"
+    },
+    "timing": {
+      "ended_on_time": "已结束 · 准时",
+      "ended_overrun": "已结束 · 超时",
+      "live": "进行中",
+      "live_overrun": "进行中 · 已超时",
+      "preparing": "会前筹备",
+      "waiting_to_start": "待开始"
+    },
+    "title": "让下一场会配得上占用的时间"
+  },
+  "guide": {
+    "actions": {
+      "copy": "以这个示例开始",
+      "exit": "退出导览",
+      "next": "下一步",
+      "previous": "上一步"
+    },
+    "copy": {
+      "confirmDescription": "这会在当前浏览器创建一场独立会议。导览 fixture 不会改变，后续真实 AI 操作仍需要连接你自己的模型。",
+      "confirmTitle": "把这个示例复制到我的会议？",
+      "error": "当前浏览器无法打开本机会议存储，因此没有创建会议；内存导览仍可继续使用。"
+    },
+    "description": "切换三种会议剧本，在不用模型 Key、也不创建真实会议记录的情况下，看完从会前准备到报告的完整节奏。",
+    "eyebrow": "无需 Key · 不写本机数据",
+    "fixtures": {
+      "brainstorm": {
+        "cheat": "先用目标受众和挑战开场，每次只追一个大胆方向；进入收敛时，明确提醒大家按触达、清晰度和成本筛选。",
+        "copyReason": "团队需要先打开可能性空间，再做选择。",
+        "expansion1": "借专业人士建立信任",
+        "expansion2": "展示产品真实使用",
+        "expansion3": "邀请客户二次创作",
+        "label": "脑暴共创",
+        "modeEffect": "先保护发散，再明确安排收敛，不让会议停在一堆没人接的点子上。",
+        "objective": "找到让人记住的发布角度",
+        "outcome1": "三个概念进入轻量测试",
+        "outcome2": "Mina 负责受众二创原型",
+        "outcome3": "团队按触达、清晰度和成本筛选",
+        "question": "发布信息最需要让哪类人记住并采取行动？",
+        "rawRequest": "给开发者工具想一批新鲜的发布创意，不要再做普通的功能公告。",
+        "readinessSummary": "挑战已经清楚，目标受众和筛选方法还需要更锋利的边界。",
+        "reason": "具体受众能提供有效视角，又不会太早收窄创意。",
+        "report": "# 发布角度脑暴\n\n## 候选创意\n- 专业人士背书\n- 产品使用故事\n- 客户二次创作\n\n## 下一步测试\n按触达、清晰度和成本评估三个概念。",
+        "title": "发布角度脑暴",
+        "topic1": "受众真相",
+        "topic2": "创意视角",
+        "topic3": "筛选方法"
+      },
+      "decision": {
+        "cheat": "开场先说清要做的决定和拍板人；依次推进备选、标准与关键风险，最后复述由谁做出选择。",
+        "copyReason": "这项需求需要在多个方案中做出明确选择。",
+        "expansion1": "先发布一个区域",
+        "expansion2": "运行邀请制 Beta",
+        "expansion3": "等待合规审查",
+        "label": "决策对齐",
+        "modeEffect": "先把拍板人、备选、标准、风险和期限摊开，再让房间里的讨论逼近决定。",
+        "objective": "选定产品发布方案",
+        "outcome1": "先采用单区域发布",
+        "outcome2": "Leah 周五前完成合规检查",
+        "outcome3": "两周数据后复盘扩展范围",
+        "question": "如果现场无法达成一致，谁拥有最终拍板权？",
+        "rawRequest": "决定产品是全球发布、先上一个区域，还是为了合规审查延期。",
+        "readinessSummary": "备选方案已经明确，但拍板权和风险容忍度还不完整。",
+        "reason": "没有明确的决策人，讨论很容易停在礼貌但含糊的共识上。",
+        "report": "# 发布方案决策\n\n## 决定\n先做单区域邀请制发布。\n\n## 行动\nLeah 周五前完成合规检查。\n\n## 复盘点\n两周发布数据后评估扩大范围。",
+        "title": "选定产品发布方案",
+        "topic1": "备选方案",
+        "topic2": "判断标准",
+        "topic3": "风险与拍板人"
+      },
+      "retro": {
+        "cheat": "从共同事实开场，把原因与责备分开；主动寻找一个反例，最后收口到一项有负责人的改进。",
+        "copyReason": "团队需要理解过去的结果并确定改进动作。",
+        "expansion1": "告警晚于实际影响",
+        "expansion2": "回滚路径不清楚",
+        "expansion3": "事故中途更换负责人",
+        "label": "复盘改进",
+        "modeEffect": "把事实和解释拆开，寻找原因与反例，最后把学到的东西变成有负责人的改进。",
+        "objective": "减少重复发布事故",
+        "outcome1": "高风险发布前演练回滚",
+        "outcome2": "Ravi 周二前检查告警阈值",
+        "outcome3": "保留有效的同伴检查步骤",
+        "question": "发生了什么，是房间里所有人都会同意的事实？",
+        "rawRequest": "复盘上周失败的发布，理解恢复为什么很慢，并决定要改什么。",
+        "readinessSummary": "事故范围已知，但事实和预期与实际表现还需要拆开。",
+        "reason": "从共同事实开始，能避免复盘变成各说各话。",
+        "report": "# 发布事故复盘\n\n## 发生了什么\n发现和回滚都太晚。\n\n## 改进\n高风险发布前演练回滚。\n\n## 负责人\nRavi 周二前检查告警阈值。",
+        "title": "发布事故复盘",
+        "topic1": "共同事实",
+        "topic2": "原因与反例",
+        "topic3": "改进与负责人"
+      }
+    },
+    "map": {
+      "label": "从左到右的示例会议脑图"
+    },
+    "memoryOnly": "导览状态只存在当前页面内存。切换、完成或退出都不会创建会议，也不会调用 /api/ai/*。",
+    "pageTitle": "90 秒导览",
+    "progress": "第 {current} / {total} 步",
+    "readiness": {
+      "confirmed": "会议目标 · 已确认",
+      "missing": "决策边界 · 缺失",
+      "partial": "参与者与输入 · 部分明确",
+      "title": "开会准备度"
+    },
+    "sampleAnswer": "预置示例回答",
+    "sampleResult": "示例结果",
+    "scenarioLabel": "导览剧本",
+    "steps": {
+      "focus": {
+        "cheatTitle": "主持人小抄",
+        "description": "当前议题及其子树被突出，其他分支仍然可见、可点击，而不是凭空消失。",
+        "title": "聚焦一个分支"
+      },
+      "grill": {
+        "title": "用拷问补齐准备度"
+      },
+      "outcomes": {
+        "outputTitle": "会议产出",
+        "reportTitle": "可带走的报告",
+        "title": "散会时带走东西"
+      },
+      "play": {
+        "description": "一次节点出招只新增 2–4 个受控子节点。导览播放预置结果，不会发送模型请求。",
+        "title": "对当前节点出招"
+      },
+      "type": {
+        "title": "剧本会改变提问方式"
+      }
+    },
+    "title": "先看懂整套会议流程，再把真会交给它"
+  },
+  "meetingCreation": {
+    "actions": {
+      "back": "返回会议",
+      "classify": "推荐会议剧本",
+      "confirm": "确认，开始拷问",
+      "editRequest": "修改会议信息",
+      "manual": "手动选择剧本",
+      "retry": "重试推荐"
+    },
+    "confidence": {
+      "high": "高置信度推荐",
+      "low": "低置信度 · 通用兜底",
+      "medium": "中等置信度推荐"
+    },
+    "description": "保留老板原话不动。模型只推荐剧本和短标题，真正进入会前准备前由你做最终选择。",
+    "errors": {
+      "ai": {
+        "INPUT_INVALID": "暂时无法分类。请检查老板原话和可选标题后重试。",
+        "ORIGIN_INVALID": "无法验证这次请求。请刷新 Convergene 后重试。",
+        "OUTPUT_INVALID": "模型返回的推荐无法使用。可以重试一次，或直接手动选择剧本。",
+        "OUTPUT_LANGUAGE_MISMATCH": "模型没有使用所选内容语言。输入没有改变，可以重试或手动选择剧本。",
+        "PROVIDER_AUTH_FAILED": "供应商拒绝了已保存的 Key。请重新连接后重试。",
+        "PROVIDER_CONFIG_INVALID": "已保存的模型配置无法继续使用。请更换配置后重试。",
+        "PROVIDER_CONFIG_UNAVAILABLE": "模型配置存储暂时不可用。表单仍然保留，可以稍后重试或手动选择。",
+        "PROVIDER_MODEL_NOT_FOUND": "当前账号无法使用预设模型。请检查模型设置，或手动选择剧本。",
+        "PROVIDER_NOT_CONFIGURED": "连接你自己的模型后获取推荐，也可以直接手动选择。",
+        "PROVIDER_RATE_LIMITED": "供应商正在限流。请稍等后重试，或手动选择剧本。",
+        "PROVIDER_UNAVAILABLE": "暂时无法连接供应商。输入已经保留，可以重试或手动选择。",
+        "RATE_LIMITED": "当前会话尝试过于频繁。请等待一分钟，或手动选择。",
+        "REQUEST_CANCELLED": "上一次推荐已取消，准备好后可以重试。",
+        "UNKNOWN": "推荐被意外中断。输入没有改变，可以重试或手动选择剧本。"
+      },
+      "form": "请检查下方标出的会议信息。当前输入已经完整保留。",
+      "save": "当前浏览器无法打开本机会议存储，因此没有创建会议；表单内容保持不变。"
+    },
+    "eyebrow": "创建一场真实的本机会议",
+    "fallbackTitle": "未命名会议",
+    "fields": {
+      "attendees": {
+        "invalid": "请输入 1 到 10,000 的整数。",
+        "label": "预计参会人数",
+        "required": "请输入预计参会人数。"
+      },
+      "locale": {
+        "label": "会议内容语言",
+        "required": "请选择会议内容语言。"
+      },
+      "rawRequest": {
+        "help": "本次分类时，原始需求会经由 Convergene 后端临时转发给你选择的供应商；后端不会持久化，确认剧本后才保存到当前浏览器。",
+        "label": "老板原话 / 原始会议需求",
+        "placeholder": "把老板原话、日历邀请或那个一团乱的问题原样贴进来……",
+        "required": "请输入原始会议需求。",
+        "tooLong": "原始需求最多 4,000 字符。"
+      },
+      "schedule": {
+        "end": "计划结束",
+        "label": "计划时间",
+        "required": "请选择有效的开始和结束时间。",
+        "start": "计划开始"
+      },
+      "title": {
+        "label": "会议标题 · 选填",
+        "placeholder": "留空可让模型建议短标题"
+      }
+    },
+    "locales": {
+      "en-US": "英文",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "modes": {
+      "brainstorm": {
+        "description": "先打开可能性空间，再收敛到值得继续的候选。",
+        "title": "脑暴共创"
+      },
+      "decision": {
+        "description": "摊开备选、标准、风险和真正拥有拍板权的人。",
+        "title": "决策对齐"
+      },
+      "general": {
+        "description": "当需求不适合三个聚焦剧本时使用的低调兜底。",
+        "title": "通用讨论"
+      },
+      "retro": {
+        "description": "拆开事实与解释，把学到的东西变成有负责人的改进。",
+        "title": "复盘改进"
+      }
+    },
+    "pageTitle": "新建会议",
+    "recommendation": {
+      "aiEyebrow": "AI 推荐 · 由你决定",
+      "chooseMode": "选择这场会议要使用的剧本",
+      "manualDescription": "选择房间最需要的效果，无需再消耗一次模型请求。",
+      "manualEyebrow": "手动兜底",
+      "manualTitle": "自己选择会议剧本",
+      "reasonLabel": "推荐理由",
+      "suggestedTitle": "建议标题：{title}",
+      "title": "这更像一场「{mode}」"
+    },
+    "title": "把老板原话扔进来，先看看这会到底要干嘛。"
+  },
+  "meetingSetup": {
+    "actions": {
+      "back": "返回会议",
+      "retry": "重新加载会议"
+    },
+    "attendeeCount": "预计 {count} 人",
+    "errors": {
+      "load": "暂时无法读取这场本机会议，已保存的数据没有被修改。"
+    },
+    "fields": {
+      "attendees": "预计参会人数",
+      "locale": "内容语言",
+      "mode": "已确认剧本",
+      "rawRequest": "老板原话",
+      "schedule": "计划时间"
+    },
+    "loading": "正在加载本机会议",
+    "locales": {
+      "en-US": "英文",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "lockedDescription": "这项推荐已经由你确认并保存到本机。进入准备后，剧本不能被静默切换。",
+    "modes": {
+      "brainstorm": "脑暴共创",
+      "decision": "决策对齐",
+      "general": "通用讨论",
+      "retro": "复盘改进",
+      "unselected": "尚未选择"
+    },
+    "nextTitle": "会前准备已经开始",
+    "notFound": "当前浏览器里没有这场会议。",
+    "pageTitle": "会议设置",
+    "restartRule": "下一步是 Grill：一次只问一个问题，并持续显示准备度。要更换剧本，必须显式重新准备；系统会保留老板原话，并清空原有准备内容。",
+    "stages": {
+      "brief_ready": "Brief 已就绪",
+      "draft": "草稿已保存",
+      "grilling": "剧本已确认",
+      "map_ready": "脑图已就绪"
+    },
+    "summaryTitle": "已确认的会议设置"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",

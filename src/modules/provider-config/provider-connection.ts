@@ -6,7 +6,7 @@ import {
   ProviderGatewayError,
   runStructuredProviderCall,
   type ResolvedProviderConfig,
-} from '../meeting-ai';
+} from '../meeting-ai/server';
 import type { ProviderConfigErrorCode, ProviderConnectionResult, ProviderId } from './model';
 import { providerPresets } from './presets';
 

@@ -1,6 +1,10 @@
 export const supportedLocales = ['zh-CN', 'zh-TW', 'en-US'] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
 
+export function isSupportedLocale(value: string): value is SupportedLocale {
+  return supportedLocales.includes(value as SupportedLocale);
+}
+
 export const meetingModes = ['DECISION', 'BRAINSTORM', 'RETRO', 'GENERAL'] as const;
 export type MeetingMode = (typeof meetingModes)[number];
 

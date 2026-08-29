@@ -351,7 +351,7 @@ const providerPresets = {
 } as const
 ```
 
-2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema；StepFun 还会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。probe 使用 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
+2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema；StepFun 还会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免稍复杂的分类在发出 JSON 前耗尽 reasoning budget。probe 使用 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 

@@ -403,6 +403,8 @@ interface ReportOutput {
 
 ```ts
 type AIErrorCode =
+  | 'ORIGIN_INVALID'
+  | 'RATE_LIMITED'
   | 'PROVIDER_NOT_CONFIGURED'
   | 'PROVIDER_AUTH_FAILED'
   | 'PROVIDER_CONFIG_INVALID'

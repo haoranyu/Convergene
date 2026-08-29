@@ -20,6 +20,396 @@
     },
     "title": "打工人會議作弊工具"
   },
+  "appShell": {
+    "data": {
+      "actions": {
+        "clear": "清除本機會議",
+        "export": "匯出全部 JSON",
+        "manageModel": "管理模型設定"
+      },
+      "clear": {
+        "confirmDescription": "這會永久刪除目前瀏覽器裡的 {count} 場會議及其心智圖、筆記、產出與報告；模型設定仍會保持連線。",
+        "confirmTitle": "清除 {count} 場本機會議？"
+      },
+      "cloud": {
+        "comingSoon": "後續支援",
+        "description": "P0 尚未提供帳號與雲端同步。目前頁面沒有任何會議內容被上傳或同步。",
+        "title": "登入並啟用雲端同步"
+      },
+      "errors": {
+        "clear": "暫時無法清除本機會議。請關閉其他 Convergene 分頁後再試一次。",
+        "export": "暫時無法產生匯出檔案。本機資料沒有變更。",
+        "read": "暫時無法統計本機會議。已儲存的資料沒有被修改。"
+      },
+      "feedback": {
+        "cleared": "本機會議資料已清除，模型設定沒有變更。",
+        "exported": "已下載完整的版本化 JSON 匯出檔案。"
+      },
+      "localNotice": "會議內容只儲存在目前瀏覽器，不會寫入 Convergene 後端。",
+      "meetingData": {
+        "description": "會議、心智圖、筆記、產出與報告儲存在本機 IndexedDB。JSON 匯出絕不包含供應商 Key 或工作階段。",
+        "title": "會議資料 · 目前瀏覽器"
+      },
+      "modelData": {
+        "description": "伺服器只為匿名工作階段儲存加密後的供應商 Key，絕不會把會議內容與它存在一起。",
+        "title": "模型設定 · 加密保險箱"
+      },
+      "title": "本機資料與攜出方式",
+      "trigger": "本機儲存"
+    },
+    "languageLabel": "介面語言",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "model": {
+      "configure": "設定模型",
+      "loading": "正在檢查模型連線",
+      "retry": "重試模型狀態"
+    },
+    "navigationLabel": "應用程式控制",
+    "settings": "開啟模型設定"
+  },
+  "dashboard": {
+    "actions": {
+      "guide": "體驗 90 秒導覽",
+      "new": "新增會議",
+      "retry": "重新載入本機會議"
+    },
+    "attendees": "預計 {count} 人",
+    "delete": {
+      "actionLabel": "刪除 {title}",
+      "description": "只會刪除目前瀏覽器裡的這場會議及其關聯資料，模型設定仍保持連線。",
+      "title": "刪除「{title}」？"
+    },
+    "description": "把老闆原話變成一場真的能開完的會。所有會議內容留在這個瀏覽器裡，每條 AI 建議都由你確認。",
+    "empty": {
+      "description": "還沒有會議。可以從真實需求開始，也可以先體驗不需要 Key 的範例。",
+      "modes": "決策對齊 · 腦暴共創 · 復盤改進"
+    },
+    "errors": {
+      "load": "暫時無法讀取本機會議資料，已儲存的資料沒有被修改。"
+    },
+    "eyebrow": "你的私人會議作弊工具",
+    "groups": {
+      "active": {
+        "count": "{count} 場",
+        "title": "進行中"
+      },
+      "ended": {
+        "count": "{count} 場",
+        "title": "已結束"
+      },
+      "preparing": {
+        "count": "{count} 場",
+        "title": "會前準備"
+      },
+      "waiting": {
+        "count": "{count} 場",
+        "title": "待開始"
+      }
+    },
+    "loading": "正在載入本機會議",
+    "live": {
+      "currentTopic": "目前議題 · {topic}",
+      "duration": "已進行 {minutes} 分鐘",
+      "noActiveTopic": "尚未選擇議題",
+      "personHours": "已累計 {hours, number} 人時"
+    },
+    "localMarker": "已儲存到本機",
+    "modes": {
+      "brainstorm": "腦暴共創",
+      "decision": "決策對齊",
+      "general": "一般討論",
+      "retro": "復盤改進",
+      "unselected": "正在選擇劇本"
+    },
+    "pageTitle": "會議",
+    "stages": {
+      "brief_ready": "Brief 已就緒",
+      "draft": "需求已儲存",
+      "grilling": "會前追問中",
+      "map_ready": "會前準備已完成"
+    },
+    "staleLive": {
+      "description": "{count, plural, one {有一場進行中會議已超過計畫結束時間，請先開啟處理，再開始下一場。} other {有 # 場進行中會議已超過計畫結束時間，請先處理，再開始下一場。}}",
+      "title": "可能有會議忘記結束"
+    },
+    "timing": {
+      "ended_on_time": "已結束 · 準時",
+      "ended_overrun": "已結束 · 超時",
+      "live": "進行中",
+      "live_overrun": "進行中 · 已超時",
+      "preparing": "會前準備",
+      "waiting_to_start": "待開始"
+    },
+    "title": "讓下一場會配得上佔用的時間"
+  },
+  "guide": {
+    "actions": {
+      "copy": "以這個範例開始",
+      "exit": "退出導覽",
+      "next": "下一步",
+      "previous": "上一步"
+    },
+    "copy": {
+      "confirmDescription": "這會在目前瀏覽器建立一場獨立會議。導覽 fixture 不會改變，後續真正的 AI 操作仍需要連接你自己的模型。",
+      "confirmTitle": "把這個範例複製到我的會議？",
+      "error": "目前瀏覽器無法開啟本機會議儲存空間，因此沒有建立會議；記憶體導覽仍可繼續使用。"
+    },
+    "description": "切換三種會議劇本，在不用模型 Key、也不建立真正會議記錄的情況下，看完從會前準備到報告的完整節奏。",
+    "eyebrow": "無需 Key · 不寫本機資料",
+    "fixtures": {
+      "brainstorm": {
+        "cheat": "先用目標受眾與挑戰開場，每次只追一個大膽方向；進入收斂時，明確提醒大家按觸及、清晰度與成本篩選。",
+        "copyReason": "團隊需要先打開可能性空間，再做選擇。",
+        "expansion1": "借專業人士建立信任",
+        "expansion2": "展示產品實際使用",
+        "expansion3": "邀請客戶二次創作",
+        "label": "腦暴共創",
+        "modeEffect": "先保護發散，再明確安排收斂，不讓會議停在一堆沒人接的點子上。",
+        "objective": "找到讓人記住的發布角度",
+        "outcome1": "三個概念進入輕量測試",
+        "outcome2": "Mina 負責受眾二創原型",
+        "outcome3": "團隊按觸及、清晰度與成本篩選",
+        "question": "發布訊息最需要讓哪類人記住並採取行動？",
+        "rawRequest": "替開發者工具想一批新鮮的發布創意，不要再做普通的功能公告。",
+        "readinessSummary": "挑戰已經清楚，目標受眾與篩選方法還需要更銳利的邊界。",
+        "reason": "具體受眾能提供有效視角，又不會太早限縮創意。",
+        "report": "# 發布角度腦暴\n\n## 候選創意\n- 專業人士背書\n- 產品使用故事\n- 客戶二次創作\n\n## 下一步測試\n按觸及、清晰度與成本評估三個概念。",
+        "title": "發布角度腦暴",
+        "topic1": "受眾真相",
+        "topic2": "創意視角",
+        "topic3": "篩選方法"
+      },
+      "decision": {
+        "cheat": "開場先說清楚要做的決定與拍板人；依序推進備選、標準與關鍵風險，最後重述由誰做出選擇。",
+        "copyReason": "這項需求需要在多個方案中做出明確選擇。",
+        "expansion1": "先發布一個區域",
+        "expansion2": "執行邀請制 Beta",
+        "expansion3": "等待合規審查",
+        "label": "決策對齊",
+        "modeEffect": "先把拍板人、備選、標準、風險與期限攤開，再讓房間裡的討論逼近決定。",
+        "objective": "選定產品發布方案",
+        "outcome1": "先採用單區域發布",
+        "outcome2": "Leah 週五前完成合規檢查",
+        "outcome3": "兩週資料後復盤擴展範圍",
+        "question": "如果現場無法達成一致，誰擁有最終拍板權？",
+        "rawRequest": "決定產品是全球發布、先上一個區域，還是為了合規審查延期。",
+        "readinessSummary": "備選方案已經明確，但拍板權與風險容忍度還不完整。",
+        "reason": "沒有明確的決策人，討論很容易停在禮貌但含糊的共識上。",
+        "report": "# 發布方案決策\n\n## 決定\n先做單區域邀請制發布。\n\n## 行動\nLeah 週五前完成合規檢查。\n\n## 復盤點\n兩週發布資料後評估擴大範圍。",
+        "title": "選定產品發布方案",
+        "topic1": "備選方案",
+        "topic2": "判斷標準",
+        "topic3": "風險與拍板人"
+      },
+      "retro": {
+        "cheat": "從共同事實開場，把原因與責怪分開；主動尋找一個反例，最後收束到一項有負責人的改進。",
+        "copyReason": "團隊需要理解過去的結果並確定改進行動。",
+        "expansion1": "警示晚於實際影響",
+        "expansion2": "回復路徑不清楚",
+        "expansion3": "事故中途更換負責人",
+        "label": "復盤改進",
+        "modeEffect": "把事實與解釋拆開，尋找原因與反例，最後把學到的東西變成有負責人的改進。",
+        "objective": "減少重複發布事故",
+        "outcome1": "高風險發布前演練回復",
+        "outcome2": "Ravi 週二前檢查警示門檻",
+        "outcome3": "保留有效的同儕檢查步驟",
+        "question": "發生了什麼，是房間裡所有人都會同意的事實？",
+        "rawRequest": "復盤上週失敗的發布，理解恢復為什麼很慢，並決定要改什麼。",
+        "readinessSummary": "事故範圍已知，但事實和預期與實際表現還需要拆開。",
+        "reason": "從共同事實開始，能避免復盤變成各說各話。",
+        "report": "# 發布事故復盤\n\n## 發生了什麼\n發現與回復都太晚。\n\n## 改進\n高風險發布前演練回復。\n\n## 負責人\nRavi 週二前檢查警示門檻。",
+        "title": "發布事故復盤",
+        "topic1": "共同事實",
+        "topic2": "原因與反例",
+        "topic3": "改進與負責人"
+      }
+    },
+    "map": {
+      "label": "從左到右的範例會議心智圖"
+    },
+    "memoryOnly": "導覽狀態只存在目前頁面記憶體。切換、完成或退出都不會建立會議，也不會呼叫 /api/ai/*。",
+    "pageTitle": "90 秒導覽",
+    "progress": "第 {current} / {total} 步",
+    "readiness": {
+      "confirmed": "會議目標 · 已確認",
+      "missing": "決策邊界 · 缺失",
+      "partial": "參與者與輸入 · 部分明確",
+      "title": "開會準備度"
+    },
+    "sampleAnswer": "預置範例回答",
+    "sampleResult": "範例結果",
+    "scenarioLabel": "導覽劇本",
+    "steps": {
+      "focus": {
+        "cheatTitle": "主持人小抄",
+        "description": "目前議題及其子樹被突出，其他分支仍然可見、可點擊，而不是憑空消失。",
+        "title": "聚焦一個分支"
+      },
+      "grill": {
+        "title": "用追問補齊準備度"
+      },
+      "outcomes": {
+        "outputTitle": "會議產出",
+        "reportTitle": "可攜出的報告",
+        "title": "散會時帶走成果"
+      },
+      "play": {
+        "description": "一次節點出招只新增 2–4 個受控子節點。導覽播放預置結果，不會傳送模型請求。",
+        "title": "對目前節點出招"
+      },
+      "type": {
+        "title": "劇本會改變提問方式"
+      }
+    },
+    "title": "先看懂整套會議流程，再把真正的會交給它"
+  },
+  "meetingCreation": {
+    "actions": {
+      "back": "返回會議",
+      "classify": "推薦會議劇本",
+      "confirm": "確認，開始追問",
+      "editRequest": "修改會議資訊",
+      "manual": "手動選擇劇本",
+      "retry": "重試推薦"
+    },
+    "confidence": {
+      "high": "高信心推薦",
+      "low": "低信心 · 一般備用",
+      "medium": "中等信心推薦"
+    },
+    "description": "保留老闆原話不動。模型只推薦劇本與短標題，真正進入會前準備前由你做最後選擇。",
+    "errors": {
+      "ai": {
+        "INPUT_INVALID": "暫時無法分類。請檢查老闆原話與可選標題後再試一次。",
+        "ORIGIN_INVALID": "無法驗證這次請求。請重新整理 Convergene 後再試一次。",
+        "OUTPUT_INVALID": "模型回傳的推薦無法使用。可以重試一次，或直接手動選擇劇本。",
+        "OUTPUT_LANGUAGE_MISMATCH": "模型沒有使用所選內容語言。輸入沒有變更，可以再試一次或手動選擇劇本。",
+        "PROVIDER_AUTH_FAILED": "供應商拒絕了已儲存的 Key。請重新連接後再試一次。",
+        "PROVIDER_CONFIG_INVALID": "已儲存的模型設定無法繼續使用。請更換設定後再試一次。",
+        "PROVIDER_CONFIG_UNAVAILABLE": "模型設定儲存暫時無法使用。表單仍然保留，可以稍後重試或手動選擇。",
+        "PROVIDER_MODEL_NOT_FOUND": "目前帳號無法使用預設模型。請檢查模型設定，或手動選擇劇本。",
+        "PROVIDER_NOT_CONFIGURED": "連接你自己的模型後取得推薦，也可以直接手動選擇。",
+        "PROVIDER_RATE_LIMITED": "供應商正在限制請求。請稍候再試，或手動選擇劇本。",
+        "PROVIDER_UNAVAILABLE": "暫時無法連接供應商。輸入已經保留，可以重試或手動選擇。",
+        "RATE_LIMITED": "目前工作階段嘗試過於頻繁。請等待一分鐘，或手動選擇。",
+        "REQUEST_CANCELLED": "上一次推薦已取消，準備好後可以重試。",
+        "UNKNOWN": "推薦被意外中斷。輸入沒有變更，可以再試一次或手動選擇劇本。"
+      },
+      "form": "請檢查下方標出的會議資訊。目前輸入已完整保留。",
+      "save": "目前瀏覽器無法開啟本機會議儲存空間，因此沒有建立會議；表單內容保持不變。"
+    },
+    "eyebrow": "建立一場真正的本機會議",
+    "fallbackTitle": "未命名會議",
+    "fields": {
+      "attendees": {
+        "invalid": "請輸入 1 到 10,000 的整數。",
+        "label": "預計參與人數",
+        "required": "請輸入預計參與人數。"
+      },
+      "locale": {
+        "label": "會議內容語言",
+        "required": "請選擇會議內容語言。"
+      },
+      "rawRequest": {
+        "help": "本次分類時，原始需求會經由 Convergene 後端暫時轉送給你選擇的供應商；後端不會持久儲存，確認劇本後才儲存在目前瀏覽器。",
+        "label": "老闆原話 / 原始會議需求",
+        "placeholder": "把老闆原話、行事曆邀請或那個一團亂的問題原樣貼進來……",
+        "required": "請輸入原始會議需求。",
+        "tooLong": "原始需求最多 4,000 個字元。"
+      },
+      "schedule": {
+        "end": "計畫結束",
+        "label": "計畫時間",
+        "required": "請選擇有效的開始與結束時間。",
+        "start": "計畫開始"
+      },
+      "title": {
+        "label": "會議標題 · 選填",
+        "placeholder": "留空可讓模型建議短標題"
+      }
+    },
+    "locales": {
+      "en-US": "英文",
+      "zh-CN": "簡體中文",
+      "zh-TW": "繁體中文"
+    },
+    "modes": {
+      "brainstorm": {
+        "description": "先打開可能性空間，再收斂到值得繼續的候選。",
+        "title": "腦暴共創"
+      },
+      "decision": {
+        "description": "攤開備選、標準、風險與真正擁有拍板權的人。",
+        "title": "決策對齊"
+      },
+      "general": {
+        "description": "當需求不適合三個聚焦劇本時使用的低調備用。",
+        "title": "一般討論"
+      },
+      "retro": {
+        "description": "拆開事實與解釋，把學到的東西變成有負責人的改進。",
+        "title": "復盤改進"
+      }
+    },
+    "pageTitle": "新增會議",
+    "recommendation": {
+      "aiEyebrow": "AI 推薦 · 由你決定",
+      "chooseMode": "選擇這場會議要使用的劇本",
+      "manualDescription": "選擇房間最需要的效果，無需再消耗一次模型請求。",
+      "manualEyebrow": "手動備用",
+      "manualTitle": "自己選擇會議劇本",
+      "reasonLabel": "推薦理由",
+      "suggestedTitle": "建議標題：{title}",
+      "title": "這更像一場「{mode}」"
+    },
+    "title": "把老闆原話丟進來，先看看這場會到底要做什麼。"
+  },
+  "meetingSetup": {
+    "actions": {
+      "back": "返回會議",
+      "retry": "重新載入會議"
+    },
+    "attendeeCount": "預計 {count} 人",
+    "errors": {
+      "load": "暫時無法讀取這場本機會議，已儲存的資料沒有被修改。"
+    },
+    "fields": {
+      "attendees": "預計參與人數",
+      "locale": "內容語言",
+      "mode": "已確認劇本",
+      "rawRequest": "老闆原話",
+      "schedule": "計畫時間"
+    },
+    "loading": "正在載入本機會議",
+    "locales": {
+      "en-US": "英文",
+      "zh-CN": "簡體中文",
+      "zh-TW": "繁體中文"
+    },
+    "lockedDescription": "這項推薦已經由你確認並儲存在本機。進入準備後，劇本不能被靜默切換。",
+    "modes": {
+      "brainstorm": "腦暴共創",
+      "decision": "決策對齊",
+      "general": "一般討論",
+      "retro": "復盤改進",
+      "unselected": "尚未選擇"
+    },
+    "nextTitle": "會前準備已經開始",
+    "notFound": "目前瀏覽器裡沒有這場會議。",
+    "pageTitle": "會議設定",
+    "restartRule": "下一步是 Grill：一次只問一個問題，並持續顯示準備度。要更換劇本，必須明確重新準備；系統會保留老闆原話，並清除原有準備內容。",
+    "stages": {
+      "brief_ready": "Brief 已就緒",
+      "draft": "草稿已儲存",
+      "grilling": "劇本已確認",
+      "map_ready": "心智圖已就緒"
+    },
+    "summaryTitle": "已確認的會議設定"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",

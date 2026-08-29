@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
 import {
   createProviderSessionId,
@@ -9,6 +10,7 @@ import {
   ApiSecurityError,
   assertSameOrigin,
   enforceProviderConfigRateLimit,
+  readJsonInput,
   readProviderConfigInput,
 } from './provider-config-http';
 
@@ -77,6 +79,30 @@ describe('provider configuration HTTP security', () => {
     });
   });
 
+  it('reuses the bounded parser for a larger strict AI contract without weakening it', async () => {
+    const schema = z.object({ rawRequest: z.string().min(1).max(4_000) }).strict();
+    const request = new Request('https://convergene.example/api/ai/classify-meeting', {
+      body: JSON.stringify({ rawRequest: 'x'.repeat(4_000) }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    });
+
+    await expect(readJsonInput(request, schema, 8_192)).resolves.toEqual({
+      rawRequest: 'x'.repeat(4_000),
+    });
+    await expect(
+      readJsonInput(
+        new Request('https://convergene.example/api/ai/classify-meeting', {
+          body: JSON.stringify({ meetingId: 'server-index', rawRequest: 'valid' }),
+          headers: { 'content-type': 'application/json' },
+          method: 'POST',
+        }),
+        schema,
+        8_192,
+      ),
+    ).rejects.toMatchObject({ code: 'INPUT_INVALID' });
+  });
+
   it('allows the limit and rejects the next request using a hashed scope', async () => {
     let count = 0;
     let receivedKey = '';
@@ -104,6 +130,31 @@ describe('provider configuration HTTP security', () => {
     });
     expect(receivedKey).toMatch(/^rate-limit:provider-config:[a-f0-9]{64}$/u);
     expect(receivedKey).not.toContain('203.0.113.10');
+  });
+
+  it('keeps AI tasks in a separate rate-limit namespace', async () => {
+    const receivedKeys: string[] = [];
+    const store = {
+      consumeRateLimit(key: string) {
+        receivedKeys.push(key);
+        return Promise.resolve(1);
+      },
+      delete: () => Promise.resolve(),
+      get: () => Promise.resolve(null),
+      has: () => Promise.resolve(false),
+      set: () => Promise.resolve(),
+      touch: () => Promise.resolve(null),
+    } as ProviderConfigStore;
+    const request = new Request('https://convergene.example/api/ai/classify-meeting', {
+      headers: { 'x-forwarded-for': '203.0.113.10' },
+    });
+
+    await enforceProviderConfigRateLimit(request, store);
+    await enforceProviderConfigRateLimit(request, store, 20, 60, 'classify-meeting');
+
+    expect(receivedKeys[0]).toMatch(/^rate-limit:provider-config:[a-f0-9]{64}$/u);
+    expect(receivedKeys[1]).toMatch(/^rate-limit:classify-meeting:[a-f0-9]{64}$/u);
+    expect(receivedKeys[0]).not.toBe(receivedKeys[1]);
   });
 
   it('keeps forged session cookies in the pre-session client bucket', async () => {

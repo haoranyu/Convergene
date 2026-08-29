@@ -20,6 +20,396 @@
     },
     "title": "The meeting cheat tool for getting work done"
   },
+  "appShell": {
+    "data": {
+      "actions": {
+        "clear": "Clear local meetings",
+        "export": "Export all as JSON",
+        "manageModel": "Manage model configuration"
+      },
+      "clear": {
+        "confirmDescription": "This permanently removes {count, plural, one {this meeting} other {all # meetings}}, maps, notes, outcomes, and reports from this browser. Your model configuration stays connected.",
+        "confirmTitle": "{count, plural, one {Clear 1 local meeting?} other {Clear all # local meetings?}}"
+      },
+      "cloud": {
+        "comingSoon": "Coming later",
+        "description": "Accounts and cloud sync are not available in P0. Nothing on this page is currently uploaded or synced.",
+        "title": "Sign in and enable cloud sync"
+      },
+      "errors": {
+        "clear": "Local meetings could not be cleared. Close other Convergene tabs and try again.",
+        "export": "The export could not be created. Your local data was not changed.",
+        "read": "Local meeting data could not be counted. Your stored data was not modified."
+      },
+      "feedback": {
+        "cleared": "Local meeting data cleared. Your model configuration was not changed.",
+        "exported": "A complete versioned JSON export was downloaded."
+      },
+      "localNotice": "Meeting content is stored only in this browser. It is not saved in the Convergene backend.",
+      "meetingData": {
+        "description": "Meetings, maps, notes, outcomes, and reports live in IndexedDB on this device. The JSON export never includes provider keys or sessions.",
+        "title": "Meeting data · this browser"
+      },
+      "modelData": {
+        "description": "Only an encrypted provider key is stored server-side for your anonymous session. Meeting content is never stored with it.",
+        "title": "Model configuration · encrypted vault"
+      },
+      "title": "Local data and portability",
+      "trigger": "Saved locally"
+    },
+    "languageLabel": "Interface language",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "model": {
+      "configure": "Configure model",
+      "loading": "Checking model connection",
+      "retry": "Retry model status"
+    },
+    "navigationLabel": "Application controls",
+    "settings": "Open model settings"
+  },
+  "dashboard": {
+    "actions": {
+      "guide": "Try the 90-second tour",
+      "new": "New meeting",
+      "retry": "Reload local meetings"
+    },
+    "attendees": "{count, plural, one {# attendee} other {# attendees}}",
+    "delete": {
+      "actionLabel": "Delete {title}",
+      "description": "Only this meeting and its related local data will be removed from this browser. Your model configuration stays connected.",
+      "title": "Delete “{title}”?"
+    },
+    "description": "Turn the raw request into a meeting people can actually finish. Your work stays in this browser, and you stay in control of every AI suggestion.",
+    "empty": {
+      "description": "No meetings yet. Start with a real request or explore a no-key guided example.",
+      "modes": "Decision alignment · Brainstorming · Retrospective"
+    },
+    "errors": {
+      "load": "Local meeting data could not be read. Your stored data was not modified."
+    },
+    "eyebrow": "Private meeting copilot",
+    "groups": {
+      "active": {
+        "count": "{count, plural, one {# meeting} other {# meetings}}",
+        "title": "In progress"
+      },
+      "ended": {
+        "count": "{count, plural, one {# meeting} other {# meetings}}",
+        "title": "Ended"
+      },
+      "preparing": {
+        "count": "{count, plural, one {# meeting} other {# meetings}}",
+        "title": "Preparing"
+      },
+      "waiting": {
+        "count": "{count, plural, one {# meeting} other {# meetings}}",
+        "title": "Ready to start"
+      }
+    },
+    "loading": "Loading local meetings",
+    "live": {
+      "currentTopic": "Current topic · {topic}",
+      "duration": "{minutes, plural, one {# minute live} other {# minutes live}}",
+      "noActiveTopic": "No topic selected",
+      "personHours": "{hours, number} person-hours so far"
+    },
+    "localMarker": "Saved locally",
+    "modes": {
+      "brainstorm": "Brainstorm",
+      "decision": "Decision",
+      "general": "General",
+      "retro": "Retro",
+      "unselected": "Choosing a script"
+    },
+    "pageTitle": "Meetings",
+    "stages": {
+      "brief_ready": "Brief ready",
+      "draft": "Request saved",
+      "grilling": "Grill in progress",
+      "map_ready": "Preparation complete"
+    },
+    "staleLive": {
+      "description": "{count, plural, one {A live meeting is past its scheduled end. Open it before starting another meeting.} other {# live meetings are past their scheduled end. Resolve them before starting another meeting.}}",
+      "title": "A meeting may have been left running"
+    },
+    "timing": {
+      "ended_on_time": "Ended · on time",
+      "ended_overrun": "Ended · overrun",
+      "live": "In progress",
+      "live_overrun": "In progress · overrun",
+      "preparing": "Preparing",
+      "waiting_to_start": "Waiting to start"
+    },
+    "title": "Make the next meeting earn its calendar slot"
+  },
+  "guide": {
+    "actions": {
+      "copy": "Start from this example",
+      "exit": "Exit tour",
+      "next": "Next step",
+      "previous": "Previous step"
+    },
+    "copy": {
+      "confirmDescription": "This creates one independent local meeting in this browser. The tour fixture itself stays unchanged, and later AI actions will require your own model connection.",
+      "confirmTitle": "Copy this example into your meetings?",
+      "error": "This browser could not open local meeting storage, so no meeting was created. The in-memory tour is still available."
+    },
+    "description": "Switch among three meeting scripts and preview the full rhythm—from preparation to a report—without a model key or a real meeting record.",
+    "eyebrow": "No key · no local write",
+    "fixtures": {
+      "brainstorm": {
+        "cheat": "Open with the audience challenge. Ask for one bold direction at a time, then transition into the agreed reach, clarity, and cost screen.",
+        "copyReason": "The team needs to open the possibility space before choosing.",
+        "expansion1": "Borrow trust from specialists",
+        "expansion2": "Show the product in use",
+        "expansion3": "Invite customer remixes",
+        "label": "Brainstorm together",
+        "modeEffect": "This script protects divergence first, then adds an explicit convergence step so the room does not stop at a pile of ideas.",
+        "objective": "Find a memorable launch angle",
+        "outcome1": "Three concepts move into lightweight testing",
+        "outcome2": "Mina owns the audience remix prototype",
+        "outcome3": "Team will select with reach, clarity, and cost",
+        "question": "Who must remember or act on the launch message?",
+        "rawRequest": "We need fresh launch ideas for a developer tool without repeating the usual feature announcement.",
+        "readinessSummary": "The challenge is clear; the audience and selection method still need sharper boundaries.",
+        "reason": "A concrete audience gives the room a useful lens without closing ideas too early.",
+        "report": "# Launch angle brainstorm\n\n## Candidate ideas\n- Specialist proof\n- Product-in-use story\n- Customer remix\n\n## Next test\nScore three concepts by reach, clarity, and cost.",
+        "title": "Launch angle brainstorm",
+        "topic1": "Audience truths",
+        "topic2": "Creative lenses",
+        "topic3": "Selection method"
+      },
+      "decision": {
+        "cheat": "Open by naming the decision and owner. Move from options to criteria, surface the deciding risk, then restate who makes the call.",
+        "copyReason": "The request requires a concrete choice among alternatives.",
+        "expansion1": "Ship one region first",
+        "expansion2": "Run a gated beta",
+        "expansion3": "Delay for compliance",
+        "label": "Align on a decision",
+        "modeEffect": "This script makes the owner, alternatives, criteria, risks, and deadline visible before the room tries to decide.",
+        "objective": "Choose the launch plan",
+        "outcome1": "Start with one-region launch",
+        "outcome2": "Leah owns the compliance check by Friday",
+        "outcome3": "Revisit expansion after two weeks of data",
+        "question": "Who owns the final call if the room cannot agree?",
+        "rawRequest": "Choose whether we launch globally, start in one region, or delay for the compliance review.",
+        "readinessSummary": "The options are known; decision ownership and risk tolerance remain incomplete.",
+        "reason": "Without a named decision owner, discussion can end in polite ambiguity.",
+        "report": "# Launch plan decision\n\n## Decision\nStart with one region and a gated beta.\n\n## Action\nLeah completes the compliance check by Friday.\n\n## Revisit\nReview expansion after two weeks of launch data.",
+        "title": "Choose the launch plan",
+        "topic1": "Options",
+        "topic2": "Decision criteria",
+        "topic3": "Risks and owner"
+      },
+      "retro": {
+        "cheat": "Open with shared facts. Keep causes separate from blame, ask for a counterexample, then close on one owned improvement.",
+        "copyReason": "The team needs to understand a past result and agree on an improvement.",
+        "expansion1": "Alerts arrived after impact",
+        "expansion2": "Rollback path was unclear",
+        "expansion3": "Ownership changed mid-incident",
+        "label": "Reflect and improve",
+        "modeEffect": "This script separates facts from interpretation, searches for causes and counterexamples, then turns learning into owned changes.",
+        "objective": "Reduce repeat release incidents",
+        "outcome1": "Add pre-release rollback rehearsal",
+        "outcome2": "Ravi owns alert-threshold review by Tuesday",
+        "outcome3": "Keep the working peer-check step",
+        "question": "What happened that everyone in the room would agree is a fact?",
+        "rawRequest": "Review last week's failed release, understand why recovery was slow, and agree on what to change.",
+        "readinessSummary": "The incident scope is known; facts and expected-versus-actual behavior need separation.",
+        "reason": "Starting from shared facts keeps the retro from becoming a contest of opinions.",
+        "report": "# Release incident retro\n\n## What happened\nDetection and rollback were both late.\n\n## Change\nRehearse rollback before high-risk releases.\n\n## Owner\nRavi reviews alert thresholds by Tuesday.",
+        "title": "Release incident retro",
+        "topic1": "Shared facts",
+        "topic2": "Causes and counterexamples",
+        "topic3": "Owned improvements"
+      }
+    },
+    "map": {
+      "label": "Example left-to-right meeting map"
+    },
+    "memoryOnly": "Tour state lives only in page memory. Switching, completing, or exiting does not create a meeting or call /api/ai/*.",
+    "pageTitle": "90-second tour",
+    "progress": "Step {current} of {total}",
+    "readiness": {
+      "confirmed": "Objective · confirmed",
+      "missing": "Decision boundary · missing",
+      "partial": "Participants and inputs · partial",
+      "title": "Meeting readiness"
+    },
+    "sampleAnswer": "Preset example answer",
+    "sampleResult": "Example result",
+    "scenarioLabel": "Tour scenario",
+    "steps": {
+      "focus": {
+        "cheatTitle": "Facilitator cheat sheet",
+        "description": "The active topic and its subtree come forward; other branches remain visible and clickable instead of disappearing.",
+        "title": "Focus one branch"
+      },
+      "grill": {
+        "title": "Grill for readiness"
+      },
+      "outcomes": {
+        "outputTitle": "Meeting outcomes",
+        "reportTitle": "Portable report",
+        "title": "Leave with something"
+      },
+      "play": {
+        "description": "A node play adds two to four controlled children. The tour uses a preset result and never sends a model request.",
+        "title": "Play the selected node"
+      },
+      "type": {
+        "title": "The script changes the questions"
+      }
+    },
+    "title": "See the meeting workflow before trusting it with a real one"
+  },
+  "meetingCreation": {
+    "actions": {
+      "back": "Back to meetings",
+      "classify": "Recommend a meeting script",
+      "confirm": "Confirm and start Grill",
+      "editRequest": "Edit meeting details",
+      "manual": "Choose a script manually",
+      "retry": "Retry recommendation"
+    },
+    "confidence": {
+      "high": "High-confidence recommendation",
+      "low": "Low confidence · general fallback",
+      "medium": "Medium-confidence recommendation"
+    },
+    "description": "Keep the original ask intact. The model only recommends a script and short title; you make the final choice before anything enters preparation.",
+    "errors": {
+      "ai": {
+        "INPUT_INVALID": "The request could not be classified. Check the raw request and optional title, then retry.",
+        "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
+        "OUTPUT_INVALID": "The model returned an unusable recommendation. Retry once or choose a script manually.",
+        "OUTPUT_LANGUAGE_MISMATCH": "The recommendation used the wrong language. Retry or choose a script manually; your input is unchanged.",
+        "PROVIDER_AUTH_FAILED": "The provider rejected the saved key. Reconnect it, then retry.",
+        "PROVIDER_CONFIG_INVALID": "The saved model configuration can no longer be used. Replace it, then retry.",
+        "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your form is still here; retry later or choose manually.",
+        "PROVIDER_MODEL_NOT_FOUND": "The approved model is unavailable for this account. Check model settings or choose manually.",
+        "PROVIDER_NOT_CONFIGURED": "Connect your own model provider to get a recommendation, or choose manually.",
+        "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment, then retry or choose manually.",
+        "PROVIDER_UNAVAILABLE": "The provider could not be reached. Your inputs are preserved; retry or choose manually.",
+        "RATE_LIMITED": "Too many attempts were made from this session. Wait a minute or choose manually.",
+        "REQUEST_CANCELLED": "The prior recommendation was cancelled. You can retry when ready.",
+        "UNKNOWN": "Something unexpected interrupted the recommendation. Your input is unchanged; retry or choose manually."
+      },
+      "form": "Check the highlighted meeting details below. Your current input has been preserved.",
+      "save": "This browser could not open local meeting storage, so the meeting was not created. The form is unchanged."
+    },
+    "eyebrow": "Create a real local meeting",
+    "fallbackTitle": "Untitled meeting",
+    "fields": {
+      "attendees": {
+        "invalid": "Enter a whole number from 1 to 10,000.",
+        "label": "Expected attendees",
+        "required": "Enter the expected attendee count."
+      },
+      "locale": {
+        "label": "Meeting content language",
+        "required": "Choose the meeting content language."
+      },
+      "rawRequest": {
+        "help": "For this classification, the request passes transiently through Convergene's backend to your selected provider. The backend does not persist it; it is saved only in this browser after you confirm a script.",
+        "label": "The original meeting request",
+        "placeholder": "Paste the boss's words, the calendar ask, or the messy problem exactly as you received it…",
+        "required": "Enter the original meeting request.",
+        "tooLong": "Keep the original request within 4,000 characters."
+      },
+      "schedule": {
+        "end": "Planned end",
+        "label": "Planned time",
+        "required": "Choose a valid start and end time.",
+        "start": "Planned start"
+      },
+      "title": {
+        "label": "Title · optional",
+        "placeholder": "Leave blank for a suggested short title"
+      }
+    },
+    "locales": {
+      "en-US": "English",
+      "zh-CN": "Simplified Chinese",
+      "zh-TW": "Traditional Chinese"
+    },
+    "modes": {
+      "brainstorm": {
+        "description": "Open the possibility space, then converge on what deserves a next step.",
+        "title": "Brainstorm together"
+      },
+      "decision": {
+        "description": "Surface alternatives, criteria, risks, and the person who owns the call.",
+        "title": "Align on a decision"
+      },
+      "general": {
+        "description": "A low-key fallback when the request does not fit the three focused scripts.",
+        "title": "General discussion"
+      },
+      "retro": {
+        "description": "Separate facts from interpretation and turn learning into owned improvements.",
+        "title": "Reflect and improve"
+      }
+    },
+    "pageTitle": "New meeting",
+    "recommendation": {
+      "aiEyebrow": "AI recommendation · you decide",
+      "chooseMode": "Choose the script this meeting will use",
+      "manualDescription": "Pick the effect the room needs. You can confirm without spending another model request.",
+      "manualEyebrow": "Manual fallback",
+      "manualTitle": "Choose the meeting script yourself",
+      "reasonLabel": "Why this was recommended",
+      "suggestedTitle": "Suggested title: {title}",
+      "title": "This looks like “{mode}”"
+    },
+    "title": "Throw in the raw ask. First, figure out what this meeting is actually for."
+  },
+  "meetingSetup": {
+    "actions": {
+      "back": "Back to meetings",
+      "retry": "Reload meeting"
+    },
+    "attendeeCount": "{count, plural, one {# attendee} other {# attendees}}",
+    "errors": {
+      "load": "This local meeting could not be read. Its stored data was not modified."
+    },
+    "fields": {
+      "attendees": "Expected attendees",
+      "locale": "Content language",
+      "mode": "Confirmed script",
+      "rawRequest": "Original request",
+      "schedule": "Planned time"
+    },
+    "loading": "Loading local meeting",
+    "locales": {
+      "en-US": "English",
+      "zh-CN": "Simplified Chinese",
+      "zh-TW": "Traditional Chinese"
+    },
+    "lockedDescription": "This recommendation was confirmed by you and saved locally. The script cannot change silently after preparation starts.",
+    "modes": {
+      "brainstorm": "Brainstorm together",
+      "decision": "Align on a decision",
+      "general": "General discussion",
+      "retro": "Reflect and improve",
+      "unselected": "Not selected"
+    },
+    "nextTitle": "Preparation has started",
+    "notFound": "This meeting is not stored in the current browser.",
+    "pageTitle": "Meeting setup",
+    "restartRule": "The next step is Grill: one question at a time, with a visible readiness check. Changing the script requires an explicit restart that keeps the original request and clears preparation content.",
+    "stages": {
+      "brief_ready": "Brief ready",
+      "draft": "Draft saved",
+      "grilling": "Script confirmed",
+      "map_ready": "Map ready"
+    },
+    "summaryTitle": "Confirmed meeting setup"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "Cancel",

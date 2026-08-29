@@ -18,6 +18,7 @@ import type {
   Meeting,
   MeetingBriefDraft,
   MeetingDomainErrorCode,
+  MeetingMode,
   MeetingOutcome,
   MeetingReport,
   SupportedLocale,
@@ -185,6 +186,25 @@ function validLiveOutcomeEnd(outcomes: readonly MeetingOutcome[], endedAt: Date)
 export class MeetingRepository {
   constructor(private readonly database: MeetingDatabase) {}
 
+  private insertNewMeeting(meeting: Meeting): Promise<Result<Meeting, MeetingRepositoryErrorCode>> {
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.appState],
+      async () => {
+        if ((await this.database.meetings.get(meeting.id)) !== undefined) {
+          return failure('MEETING_ALREADY_EXISTS');
+        }
+
+        await this.database.meetings.add(meeting);
+        await this.database.appState.put({
+          key: 'exportSchemaVersion',
+          value: exportSchemaVersion,
+        });
+        return { ok: true, value: meeting };
+      },
+    );
+  }
+
   async createMeeting(meeting: Meeting): Promise<Result<Meeting, MeetingRepositoryErrorCode>> {
     const snapshot = validProjectedMeeting(meeting);
     if (snapshot === undefined) return failure('INVALID_MEETING');
@@ -192,22 +212,30 @@ export class MeetingRepository {
       return failure('INVALID_MEETING_STATE');
     }
 
-    return this.database.transaction(
-      'rw',
-      [this.database.meetings, this.database.appState],
-      async () => {
-        if ((await this.database.meetings.get(snapshot.id)) !== undefined) {
-          return failure('MEETING_ALREADY_EXISTS');
-        }
+    return this.insertNewMeeting(snapshot);
+  }
 
-        await this.database.meetings.add(snapshot);
-        await this.database.appState.put({
-          key: 'exportSchemaVersion',
-          value: exportSchemaVersion,
-        });
-        return { ok: true, value: snapshot };
-      },
-    );
+  async createMeetingForPreparation(
+    meeting: Meeting,
+    mode: MeetingMode,
+    reason: string | undefined,
+    now: Date,
+  ): Promise<Result<Meeting, MeetingRepositoryErrorCode>> {
+    const snapshot = validProjectedMeeting(meeting);
+    if (
+      snapshot === undefined ||
+      snapshot.status !== 'PREPARING' ||
+      snapshot.preparationStage !== 'DRAFT'
+    ) {
+      return failure('INVALID_MEETING');
+    }
+
+    const prepared = confirmMeetingMode(snapshot, mode, reason, new Date(now.getTime()));
+    if (!prepared.ok) return prepared;
+    const value = validProjectedMeeting(prepared.value);
+    if (value === undefined) return failure('INVALID_MEETING');
+
+    return this.insertNewMeeting(value);
   }
 
   async updateMeetingSetup(

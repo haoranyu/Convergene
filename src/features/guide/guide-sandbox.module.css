@@ -1,0 +1,300 @@
+.shell {
+  margin: 0 auto;
+  max-width: 1180px;
+  min-height: calc(100dvh - 72px);
+  padding: 40px var(--space-6) 72px;
+}
+
+.titleRow,
+.sampleHeading,
+.progressHeader,
+.controls,
+.privacyNote {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.titleRow {
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+.titleRow :global(.arco-typography) {
+  max-width: 720px;
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.exitLink {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-muted-foreground);
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 11px 16px;
+  text-decoration: none;
+}
+
+.scenarioTabs {
+  margin: 24px 0;
+}
+
+.tourFrame {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--color-foreground) 7%, transparent);
+  display: grid;
+  gap: var(--space-6);
+  padding: clamp(20px, 4vw, 40px);
+}
+
+.progressHeader {
+  align-items: end;
+  gap: var(--space-6);
+}
+
+.progressHeader > :last-child {
+  flex: 0 1 320px;
+}
+
+.progressHeader :global(.arco-typography) {
+  margin: 4px 0 0;
+}
+
+.stepGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  min-height: 360px;
+}
+
+.fullStep {
+  display: grid;
+  gap: var(--space-4);
+  min-height: 360px;
+}
+
+.explainerCard,
+.readinessCard,
+.cheatCard,
+.outcomesCard,
+.reportCard {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+}
+
+.map {
+  align-items: center;
+  align-content: center;
+  background:
+    linear-gradient(var(--color-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border) 1px, transparent 1px), var(--color-background);
+  background-size: 24px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 56px;
+  grid-template-columns: minmax(140px, 0.75fr) minmax(0, 1.75fr);
+  min-height: 360px;
+  overflow: hidden;
+  padding: var(--space-6);
+}
+
+.mapNode {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--color-foreground) 8%, transparent);
+  font-weight: 600;
+  max-width: 220px;
+  padding: 12px 16px;
+  text-align: center;
+  transition:
+    opacity 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.rootNode {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  justify-self: end;
+  position: relative;
+}
+
+.rootNode::after {
+  background: var(--color-border);
+  content: '';
+  height: 2px;
+  left: 100%;
+  position: absolute;
+  top: 50%;
+  width: 56px;
+}
+
+.topicRow {
+  display: grid;
+  gap: 16px;
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  position: relative;
+  width: 100%;
+}
+
+.topicRow::before {
+  background: var(--color-border);
+  bottom: 16.7%;
+  content: '';
+  left: 0;
+  position: absolute;
+  top: 16.7%;
+  width: 2px;
+}
+
+.topicNode {
+  margin-left: 56px;
+  min-width: 0;
+  position: relative;
+}
+
+.topicNode::before {
+  background: var(--color-border);
+  content: '';
+  height: 2px;
+  left: -56px;
+  position: absolute;
+  top: 50%;
+  width: 56px;
+}
+
+.activeNode {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.dimNode {
+  opacity: var(--opacity-dimmed);
+}
+
+.expansionList {
+  display: grid;
+  font-size: 12px;
+  font-weight: 400;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.expansionList span {
+  background: var(--color-primary-subtle);
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.readinessCard ul,
+.outcomesCard ul {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.readinessCard li {
+  align-items: center;
+  display: flex;
+}
+
+.outcomesCard li {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+}
+
+.outcomesCard li svg {
+  color: var(--color-success);
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.reportCard pre {
+  background: var(--color-foreground);
+  border-radius: var(--radius-md);
+  color: var(--color-background);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1.7;
+  margin: 0;
+  min-height: 220px;
+  overflow: auto;
+  padding: var(--space-4);
+  white-space: pre-wrap;
+}
+
+.controls {
+  border-top: 1px solid var(--color-border);
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+}
+
+.controls :global(.arco-btn) {
+  min-height: 44px;
+}
+
+.privacyNote {
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-4);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .shell {
+    padding: 32px var(--space-4) 64px;
+  }
+
+  .titleRow,
+  .progressHeader,
+  .controls,
+  .sampleHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stepGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .map {
+    gap: var(--space-4);
+    grid-template-columns: 1fr;
+  }
+
+  .rootNode {
+    justify-self: center;
+  }
+
+  .topicRow {
+    grid-template-rows: none;
+  }
+
+  .rootNode::after,
+  .topicRow::before,
+  .topicNode::before {
+    display: none;
+  }
+
+  .topicNode {
+    margin-left: 0;
+  }
+
+  .controls > :last-child {
+    width: 100%;
+  }
+}

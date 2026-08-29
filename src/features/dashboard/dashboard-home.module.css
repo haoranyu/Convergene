@@ -1,0 +1,227 @@
+.shell {
+  margin: 0 auto;
+  max-width: 1280px;
+  min-height: calc(100dvh - 72px);
+  padding: clamp(32px, 6vw, 72px) var(--space-6) 80px;
+}
+
+.recoveryBanner {
+  margin-bottom: var(--space-6);
+}
+
+.hero {
+  align-items: end;
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: clamp(40px, 7vw, 72px);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  font-size: clamp(38px, 6vw, 68px) !important;
+  letter-spacing: -0.05em !important;
+  line-height: 1 !important;
+  margin: var(--space-3) 0 !important;
+  max-width: 850px;
+}
+
+.heroDescription {
+  color: var(--color-muted-foreground) !important;
+  font-size: 17px !important;
+  line-height: 1.7 !important;
+  margin-bottom: 0 !important;
+  max-width: 680px;
+}
+
+.heroActions {
+  justify-content: flex-end;
+}
+
+.primaryLink,
+.secondaryLink {
+  align-items: center;
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  font-weight: 600;
+  gap: var(--space-2);
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  text-decoration: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.primaryLink {
+  background: var(--color-primary);
+  color: var(--color-surface);
+}
+
+.primaryLink:hover {
+  background: var(--color-primary-hover);
+}
+
+.secondaryLink {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-foreground);
+}
+
+.secondaryLink:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.loadingGrid,
+.meetingGrid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.emptyState,
+.errorState {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  justify-content: center;
+  min-height: 280px;
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.errorState {
+  align-items: stretch;
+  margin: 0 auto;
+  max-width: 680px;
+}
+
+.groups,
+.group {
+  display: grid;
+}
+
+.groups {
+  gap: clamp(36px, 6vw, 64px);
+}
+
+.group {
+  gap: var(--space-4);
+}
+
+.groupHeading {
+  align-items: baseline;
+  display: flex;
+  gap: var(--space-3);
+}
+
+.groupHeading :global(.arco-typography) {
+  margin: 0;
+}
+
+.meetingCard {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  min-width: 0;
+}
+
+.meetingCard:hover {
+  border-color: color-mix(in srgb, var(--color-primary) 42%, var(--color-border)) !important;
+}
+
+.deleteButton:global(.arco-btn) {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.cardTopline,
+.cardFooter {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.cardStateLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cardStateLabels > :last-child::before {
+  color: var(--color-muted-foreground);
+  content: '·';
+  margin-right: var(--space-2);
+}
+
+.cardLink {
+  display: block;
+  text-decoration: none;
+}
+
+.cardTitle {
+  margin: var(--space-3) 0 !important;
+  overflow-wrap: anywhere;
+}
+
+.cardMeta {
+  color: var(--color-muted-foreground);
+  display: grid;
+  font-size: 14px;
+  gap: 8px;
+}
+
+.cardMeta span {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.cardFooter {
+  border-top: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+}
+
+@media (max-width: 900px) {
+  .hero {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .heroActions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767px) {
+  .shell {
+    padding: 32px var(--space-4) 64px;
+  }
+
+  .loadingGrid,
+  .meetingGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroActions,
+  .primaryLink,
+  .secondaryLink {
+    width: 100%;
+  }
+}
