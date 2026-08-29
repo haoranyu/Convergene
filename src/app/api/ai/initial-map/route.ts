@@ -6,7 +6,7 @@ import {
 import {
   meetingAIErrorResponse,
   meetingAIJson,
-  runStructuredProviderCall,
+  resolveConfiguredProviderCaller,
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 import {
@@ -28,12 +28,11 @@ export async function POST(request: Request): Promise<Response> {
     );
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 12, 60, 'initial-map');
-    const config = await service.resolve();
+    const callProvider = await resolveConfiguredProviderCaller(service);
     const output = await runReliableInitialMapCall({
       callProvider: (prompt) =>
-        runStructuredProviderCall({
+        callProvider({
           abortSignal: request.signal,
-          config,
           maxOutputTokens: 8_192,
           prompt,
           role: 'grill',

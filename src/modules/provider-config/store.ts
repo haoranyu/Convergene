@@ -1,13 +1,15 @@
 import 'server-only';
 
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 
 import { z } from 'zod';
 
 import type { AesGcmEnvelope } from './credential-crypto';
-import type { ProviderId } from './model';
+import { providerIds, type ProviderId } from './model';
 
 export const providerConfigTtlSeconds = 30 * 24 * 60 * 60;
+
+const revisionSchema = z.string().regex(/^[A-Za-z0-9_-]{22}$/u);
 
 function canonicalBase64Schema(label: string, expectedBytes?: number) {
   return z
@@ -25,27 +27,94 @@ function canonicalBase64Schema(label: string, expectedBytes?: number) {
     );
 }
 
-export const encryptedProviderConfigSchema = z
+const legacyEncryptedProviderConfigSchema = z
   .object({
     authTag: canonicalBase64Schema('authTag', 16),
     ciphertext: canonicalBase64Schema('ciphertext'),
     createdAt: z.iso.datetime(),
     iv: canonicalBase64Schema('iv', 12),
     lastUsedAt: z.iso.datetime(),
-    provider: z.enum(['STEPFUN', 'SILICONFLOW'] satisfies ProviderId[]),
+    provider: z.enum(providerIds),
     version: z.literal(1),
   })
   .strict();
 
+export const encryptedProviderCredentialSchema = z
+  .object({
+    authTag: canonicalBase64Schema('authTag', 16),
+    ciphertext: canonicalBase64Schema('ciphertext'),
+    createdAt: z.iso.datetime(),
+    health: z.enum(['AVAILABLE', 'AUTH_REJECTED', 'DECRYPTION_FAILED']),
+    iv: canonicalBase64Schema('iv', 12),
+    keyId: z.union([z.literal('legacy'), z.string().regex(/^sha256:[a-f0-9]{64}$/u)]),
+    lastUsedAt: z.iso.datetime(),
+    revision: revisionSchema,
+    version: z.literal(1),
+  })
+  .strict();
+
+const providerCredentialSlotsSchema = z
+  .object({
+    SILICONFLOW: encryptedProviderCredentialSchema.optional(),
+    STEPFUN: encryptedProviderCredentialSchema.optional(),
+  })
+  .strict();
+
+export const encryptedProviderConfigV2Schema = z
+  .object({
+    activeProvider: z.enum(providerIds),
+    providers: providerCredentialSlotsSchema,
+    revision: revisionSchema,
+    version: z.literal(2),
+  })
+  .strict()
+  .superRefine((record, context) => {
+    if (!record.providers[record.activeProvider]) {
+      context.addIssue({
+        code: 'custom',
+        message: 'The active provider must have a stored credential',
+        path: ['activeProvider'],
+      });
+    }
+  });
+
+export const encryptedProviderConfigSchema = z.union([
+  legacyEncryptedProviderConfigSchema,
+  encryptedProviderConfigV2Schema,
+]);
+
+export type LegacyEncryptedProviderConfig = z.infer<typeof legacyEncryptedProviderConfigSchema>;
+export type EncryptedProviderCredential = z.infer<typeof encryptedProviderCredentialSchema>;
+export type EncryptedProviderConfigV2 = z.infer<typeof encryptedProviderConfigV2Schema>;
 export type EncryptedProviderConfig = z.infer<typeof encryptedProviderConfigSchema>;
 
+export type ProviderConfigWriteExpectation =
+  | { state: 'INVALID' }
+  | { state: 'LEGACY' }
+  | { state: 'MISSING' }
+  | { revision: string; state: 'V2' };
+
+export interface ProviderConfigWrite {
+  expectation: ProviderConfigWriteExpectation;
+  record: EncryptedProviderConfigV2;
+  ttlSeconds: number;
+}
+
+export interface ProviderConfigTouch {
+  credentialRevision: string;
+  lastUsedAt: string;
+  nextRecordRevision: string;
+  provider: ProviderId;
+  ttlSeconds: number;
+}
+
 export interface ProviderConfigStore {
+  compareAndSet(key: string, write: ProviderConfigWrite): Promise<boolean>;
   consumeRateLimit(key: string, limit: number, windowSeconds: number): Promise<number>;
   delete(key: string): Promise<void>;
   get(key: string): Promise<unknown>;
   has(key: string): Promise<boolean>;
-  set(key: string, value: EncryptedProviderConfig, ttlSeconds: number): Promise<void>;
-  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<string | null>;
+  touch(key: string, touch: ProviderConfigTouch): Promise<unknown | null>;
 }
 
 export function providerConfigKey(sessionId: string): string {
@@ -56,16 +125,34 @@ export function rateLimitKey(scope: string, namespace = 'provider-config'): stri
   return `rate-limit:${namespace}:${createHash('sha256').update(scope).digest('hex')}`;
 }
 
-export function toEncryptedProviderConfig(
+export function createProviderConfigRevision(): string {
+  return randomBytes(16).toString('base64url');
+}
+
+export function toEncryptedProviderCredential(
   envelope: AesGcmEnvelope,
-  provider: ProviderId,
   timestamp: string,
   createdAt = timestamp,
-): EncryptedProviderConfig {
+  revision = createProviderConfigRevision(),
+): EncryptedProviderCredential {
   return {
     ...envelope,
     createdAt,
+    health: 'AVAILABLE',
     lastUsedAt: timestamp,
-    provider,
+    revision,
   };
+}
+
+export function toEncryptedProviderConfig(
+  activeProvider: ProviderId,
+  providers: Partial<Record<ProviderId, EncryptedProviderCredential>>,
+  revision = createProviderConfigRevision(),
+): EncryptedProviderConfigV2 {
+  return encryptedProviderConfigV2Schema.parse({
+    activeProvider,
+    providers,
+    revision,
+    version: 2,
+  });
 }

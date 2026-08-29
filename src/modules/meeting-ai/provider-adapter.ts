@@ -17,6 +17,7 @@ export type ProviderTaskRole = keyof ProviderModelMapping;
 
 export type ProviderGatewayErrorCode =
   | 'OUTPUT_INVALID'
+  | 'PROVIDER_ACCESS_RESTRICTED'
   | 'PROVIDER_AUTH_FAILED'
   | 'PROVIDER_MODEL_NOT_FOUND'
   | 'PROVIDER_RATE_LIMITED'
@@ -32,15 +33,17 @@ export class ProviderGatewayError extends Error {
 
 export interface ResolvedProviderConfig {
   apiKey: string;
+  credentialRevision?: string;
   models: ProviderModelMapping;
   provider: ProviderId;
 }
 
-interface StructuredProviderCallOptions<Schema extends z.ZodType> {
+export interface StructuredProviderCallOptions<Schema extends z.ZodType> {
   abortSignal?: AbortSignal;
   config: ResolvedProviderConfig;
   fetch?: typeof globalThis.fetch;
   maxOutputTokens?: number;
+  onConfirmedAuthFailure?: (provider: ProviderId) => Promise<void>;
   prompt: string;
   role: ProviderTaskRole;
   schema: Schema;
@@ -162,8 +165,11 @@ function normalizeProviderError(
 
   const metadata = findApiErrorMetadata(error);
   const statusCode = metadata?.statusCode;
-  if (statusCode === 401 || statusCode === 403) {
+  if (statusCode === 401) {
     return new ProviderGatewayError('PROVIDER_AUTH_FAILED');
+  }
+  if (statusCode === 403) {
+    return new ProviderGatewayError('PROVIDER_ACCESS_RESTRICTED');
   }
   if (isKnownMissingModel(provider, metadata)) {
     return new ProviderGatewayError('PROVIDER_MODEL_NOT_FOUND');
@@ -189,6 +195,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
   config,
   fetch,
   maxOutputTokens = defaultMaxOutputTokens,
+  onConfirmedAuthFailure,
   prompt,
   role,
   schema,
@@ -227,12 +234,16 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
 
     return schema.parse(await result.output);
   } catch (error) {
-    throw normalizeProviderError(
+    const normalizedError = normalizeProviderError(
       streamedError ?? error,
       config.provider,
       abortSignal?.aborted === true,
       timeoutController.signal.aborted,
     );
+    if (normalizedError.code === 'PROVIDER_AUTH_FAILED') {
+      await onConfirmedAuthFailure?.(config.provider);
+    }
+    throw normalizedError;
   } finally {
     clearTimeout(timeoutHandle);
   }

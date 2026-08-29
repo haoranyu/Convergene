@@ -14,6 +14,7 @@ function statusForCode(code: MeetingAIErrorCode): number {
     case 'INPUT_INVALID':
       return 400;
     case 'ORIGIN_INVALID':
+    case 'PROVIDER_ACCESS_RESTRICTED':
       return 403;
     case 'PROVIDER_AUTH_FAILED':
       return 401;

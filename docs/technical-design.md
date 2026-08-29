@@ -318,19 +318,22 @@ db.version(1).stores({
 - 重复同名 Cookie 直接拒绝；只有 Cookie 对应的 Redis record 存在时才能复用 session，否则保存时由服务端重新生成随机 id；
 - 服务端只在用户保存模型配置时创建；浏览导览不创建会话；
 - Redis key 使用 `provider-config:${sha256(sessionId)}`，不直接使用 Cookie 值；
-- 每次成功读取配置后原子更新 Redis `lastUsedAt` 与 30 天 TTL，并同步续期 Cookie；状态读取只校验加密 envelope 结构，不能为展示状态而解密 Key。
+- 每次成功读取配置后原子更新当前供应商的 `lastUsedAt` 与 Redis 30 天 TTL，并同步续期 Cookie；
+- Cookie 不设置 `Domain`，因此 Production 与每个 Vercel Preview host 的匿名会话按来源隔离。跨来源看不到同一组配置是预期的安全边界，不得以跨域 Cookie 或服务端会议数据绕过。
 
 ### 6.2 加密记录
 
 使用 Node `crypto` 的 AES-256-GCM：
 
 ```ts
-interface EncryptedProviderConfig {
+interface EncryptedProviderCredential {
   version: 1
-  provider: 'STEPFUN' | 'SILICONFLOW'
+  revision: string
   ciphertext: string
   iv: string
   authTag: string
+  keyId: string
+  health: 'AVAILABLE' | 'AUTH_REJECTED' | 'DECRYPTION_FAILED'
   modelOverrides?: {
     grill?: string
     fast?: string
@@ -339,15 +342,29 @@ interface EncryptedProviderConfig {
   createdAt: string
   lastUsedAt: string
 }
+
+interface EncryptedProviderConfigV2 {
+  version: 2
+  revision: string
+  activeProvider: 'STEPFUN' | 'SILICONFLOW'
+  providers: {
+    STEPFUN?: EncryptedProviderCredential
+    SILICONFLOW?: EncryptedProviderCredential
+  }
+}
 ```
 
-- `APP_ENCRYPTION_SECRET` 必须是独立的 32-byte base64 secret；
+- `APP_ENCRYPTION_SECRET` 必须是独立的 32-byte base64 当前 secret；轮换窗口内可通过
+  `APP_ENCRYPTION_PREVIOUS_SECRETS` 提供逗号分隔的旧 secret keyring；
 - runtime 初始化时必须先校验它是 canonical base64 且恰好解码为 32 bytes；格式错误统一视为配置存储不可用；
 - 每次写入使用新的 96-bit IV；
-- Provider 和模型 id 可以明文保存，API Key 必须在 `ciphertext` 中；
-- 解密只发生在调用模型前的服务端内存；
+- `keyId` 是从 256-bit secret 确定性派生的 SHA-256 标识，不包含 secret；Provider、`keyId` 和模型 id 可以明文保存，API Key 必须在 `ciphertext` 中；
+- 解密只发生在调用模型前或迁移/密钥轮换时的服务端内存；
 - 不返回、记录或重新显示原始 Key；
-- 解密失败视为配置失效，要求用户重新输入，不自动尝试其他 key。
+- status 通过 `keyId` 在 AI 请求前识别未知轮换 key；若命中已配置旧 key，则只在服务端内存解密并立即用当前 key 重加密；
+- 有效 v1 单供应商记录在读取时尝试当前/旧 keyring 并迁移为 v2，不返回明文；无法匹配的 v1 或 v2 凭证只把对应供应商标为需重配；
+- 记录和每个凭证都有不透明 revision；整记录写入以 revision 做 compare-and-set，冲突时重读并合并重试，避免并发保存或切换丢失另一供应商及当前选择；
+- 确认的认证拒绝与解密失败只修改请求实际使用的凭证 revision；若用户已替换该凭证，迟到失败不得污染新凭证或另一供应商。
 
 ### 6.3 Provider 白名单
 
@@ -378,12 +395,14 @@ const providerPresets = {
 GET    /api/provider-config/status
 POST   /api/provider-config/test
 PUT    /api/provider-config
+PATCH  /api/provider-config
 DELETE /api/provider-config
 ```
 
 - `test` 使用用户提交的 Key 做一次最小调用，不提前持久化；
-- `status` 只做加密 envelope 的结构校验，并返回是否已配置、Provider、固定掩码提示和模型覆盖；不解密也不返回 Key；
-- `PUT` 测试成功后创建/更新匿名会话和加密记录；
+- `status` 返回 `activeProvider` 与两个供应商各自的固定掩码、模型和状态；v2 当前 key 只校验 envelope 与 `keyId`，v1/旧 key 迁移才在服务端短暂解密；
+- `PUT` 测试成功后创建/更新对应供应商槽并把它设为当前供应商，不覆盖另一槽；
+- `PATCH` 只接受已经配置且可用的 `activeProvider`，不接收或返回 Key；
 - `DELETE` 幂等删除 Redis 记录并清除 Cookie。
 
 ### AI 任务
@@ -471,13 +490,16 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 封装 session、Redis、AES-GCM、Provider 白名单和模型解析。业务模块只拿到一次请求内有效的 `ResolvedProviderConfig`，不能接触 Redis record。
 
 生产实现位于 `src/modules/provider-config/`：Cookie 使用 32-byte base64url 随机 id，Redis key
-只含其 SHA-256；Key 由 AES-256-GCM envelope 保存，状态接口只返回固定掩码。PUT 在每次写入前
-重新执行最小结构化 Provider 调用，失败不覆盖旧 record；成功读取会原子更新 `lastUsedAt` 和
-Redis 的 30 天 TTL，并续期 Cookie。只有真正调用模型的 `resolve` 路径会在服务端内存解密 Key，
-状态读取不会解密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
+只含其 SHA-256；v2 record 分别保存两家供应商的 AES-256-GCM envelope，并独立保存
+`activeProvider`。PUT 在每次写入前重新执行最小结构化 Provider 调用，失败不覆盖任一旧凭证；
+PATCH 只切换已配置且可用的供应商。成功读取会原子更新当前供应商的 `lastUsedAt` 和 Redis 的
+30 天 TTL，并续期 Cookie。所有整记录修改使用 revision compare-and-set；发生并发冲突时重读并
+合并重试，不以最后写入覆盖另一供应商。当前 key 的正常 status 不解密；v1 或已知旧 key 只在迁移路径短暂解密
+并用当前 key 重加密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
 使用 IP bucket；Redis/Lua 故障返回配置不可用，不能伪装为用户触发限流。
 `src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
-Schema、超时/取消及错误归一化的唯一共享边界。
+Schema、超时/取消及错误归一化的唯一共享边界；Route 统一通过配置感知的调用封装，把 401 只归因
+到本次请求解析出的凭证 revision。
 
 ## 9. 画布与布局
 
@@ -538,7 +560,7 @@ Schema、超时/取消及错误归一化的唯一共享边界。
 
 ### 请求安全
 
-- 只接受 `POST/PUT/DELETE` 的同源 `Origin`；
+- 只接受 `POST/PUT/PATCH/DELETE` 的同源 `Origin`；
 - Cookie 使用 `SameSite=Strict`，修改配置接口仍校验 Origin；
 - Route Handler 限制 JSON body 大小、字段长度和数组数量；
 - Provider Base URL 必须来自编译期白名单，防止 SSRF；
@@ -633,6 +655,7 @@ messages/
 
 ```text
 APP_ENCRYPTION_SECRET=base64-encoded-32-byte-secret
+APP_ENCRYPTION_PREVIOUS_SECRETS=comma-separated-previous-base64-secrets-during-rotation
 UPSTASH_REDIS_REST_URL=...
 UPSTASH_REDIS_REST_TOKEN=...
 NEXT_PUBLIC_APP_URL=https://your-project.vercel.app

@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   providerModelPresets,
+  providerIds,
   type ProviderConfigErrorCode,
   type ProviderConfigInput,
   type ProviderConfigSummary,
@@ -41,6 +42,7 @@ const maskedApiKey = '••••••••';
 const errorMessageKeys: Record<ProviderConfigErrorCode, string> = {
   INPUT_INVALID: 'errors.INPUT_INVALID',
   ORIGIN_INVALID: 'errors.ORIGIN_INVALID',
+  PROVIDER_ACCESS_RESTRICTED: 'errors.PROVIDER_ACCESS_RESTRICTED',
   PROVIDER_AUTH_FAILED: 'errors.PROVIDER_AUTH_FAILED',
   PROVIDER_CONFIG_INVALID: 'errors.PROVIDER_CONFIG_INVALID',
   PROVIDER_CONFIG_UNAVAILABLE: 'errors.PROVIDER_CONFIG_UNAVAILABLE',
@@ -50,7 +52,7 @@ const errorMessageKeys: Record<ProviderConfigErrorCode, string> = {
   RATE_LIMITED: 'errors.RATE_LIMITED',
 };
 
-type Operation = 'delete' | 'save' | 'test' | null;
+type Operation = 'delete' | 'save' | 'select' | 'test' | null;
 
 interface Notice {
   kind: 'error' | 'success';
@@ -93,12 +95,14 @@ export function ProviderConfigPanel({
   const format = useFormatter();
   const [form] = Form.useForm<ProviderConfigInput>();
   const [editing, setEditing] = useState(false);
+  const [editingProvider, setEditingProvider] = useState<ProviderId>('STEPFUN');
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [operation, setOperation] = useState<Operation>(null);
   const [status, setStatus] = useState<ProviderConfigSummary | null>(null);
   const [testedInput, setTestedInput] = useState<ProviderConfigInput | null>(null);
-  const selectedProvider = (Form.useWatch('provider', form) ?? 'STEPFUN') as ProviderId;
+  const [selectingProvider, setSelectingProvider] = useState<ProviderId | null>(null);
+  const selectedProvider = (Form.useWatch('provider', form) ?? editingProvider) as ProviderId;
 
   const showForm = status?.configured !== true || editing;
   const busy = operation !== null;
@@ -107,9 +111,13 @@ export function ProviderConfigPanel({
     (result: Awaited<ReturnType<ProviderConfigClient['getStatus']>>) => {
       if (result.ok) {
         setStatus(result.value);
+        const activeCredential = result.value.configured
+          ? result.value.providers[result.value.activeProvider]
+          : null;
         setEditing(
           result.value.configured &&
-            (result.value.state === 'NEEDS_RECONFIGURATION' || Boolean(reconfigurationErrorCode)),
+            (activeCredential?.state === 'NEEDS_RECONFIGURATION' ||
+              Boolean(reconfigurationErrorCode)),
         );
         if (reconfigurationErrorCode) {
           setNotice({
@@ -118,7 +126,8 @@ export function ProviderConfigPanel({
           });
         }
         if (result.value.configured) {
-          form.setFieldValue('provider', result.value.provider);
+          setEditingProvider(result.value.activeProvider);
+          form.setFieldValue('provider', result.value.activeProvider);
         }
         return;
       }
@@ -157,6 +166,12 @@ export function ProviderConfigPanel({
       active = false;
     };
   }, [api, applyStatusResult]);
+
+  useEffect(() => {
+    if (showForm) {
+      form.setFieldValue('provider', editingProvider);
+    }
+  }, [editingProvider, form, showForm]);
 
   const providerOptions = useMemo(
     () => [
@@ -242,6 +257,7 @@ export function ProviderConfigPanel({
       if (result.ok) {
         setStatus(result.value);
         setEditing(true);
+        setEditingProvider('STEPFUN');
         setTestedInput(null);
         form.resetFields();
         setNotice({ kind: 'success', message: t('feedback.deleteSuccess') });
@@ -249,6 +265,27 @@ export function ProviderConfigPanel({
         setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
       }
     } finally {
+      setOperation(null);
+    }
+  }
+
+  async function selectProvider(provider: ProviderId) {
+    setOperation('select');
+    setSelectingProvider(provider);
+    setNotice(null);
+
+    try {
+      const result = await api.selectProvider(provider);
+      if (result.ok) {
+        setStatus(result.value);
+        setEditing(false);
+        setNotice({ kind: 'success', message: t('feedback.selectSuccess') });
+        onConfigured?.(result.value);
+      } else {
+        setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
+      }
+    } finally {
+      setSelectingProvider(null);
       setOperation(null);
     }
   }
@@ -286,65 +323,102 @@ export function ProviderConfigPanel({
       </div>
 
       {status.configured ? (
-        <Card className={styles.statusCard} bordered={false}>
-          <div className={styles.statusHeader}>
-            <div>
-              <Space align="center" size="small">
-                {status.state === 'AVAILABLE' ? (
-                  <IconCheckCircleFill className={styles.successIcon} />
-                ) : (
-                  <IconExclamationCircleFill className={styles.warningIcon} />
-                )}
-                <Typography.Title heading={5} className={styles.statusTitle}>
-                  {t(
-                    status.state === 'AVAILABLE'
-                      ? 'status.available'
-                      : 'status.needsReconfiguration',
-                  )}
-                </Typography.Title>
-              </Space>
-              <Typography.Text className={styles.statusCaption}>
-                {t('status.providerReady', { provider: providerLabel(status.provider, t) })}
-              </Typography.Text>
-            </div>
-            <Tag color={status.state === 'AVAILABLE' ? 'green' : 'orange'}>
-              {status.state === 'AVAILABLE' ? t('status.connected') : t('status.actionRequired')}
-            </Tag>
-          </div>
+        <div className={styles.statusList}>
+          {providerIds.map((provider) => {
+            const credential = status.providers[provider];
+            if (!credential) return null;
+            const active = provider === status.activeProvider;
+            const available = credential.state === 'AVAILABLE';
 
-          <Descriptions
-            border
-            className={styles.descriptions}
-            column={1}
-            data={[
-              { label: t('fields.provider'), value: providerLabel(status.provider, t) },
-              { label: t('fields.apiKey'), value: maskedApiKey },
-              {
-                label: t('status.lastUsed'),
-                value: format.dateTime(new Date(status.lastUsedAt), {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                }),
-              },
-            ]}
-            size="small"
-          />
-          <div className={styles.currentModels}>
-            <Typography.Text bold>{t('models.title')}</Typography.Text>
-            <ModelMapping models={status.models} />
-          </div>
+            return (
+              <Card className={styles.statusCard} bordered={false} key={provider}>
+                <div className={styles.statusHeader}>
+                  <div>
+                    <Space align="center" size="small">
+                      {available ? (
+                        <IconCheckCircleFill className={styles.successIcon} />
+                      ) : (
+                        <IconExclamationCircleFill className={styles.warningIcon} />
+                      )}
+                      <Typography.Title heading={5} className={styles.statusTitle}>
+                        {providerLabel(provider, t)}
+                      </Typography.Title>
+                    </Space>
+                    <Typography.Text className={styles.statusCaption}>
+                      {t(active ? 'status.providerReady' : 'status.providerStored', {
+                        provider: providerLabel(provider, t),
+                      })}
+                    </Typography.Text>
+                  </div>
+                  <Tag color={available ? (active ? 'blue' : 'green') : 'orange'}>
+                    {available
+                      ? t(active ? 'status.active' : 'status.connected')
+                      : t('status.actionRequired')}
+                  </Tag>
+                </div>
 
+                <Descriptions
+                  border
+                  className={styles.descriptions}
+                  column={1}
+                  data={[
+                    { label: t('fields.provider'), value: providerLabel(provider, t) },
+                    { label: t('fields.apiKey'), value: maskedApiKey },
+                    {
+                      label: t('status.lastUsed'),
+                      value: format.dateTime(new Date(credential.lastUsedAt), {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }),
+                    },
+                  ]}
+                  size="small"
+                />
+                <div className={styles.currentModels}>
+                  <Typography.Text bold>{t('models.title')}</Typography.Text>
+                  <ModelMapping models={credential.models} />
+                </div>
+
+                <Space className={styles.statusActions} wrap>
+                  {!active && available ? (
+                    <Button
+                      disabled={busy}
+                      loading={operation === 'select' && selectingProvider === provider}
+                      onClick={() => void selectProvider(provider)}
+                      type="primary"
+                    >
+                      {t('actions.select', { provider: providerLabel(provider, t) })}
+                    </Button>
+                  ) : null}
+                  <Button
+                    icon={<IconRefresh />}
+                    onClick={() => {
+                      setEditingProvider(provider);
+                      setEditing(true);
+                      setNotice(null);
+                    }}
+                  >
+                    {t('actions.reconfigure')}
+                  </Button>
+                </Space>
+              </Card>
+            );
+          })}
           <Space className={styles.statusActions} wrap>
-            <Button
-              icon={<IconRefresh />}
-              onClick={() => {
-                form.setFieldValue('provider', status.provider);
-                setEditing(true);
-                setNotice(null);
-              }}
-            >
-              {t('actions.reconfigure')}
-            </Button>
+            {providerIds.some((provider) => status.providers[provider] === null) ? (
+              <Button
+                onClick={() => {
+                  const missingProvider = providerIds.find(
+                    (provider) => status.providers[provider] === null,
+                  );
+                  if (missingProvider) setEditingProvider(missingProvider);
+                  setEditing(true);
+                  setNotice(null);
+                }}
+              >
+                {t('actions.addProvider')}
+              </Button>
+            ) : null}
             <Popconfirm
               autoFocus
               cancelText={t('actions.cancel')}
@@ -360,7 +434,7 @@ export function ProviderConfigPanel({
               </Button>
             </Popconfirm>
           </Space>
-        </Card>
+        </div>
       ) : null}
 
       {showForm ? (
@@ -390,7 +464,10 @@ export function ProviderConfigPanel({
                 aria-label={t('fields.provider')}
                 disabled={busy}
                 id="provider_input"
-                onChange={() => resetTestedInput()}
+                onChange={(provider) => {
+                  setEditingProvider(provider);
+                  resetTestedInput();
+                }}
                 options={providerOptions}
               />
             </Form.Item>

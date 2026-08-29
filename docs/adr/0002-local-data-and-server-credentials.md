@@ -13,22 +13,27 @@ Convergene 是个人会议工具。黑客松版本需要无需注册即可使用
 P0 使用明确的分层边界：
 
 - Meeting、Node、Edge、Outcome、Report 和 Grill 内容只保存在当前浏览器的 IndexedDB；
-- 服务端 Redis 只保存模型 Provider 配置，不保存会议内容；
+- 服务端 Redis 只保存模型 Provider 配置，不保存会议内容；同一匿名会话的 v2 配置分别保存 StepFun 与硅基流动凭证槽，并独立记录 `activeProvider`；
 - 用户不登录也可使用，服务端通过随机匿名设备会话的 HttpOnly Cookie 找到配置；
 - Redis key 使用 session token 的哈希，记录使用 AES-256-GCM 加密，30 天滑动过期；
+- 整体记录和每个加密凭证都有非敏感、不透明的 revision；整体记录修改通过 compare-and-set 原子提交，冲突时重读合并，避免并发保存或切换丢失状态；
+- 每个加密凭证记录非敏感 `keyId`；部署轮换期可配置旧 keyring，使有效旧记录在服务端重加密，未知 key 只让对应供应商进入需重配状态；
 - API 永不返回原始 Key，日志、埋点和错误不得包含 Key 或完整模型响应；
 - 默认只允许 StepFun 和硅基流动的固定 Base URL；高级设置只能覆盖白名单规则内的模型 ID；
 - 清除模型配置不删除本地会议，清除本地会议不声称已清除服务端模型配置；
+- 保存、重配或确认认证失败只影响目标供应商；切换到另一家必须由用户显式触发，不能做自动跨供应商 failover；
 - P0 提供完整 JSON 导出，注册登录与云同步是 P1，并且迁移必须由用户显式确认。
 
 ## 安全约束
 
-1. `APP_ENCRYPTION_SECRET` 只通过部署环境变量提供，不提交仓库。
+1. `APP_ENCRYPTION_SECRET` 与轮换期的 `APP_ENCRYPTION_PREVIOUS_SECRETS` 只通过部署环境变量提供，不提交仓库；旧 key 在迁移窗口结束后移除。
 2. Cookie 至少设置 `HttpOnly`、`Secure`、`SameSite=Strict` 和限定 Path。
-3. 保存、测试、删除配置的写请求执行同源检查和限流。
+3. 保存、测试、切换、删除配置的写请求执行同源检查和限流。
 4. 自定义 Base URL 在 P0 被拒绝，避免 SSRF 和任意凭据外送。
 5. Provider 测试失败不得覆盖已有可用配置。
 6. 加密、Redis 或 session 失效时返回稳定错误码，让会议的非 AI 功能继续可用。
+7. 只有确认的凭证拒绝（当前集成为 HTTP 401）打开请求实际使用的凭证 revision 的重配状态；若该凭证已被替换，迟到的 401 不改变新凭证；通用 403 权限限制、429、timeout 和 5xx 不改变凭证状态。
+8. 匿名 Cookie 保持 host-only；Production 与 Vercel Preview 来源的配置隔离是预期安全边界。
 
 ## 后果
 

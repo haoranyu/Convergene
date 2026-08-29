@@ -82,12 +82,13 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
 
   it.each([
     [401, 'PROVIDER_AUTH_FAILED'],
-    [403, 'PROVIDER_AUTH_FAILED'],
+    [403, 'PROVIDER_ACCESS_RESTRICTED'],
     [400, 'OUTPUT_INVALID'],
     [429, 'PROVIDER_RATE_LIMITED'],
     [503, 'PROVIDER_UNAVAILABLE'],
   ] as const)('normalizes HTTP %s without raw provider detail', async (status, code) => {
     const rawDetail = 'raw-provider-response-with-sensitive-detail';
+    const onConfirmedAuthFailure = vi.fn().mockResolvedValue(undefined);
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
@@ -96,6 +97,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
         config: config(provider),
         fetch: () =>
           Promise.resolve(new Response(JSON.stringify({ detail: rawDetail }), { status })),
+        onConfirmedAuthFailure,
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,
@@ -110,6 +112,10 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       );
       expect(consoleError).not.toHaveBeenCalled();
       expect(stderrWrite).not.toHaveBeenCalled();
+      expect(onConfirmedAuthFailure).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
+      if (status === 401) {
+        expect(onConfirmedAuthFailure).toHaveBeenCalledWith(provider);
+      }
     } finally {
       consoleError.mockRestore();
       stderrWrite.mockRestore();

@@ -14,6 +14,10 @@ export const providerConfigInputSchema = z
 
 export type ProviderConfigInput = z.infer<typeof providerConfigInputSchema>;
 
+export const providerSelectionInputSchema = z.object({ activeProvider: providerIdSchema }).strict();
+
+export type ProviderSelectionInput = z.infer<typeof providerSelectionInputSchema>;
+
 export const providerModelMappingSchema = z
   .object({
     fast: z.string().min(1).max(128),
@@ -37,24 +41,31 @@ export const providerModelPresets = {
   },
 } as const satisfies Record<ProviderId, ProviderModelMapping>;
 
+export interface ProviderCredentialSummary {
+  createdAt: string;
+  keyHint?: string;
+  lastUsedAt: string;
+  models: ProviderModelMapping;
+  provider: ProviderId;
+  state: 'AVAILABLE' | 'NEEDS_RECONFIGURATION';
+}
+
 export type ProviderConfigSummary =
   | {
       configured: false;
       state: 'NOT_CONFIGURED';
     }
   | {
+      activeProvider: ProviderId;
       configured: true;
-      keyHint?: string;
-      lastUsedAt: string;
-      models: ProviderModelMapping;
-      provider: ProviderId;
-      state: 'AVAILABLE' | 'NEEDS_RECONFIGURATION';
+      providers: Record<ProviderId, ProviderCredentialSummary | null>;
     };
 
 export type ProviderConfigErrorCode =
   | 'INPUT_INVALID'
   | 'ORIGIN_INVALID'
   | 'PROVIDER_AUTH_FAILED'
+  | 'PROVIDER_ACCESS_RESTRICTED'
   | 'PROVIDER_CONFIG_INVALID'
   | 'PROVIDER_CONFIG_UNAVAILABLE'
   | 'PROVIDER_MODEL_NOT_FOUND'
@@ -66,6 +77,7 @@ export const providerConfigErrorCodeSchema = z.enum([
   'INPUT_INVALID',
   'ORIGIN_INVALID',
   'PROVIDER_AUTH_FAILED',
+  'PROVIDER_ACCESS_RESTRICTED',
   'PROVIDER_CONFIG_INVALID',
   'PROVIDER_CONFIG_UNAVAILABLE',
   'PROVIDER_MODEL_NOT_FOUND',
@@ -78,12 +90,34 @@ export const providerConfigSummarySchema = z.discriminatedUnion('configured', [
   z.object({ configured: z.literal(false), state: z.literal('NOT_CONFIGURED') }).strict(),
   z
     .object({
+      activeProvider: providerIdSchema,
       configured: z.literal(true),
-      keyHint: z.literal('••••••••').optional(),
-      lastUsedAt: z.iso.datetime(),
-      models: providerModelMappingSchema,
-      provider: providerIdSchema,
-      state: z.enum(['AVAILABLE', 'NEEDS_RECONFIGURATION']),
+      providers: z
+        .object({
+          SILICONFLOW: z
+            .object({
+              createdAt: z.iso.datetime(),
+              keyHint: z.literal('••••••••').optional(),
+              lastUsedAt: z.iso.datetime(),
+              models: providerModelMappingSchema,
+              provider: z.literal('SILICONFLOW'),
+              state: z.enum(['AVAILABLE', 'NEEDS_RECONFIGURATION']),
+            })
+            .strict()
+            .nullable(),
+          STEPFUN: z
+            .object({
+              createdAt: z.iso.datetime(),
+              keyHint: z.literal('••••••••').optional(),
+              lastUsedAt: z.iso.datetime(),
+              models: providerModelMappingSchema,
+              provider: z.literal('STEPFUN'),
+              state: z.enum(['AVAILABLE', 'NEEDS_RECONFIGURATION']),
+            })
+            .strict()
+            .nullable(),
+        })
+        .strict(),
     })
     .strict(),
 ]);

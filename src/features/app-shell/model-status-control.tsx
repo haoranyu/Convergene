@@ -44,9 +44,11 @@ export function ModelStatusControl() {
     );
   }
 
-  if (status?.configured && status.state === 'AVAILABLE') {
+  const activeCredential = status?.configured ? status.providers[status.activeProvider] : null;
+
+  if (status?.configured && activeCredential?.state === 'AVAILABLE') {
     const provider = providerT(
-      status.provider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name',
+      status.activeProvider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name',
     );
     return (
       <Link className={styles.modelReady} href="/settings/model">
@@ -56,7 +58,7 @@ export function ModelStatusControl() {
     );
   }
 
-  if (status?.configured && status.state === 'NEEDS_RECONFIGURATION') {
+  if (status?.configured && activeCredential?.state === 'NEEDS_RECONFIGURATION') {
     return (
       <ProviderConfigGate onConfigured={setStatus}>
         {({ open }) => (

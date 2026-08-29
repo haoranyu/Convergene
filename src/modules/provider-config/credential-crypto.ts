@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
 const algorithm = 'aes-256-gcm';
 const authenticationTagBytes = 16;
@@ -11,7 +11,20 @@ export interface AesGcmEnvelope {
   authTag: string;
   ciphertext: string;
   iv: string;
+  keyId: string;
   version: 1;
+}
+
+export type LegacyAesGcmEnvelope = Omit<AesGcmEnvelope, 'keyId'>;
+
+export interface EncryptionKey {
+  id: string;
+  secret: string;
+}
+
+export interface EncryptionKeyring {
+  current: EncryptionKey;
+  keys: ReadonlyMap<string, EncryptionKey>;
 }
 
 function decodeCanonicalBase64(value: string, label: string): Buffer {
@@ -35,6 +48,30 @@ function decodeEncryptionSecret(encodedSecret: string): Buffer {
   }
 
   return secret;
+}
+
+export function encryptionKeyId(encodedSecret: string): string {
+  return `sha256:${createHash('sha256').update(decodeEncryptionSecret(encodedSecret)).digest('hex')}`;
+}
+
+export function createEncryptionKeyring(
+  currentSecret: string,
+  previousSecrets: readonly string[] = [],
+): EncryptionKeyring {
+  const orderedSecrets = [currentSecret, ...previousSecrets];
+  const keys = new Map<string, EncryptionKey>();
+
+  for (const secret of orderedSecrets) {
+    const key = { id: encryptionKeyId(secret), secret };
+    if (!keys.has(key.id)) {
+      keys.set(key.id, key);
+    }
+  }
+
+  return {
+    current: keys.get(encryptionKeyId(currentSecret))!,
+    keys,
+  };
 }
 
 export function assertValidEncryptionSecret(encodedSecret: string): void {
@@ -62,13 +99,24 @@ export function encryptCredential(plaintext: string, encodedSecret: string): Aes
     authTag: cipher.getAuthTag().toString('base64'),
     ciphertext: ciphertext.toString('base64'),
     iv: iv.toString('base64'),
+    keyId: encryptionKeyId(encodedSecret),
     version: 1,
   };
 }
 
-export function decryptCredential(envelope: AesGcmEnvelope, encodedSecret: string): string {
+export function decryptCredential(
+  envelope: AesGcmEnvelope | LegacyAesGcmEnvelope,
+  encodedSecret: string,
+): string {
   if (envelope.version !== 1) {
     throw new Error('Unsupported encrypted credential version');
+  }
+  if (
+    'keyId' in envelope &&
+    envelope.keyId !== 'legacy' &&
+    envelope.keyId !== encryptionKeyId(encodedSecret)
+  ) {
+    throw new Error('Encryption key does not match the credential key id');
   }
 
   const decipher = createDecipheriv(

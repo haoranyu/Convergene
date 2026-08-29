@@ -3,6 +3,7 @@ import type {
   ProviderConfigInput,
   ProviderConfigSummary,
   ProviderConnectionResult,
+  ProviderId,
 } from '@/modules/provider-config';
 import {
   providerConfigApiResponseSchema,
@@ -17,6 +18,7 @@ export interface ProviderConfigClient {
   deleteConfig(): Promise<ProviderConfigApiResponse<ProviderConfigSummary>>;
   getStatus(): Promise<ProviderConfigApiResponse<ProviderConfigSummary>>;
   saveConfig(input: ProviderConfigInput): Promise<ProviderConfigApiResponse<ProviderConfigSummary>>;
+  selectProvider(provider: ProviderId): Promise<ProviderConfigApiResponse<ProviderConfigSummary>>;
   testConnection(
     input: ProviderConfigInput,
   ): Promise<ProviderConfigApiResponse<ProviderConnectionResult>>;
@@ -89,6 +91,17 @@ export function createProviderConfigClient(
           body: JSON.stringify(input),
           headers: { 'Content-Type': 'application/json' },
           method: 'PUT',
+        },
+        providerConfigSummarySchema,
+      ),
+    selectProvider: (provider) =>
+      request(
+        fetchImplementation,
+        '/api/provider-config',
+        {
+          body: JSON.stringify({ activeProvider: provider }),
+          headers: { 'Content-Type': 'application/json' },
+          method: 'PATCH',
         },
         providerConfigSummarySchema,
       ),

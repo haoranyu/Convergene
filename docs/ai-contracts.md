@@ -418,6 +418,7 @@ type AIErrorCode =
   | 'RATE_LIMITED'
   | 'PROVIDER_NOT_CONFIGURED'
   | 'PROVIDER_AUTH_FAILED'
+  | 'PROVIDER_ACCESS_RESTRICTED'
   | 'PROVIDER_CONFIG_INVALID'
   | 'PROVIDER_CONFIG_UNAVAILABLE'
   | 'PROVIDER_MODEL_NOT_FOUND'
@@ -430,10 +431,11 @@ type AIErrorCode =
   | 'UNKNOWN'
 ```
 
-- 401/403 映射为配置失效，引导重新配置，不自动清除 Redis record；
+- 只有 HTTP 401 或供应商已验证的等价错误码映射为 `PROVIDER_AUTH_FAILED`，并只把本次使用的供应商槽标为需重配；
+- 通用 HTTP 403 映射为 `PROVIDER_ACCESS_RESTRICTED`，表示账号、模型或区域权限限制；它可由用户重试或显式切换供应商，但不能打开 Key 重配门禁；
 - 解密或 envelope 校验失败映射为 `PROVIDER_CONFIG_INVALID`；Redis、加密密钥或配置存储不可用映射为 `PROVIDER_CONFIG_UNAVAILABLE`；
 - 固定 preset model 被供应商拒绝为不存在时映射为 `PROVIDER_MODEL_NOT_FOUND`，不得退回调用任意 model；
-- 429 显示供应商限流，不自动切换另一个 Provider；
+- 429 显示供应商限流，不自动切换另一个 Provider；403、429、timeout 和 5xx 都不得自动把会议内容发给另一家供应商；
 - 5xx 可由用户重试；
 - schema 失败只对初始图自动修复一次；
 - 目标语言明显错误时允许用户重试，不能客户端自动翻译；

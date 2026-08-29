@@ -3,14 +3,17 @@ import 'server-only';
 import { cookies } from 'next/headers';
 
 import { assertValidEncryptionSecret } from './credential-crypto';
+import { getE2EProviderConfigStore } from './in-memory-store';
 import type { ProviderConfigApiResponse, ProviderConfigErrorCode } from './model';
 import { ProviderConnectionError, testProviderConnection } from './provider-connection';
+import { providerPresets } from './presets';
 import {
   providerSessionCookieName,
   providerSessionCookieOptions,
   type ProviderSessionCookie,
 } from './session';
 import { createProviderConfigService, ProviderConfigServiceError } from './service';
+import type { ProviderConfigStore } from './store';
 import { UpstashProviderConfigStore } from './upstash-store';
 
 function requiredEnvironmentVariable(
@@ -26,6 +29,7 @@ function requiredEnvironmentVariable(
 
 interface ProviderConfigRuntimeEnvironment {
   encryptionSecret: string;
+  previousEncryptionSecrets: string[];
   redisToken: string;
   redisUrl: string;
 }
@@ -34,14 +38,20 @@ export function readProviderConfigRuntimeEnvironment(
   environment: Record<string, string | undefined> = process.env,
 ): ProviderConfigRuntimeEnvironment {
   const encryptionSecret = requiredEnvironmentVariable(environment, 'APP_ENCRYPTION_SECRET');
+  const previousEncryptionSecrets = (environment.APP_ENCRYPTION_PREVIOUS_SECRETS ?? '')
+    .split(',')
+    .map((secret) => secret.trim())
+    .filter(Boolean);
   try {
     assertValidEncryptionSecret(encryptionSecret);
+    previousEncryptionSecrets.forEach(assertValidEncryptionSecret);
   } catch {
     throw new ProviderConfigServiceError('PROVIDER_CONFIG_UNAVAILABLE');
   }
 
   return {
     encryptionSecret,
+    previousEncryptionSecrets,
     redisToken: requiredEnvironmentVariable(environment, 'UPSTASH_REDIS_REST_TOKEN'),
     redisUrl: requiredEnvironmentVariable(environment, 'UPSTASH_REDIS_REST_URL'),
   };
@@ -49,6 +59,8 @@ export function readProviderConfigRuntimeEnvironment(
 
 export async function createProviderConfigRuntime() {
   const environment = readProviderConfigRuntimeEnvironment();
+  const e2eMode =
+    process.env.NODE_ENV !== 'production' && process.env.CONVERGENE_E2E_PROVIDER_CONFIG === '1';
   const cookieStore = await cookies();
   const session: ProviderSessionCookie = {
     clear() {
@@ -64,12 +76,21 @@ export async function createProviderConfigRuntime() {
       cookieStore.set(providerSessionCookieName, sessionId, providerSessionCookieOptions);
     },
   };
-  const store = new UpstashProviderConfigStore(environment.redisUrl, environment.redisToken);
+  const store: ProviderConfigStore = e2eMode
+    ? getE2EProviderConfigStore()
+    : new UpstashProviderConfigStore(environment.redisUrl, environment.redisToken);
   const service = createProviderConfigService({
     encryptionSecret: environment.encryptionSecret,
+    previousEncryptionSecrets: environment.previousEncryptionSecrets,
     session,
     store,
-    testConnection: (input, signal) => testProviderConnection({ ...input, abortSignal: signal }),
+    testConnection: e2eMode
+      ? (input) =>
+          Promise.resolve({
+            models: providerPresets[input.provider].models,
+            provider: input.provider,
+          })
+      : (input, signal) => testProviderConnection({ ...input, abortSignal: signal }),
   });
 
   return { service, store };
@@ -80,6 +101,7 @@ function statusForErrorCode(code: ProviderConfigErrorCode): number {
     case 'INPUT_INVALID':
       return 400;
     case 'ORIGIN_INVALID':
+    case 'PROVIDER_ACCESS_RESTRICTED':
       return 403;
     case 'PROVIDER_AUTH_FAILED':
       return 401;
@@ -117,6 +139,7 @@ export function providerConfigErrorResponse(error: unknown): Response {
             'INPUT_INVALID',
             'ORIGIN_INVALID',
             'PROVIDER_AUTH_FAILED',
+            'PROVIDER_ACCESS_RESTRICTED',
             'PROVIDER_CONFIG_INVALID',
             'PROVIDER_CONFIG_UNAVAILABLE',
             'PROVIDER_MODEL_NOT_FOUND',

@@ -37,6 +37,11 @@
   box-shadow: 0 8px 24px color-mix(in srgb, var(--color-foreground) 6%, transparent);
 }
 
+.statusList {
+  display: grid;
+  gap: var(--space-4);
+}
+
 .panelCompact .formCard {
   box-shadow: none;
 }

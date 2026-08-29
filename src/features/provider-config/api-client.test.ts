@@ -39,4 +39,23 @@ describe('providerConfigClient', () => {
       ok: false,
     });
   });
+
+  it('switches the active provider without sending an API key', async () => {
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        Response.json({ ok: true, value: { configured: false, state: 'NOT_CONFIGURED' } }),
+      );
+
+    await createProviderConfigClient(fetchImplementation).selectProvider('SILICONFLOW');
+
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      '/api/provider-config',
+      expect.objectContaining({
+        body: JSON.stringify({ activeProvider: 'SILICONFLOW' }),
+        method: 'PATCH',
+      }),
+    );
+    expect(String(fetchImplementation.mock.calls[0]?.[1]?.body)).not.toContain('apiKey');
+  });
 });

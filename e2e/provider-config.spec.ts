@@ -1,15 +1,23 @@
 import { expect, test } from '@playwright/test';
 
 const availableSummary = {
+  activeProvider: 'STEPFUN',
   configured: true,
-  lastUsedAt: '2026-08-29T00:00:00.000Z',
-  models: {
-    fast: 'step-3.7-flash',
-    grill: 'step-3.7-flash',
-    report: 'step-3.7-flash',
+  providers: {
+    SILICONFLOW: null,
+    STEPFUN: {
+      createdAt: '2026-08-29T00:00:00.000Z',
+      keyHint: '••••••••',
+      lastUsedAt: '2026-08-29T00:00:00.000Z',
+      models: {
+        fast: 'step-3.7-flash',
+        grill: 'step-3.7-flash',
+        report: 'step-3.7-flash',
+      },
+      provider: 'STEPFUN',
+      state: 'AVAILABLE',
+    },
   },
-  provider: 'STEPFUN',
-  state: 'AVAILABLE',
 } as const;
 
 test('tests and saves a key without echoing or retaining it in the form', async ({ page }) => {
@@ -30,7 +38,7 @@ test('tests and saves a key without echoing or retaining it in the form', async 
     await route.fulfill({
       json: {
         ok: true,
-        value: { models: availableSummary.models, provider: 'STEPFUN' },
+        value: { models: availableSummary.providers.STEPFUN.models, provider: 'STEPFUN' },
       },
     });
   });
@@ -61,13 +69,46 @@ test('tests and saves a key without echoing or retaining it in the form', async 
   await page.getByRole('button', { name: 'Save configuration' }).click();
 
   await expect(page.getByText('••••••••')).toBeVisible();
-  await expect(page.getByText('Model connection ready')).toBeVisible();
+  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
   await expect(
     page.getByText('Model configuration saved. The API key is hidden from now on.'),
   ).toBeVisible();
   await expect(page.locator('body')).not.toContainText('sk-browser-only-secret');
   expect(savedBody).toEqual({ apiKey: 'sk-browser-only-secret', provider: 'STEPFUN' });
   expect(await page.evaluate(() => window.localStorage.length)).toBe(0);
+});
+
+test('restores both providers and switches repeatedly without requesting either key', async ({
+  page,
+}) => {
+  await page.goto('/en-US/settings/model');
+  await page.getByLabel('API key').fill('e2e-stepfun-placeholder');
+  await page.getByRole('button', { name: 'Test connection' }).click();
+  await expect(
+    page.getByText('Connection verified. You can save this configuration.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Save configuration' }).click();
+  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add another provider' }).click();
+  await page.getByLabel('API key').fill('e2e-siliconflow-placeholder');
+  await page.getByRole('button', { name: 'Test connection' }).click();
+  await expect(
+    page.getByText('Connection verified. You can save this configuration.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Save configuration' }).click();
+  await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
+  await expect(page.getByText('StepFun is saved and ready to select')).toBeVisible();
+  await expect(page.getByLabel('API key')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Use StepFun' }).click();
+  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
+  await page.getByRole('button', { name: 'Use SiliconFlow' }).click();
+  await page.reload();
+
+  await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
+  await expect(page.getByText('StepFun is saved and ready to select')).toBeVisible();
+  await expect(page.getByLabel('API key')).toHaveCount(0);
 });
 
 test('validates locally and renders only safe provider error copy', async ({ page }) => {
