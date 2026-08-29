@@ -196,6 +196,7 @@ export function MeetingCreation() {
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const requestController = useRef<AbortController | null>(null);
   const [classifying, setClassifying] = useState(false);
+  const [draftValues, setDraftValues] = useState<CreationFormValues | null>(null);
   const [formInvalid, setFormInvalid] = useState(false);
   const [manual, setManual] = useState(false);
   const [notice, setNotice] = useState<MeetingAIErrorCode | 'SAVE_FAILED' | null>(null);
@@ -250,6 +251,7 @@ export function MeetingCreation() {
         if (!handleAIError(result)) setNotice(result.error.code);
         return;
       }
+      setDraftValues(values);
       setRecommendation(result.value);
       setSelectedMode(result.value.recommendedMode);
       setManual(false);
@@ -260,8 +262,11 @@ export function MeetingCreation() {
     }
   }
 
-  function chooseManually() {
+  async function chooseManually() {
+    const values = await validatedValues();
+    if (!values) return;
     setNotice(null);
+    setDraftValues(values);
     setRecommendation(null);
     setSelectedMode(null);
     setManual(true);
@@ -269,13 +274,11 @@ export function MeetingCreation() {
   }
 
   async function confirmMeeting() {
-    if (!selectedMode) return;
-    const values = await validatedValues();
-    if (!values) {
+    if (!selectedMode || !draftValues) {
       setShowRecommendation(false);
       return;
     }
-    const schedule = toIsoSchedule(values.scheduledRange);
+    const schedule = toIsoSchedule(draftValues.scheduledRange);
     if (!schedule) return;
 
     setSaving(true);
@@ -284,12 +287,12 @@ export function MeetingCreation() {
       const now = new Date();
       const draft = buildLocalMeetingDraft(
         {
-          contentLocale: values.contentLocale,
-          expectedAttendeeCount: values.expectedAttendeeCount,
-          rawRequest: values.rawRequest,
+          contentLocale: draftValues.contentLocale,
+          expectedAttendeeCount: draftValues.expectedAttendeeCount,
+          rawRequest: draftValues.rawRequest,
           scheduledEndAt: schedule[1],
           scheduledStartAt: schedule[0],
-          title: values.title?.trim() || recommendation?.suggestedTitle || t('fallbackTitle'),
+          title: draftValues.title?.trim() || recommendation?.suggestedTitle || t('fallbackTitle'),
         },
         now,
       );
@@ -442,7 +445,7 @@ export function MeetingCreation() {
                   </div>
 
                   <div className={styles.formActions}>
-                    <Button onClick={chooseManually} type="text">
+                    <Button onClick={() => void chooseManually()} type="text">
                       {t('actions.manual')}
                     </Button>
                     <Space wrap>

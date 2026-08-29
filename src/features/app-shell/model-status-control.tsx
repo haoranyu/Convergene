@@ -59,7 +59,7 @@ export function ModelStatusControl() {
           icon={<IconSafe aria-hidden="true" />}
           onClick={status === null ? () => void loadStatus() : open}
         >
-          {status === null ? t('retry') : t('configure')}
+          {status === null ? t('retry') : providerT('actions.open')}
         </Button>
       )}
     </ProviderConfigGate>

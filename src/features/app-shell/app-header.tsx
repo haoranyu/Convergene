@@ -1,6 +1,7 @@
 'use client';
 
 import { IconSettings } from '@arco-design/web-react/icon';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 
 import { Link, usePathname } from '@/i18n/navigation';
@@ -27,9 +28,20 @@ export function AppHeader({ title }: AppHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.identity}>
-        <Link className={styles.brand} href="/">
-          Convergene
-        </Link>
+        <strong className={styles.brand}>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className={styles.brandMark}
+            height={24}
+            src="/brand/convergene-mark.svg"
+            unoptimized
+            width={24}
+          />
+          <Link className={styles.brandLink} href="/">
+            Convergene
+          </Link>
+        </strong>
         {title ? <span className={styles.pageTitle}>{title}</span> : null}
       </div>
       <nav aria-label={t('navigationLabel')} className={styles.headerActions}>

@@ -83,7 +83,12 @@ export function LocalDataDrawer() {
         visible={open}
         width={440}
       >
-        <div className={styles.dataDrawerBody}>
+        <section
+          aria-label={t('title')}
+          aria-modal="true"
+          className={styles.dataDrawerBody}
+          role="dialog"
+        >
           <Alert content={t('localNotice')} showIcon type="info" />
 
           <section className={styles.dataSection}>
@@ -151,7 +156,7 @@ export function LocalDataDrawer() {
               />
             ) : null}
           </div>
-        </div>
+        </section>
       </Drawer>
     </>
   );
