@@ -13,9 +13,9 @@
 
 | ID | 可验证需求 | 主要规格 | 实施任务 | 验收 | 实现位置 |
 |---|---|---|---|---|---|
-| R-P0-01 | 无 Key 可完成三种主剧本的内存导览，只有显式复制才写本地 | 产品 7.1；UI 5 | P0-10 | AT-001～003 | 待实现 |
-| R-P0-02 | 用户以匿名设备会话保存自己的 StepFun/硅基流动配置，Key 不回显 | 产品 7.2；ADR 0002 | P0-07、P0-08 | AT-010～015 | `src/modules/provider-config/`<br>`src/modules/api-security/provider-config-http.ts`<br>`src/modules/meeting-ai/provider-adapter.ts`<br>`src/app/api/provider-config/`<br>`src/features/provider-config/`<br>`src/app/[locale]/settings/model/`<br>自动化证据：`service.test.ts`、`provider-config-http.test.ts`、`provider-adapter.test.ts`、`e2e/provider-config.spec.ts`；AT-010 的真实创建/AI 触发入口随 P0-11～P0-15 接入，当前复用配置 gate；AT-104 已覆盖清配置不删会议，清会议不删配置随 P0-10 数据设置入口验收 |
-| R-P0-03 | AI 推荐三主一辅剧本，用户确认；Grill 后不能静默改模式 | 产品 5、7.3；ADR 0003 | P0-11 | AT-020～023 | 待实现 |
+| R-P0-01 | 无 Key 可完成三种主剧本的内存导览，只有显式复制才写本地 | 产品 7.1；UI 5 | P0-10 | AT-001～003 | `src/features/guide/`<br>`src/app/[locale]/guide/`<br>`src/features/meeting-creation/local-meeting.ts`<br>自动化证据：`e2e/dashboard-guide-creation.spec.ts`（导览期间零 `/api/ai/*`、零 IndexedDB，确认复制后才创建独立本机 Meeting） |
+| R-P0-02 | 用户以匿名设备会话保存自己的 StepFun/硅基流动配置，Key 不回显 | 产品 7.2；ADR 0002 | P0-07、P0-08 | AT-010～015 | `src/modules/provider-config/`<br>`src/modules/api-security/provider-config-http.ts`<br>`src/modules/meeting-ai/provider-adapter.ts`<br>`src/app/api/provider-config/`<br>`src/features/provider-config/`<br>`src/app/[locale]/settings/model/`<br>`src/features/meeting-creation/meeting-creation.tsx`<br>自动化证据：`service.test.ts`、`provider-config-http.test.ts`、`provider-adapter.test.ts`、`e2e/provider-config.spec.ts`、`e2e/dashboard-guide-creation.spec.ts`；首次真实分类返回未配置时打开复用配置 gate；清会议与清模型配置双向隔离 |
+| R-P0-03 | AI 推荐三主一辅剧本，用户确认；Grill 后不能静默改模式 | 产品 5、7.3；ADR 0003 | P0-11 | AT-020～023 | `src/modules/meeting-ai/classify-meeting.ts`<br>`src/modules/meeting-ai/classify-prompt.ts`<br>`src/app/api/ai/classify-meeting/route.ts`<br>`src/features/meeting-creation/`<br>`src/modules/meeting-db/repository.ts`<br>自动化证据：`classify-meeting.test.ts`、`classify-client.test.ts`、`repository.test.ts`、`e2e/dashboard-guide-creation.spec.ts` |
 | R-P0-04 | Grill 单问题进行，默认 5 轮，可有一次临门一问，用户续问总上限 10 | 产品 7.4；AI 5 | P0-12、P0-13 | AT-030～035 | 待实现 |
 | R-P0-05 | 准备度按维度和三级文案表达，用户可指定下一轮优先维度 | 产品 7.4；UI 8 | P0-12、P0-13 | AT-030、AT-034～035 | 待实现 |
 | R-P0-06 | Brief 点击确认即锁定；失败以同一快照重试；继续补问与重新准备按不同规则回退，LIVE 后均不可用 | 产品 7.5；领域 3 | P0-14、P0-15 | AT-023、AT-036～038 | `src/modules/meeting-domain/preparation.ts`<br>`src/modules/meeting-db/repository.ts`<br>`src/modules/meeting-domain/preparation.test.ts`<br>`src/modules/meeting-db/repository.test.ts` |
@@ -29,10 +29,10 @@
 | R-P0-14 | LIVE 累计人时、结束后总人时和产出形成成本由确定性代码计算 | 产品 7.9；领域 6 | P0-04、P0-22 | AT-073、AT-077、AT-082、AT-084 | `src/modules/meeting-domain/economics.ts`<br>`src/modules/meeting-domain/economics.test.ts` |
 | R-P0-15 | 散会前软检查和二次确认；零产出也允许结束；ENDED 不回 LIVE | 产品 7.10；领域 3 | P0-23 | AT-076、AT-090～091 | 部分：`src/modules/meeting-domain/lifecycle.ts`<br>`src/modules/meeting-domain/lifecycle.test.ts`（仅覆盖 ENDED 不回 LIVE；P0-23、AT-090～091 待实现） |
 | R-P0-16 | 结束后生成模式化 Markdown；最多 3 个确定性 Mermaid，失败有文本降级 | 产品 7.11；AI 9；UI 12 | P0-24～026 | AT-092～096 | Spike：`src/fixtures/integration-validation/mermaid-diagrams.ts`<br>`src/modules/integration-validation/mermaid-renderer.ts`<br>`src/modules/integration-validation/mermaid-renderer.test.ts`<br>报告生成与端到端降级仍待实现 |
-| R-P0-17 | 会议业务数据仅存 IndexedDB；完整 JSON 导出不含 Key | 产品 7.13；ADR 0002 | P0-05、P0-06 | AT-100～102 | `src/modules/meeting-db/database.ts`<br>`src/modules/meeting-db/repository.ts`<br>`src/modules/meeting-db/observe.ts`<br>`src/modules/meeting-db/export.ts`<br>`src/modules/meeting-db/repository.test.ts` |
-| R-P0-18 | `zh-CN`、`zh-TW`、`en-US` 完成主路径，界面语言不改写会议内容 | 产品 4；i18n 全文 | P0-02、P0-27 | AT-096、AT-110～112 | 待实现 |
+| R-P0-17 | 会议业务数据仅存 IndexedDB；完整 JSON 导出不含 Key | 产品 7.13；ADR 0002 | P0-05、P0-06 | AT-100～102 | `src/modules/meeting-db/database.ts`<br>`src/modules/meeting-db/repository.ts`<br>`src/modules/meeting-db/observe.ts`<br>`src/modules/meeting-db/export.ts`<br>`src/features/app-shell/local-data-drawer.tsx`<br>自动化证据：`repository.test.ts`、`e2e/dashboard-guide-creation.spec.ts` |
+| R-P0-18 | `zh-CN`、`zh-TW`、`en-US` 完成主路径，界面语言不改写会议内容 | 产品 4；i18n 全文 | P0-02、P0-27 | AT-096、AT-110～112 | 部分：`messages/zh-CN.json`、`messages/zh-TW.json`、`messages/en-US.json`<br>`src/i18n/messages.test.ts`<br>首页、导览、创建与剧本确认已三语；完整 P0 主路径随后续 Issue 继续验收 |
 | R-P0-19 | 桌面提供完整画布；手机保留轻量主路径并明确画布限制 | UI 14 | P0-28 | AT-113～116 | 待实现 |
-| R-P0-20 | 首页明确本机保存、导出和云同步预告，不谎称 P0 已支持登录同步 | 产品 7.13；UI 13；ADR 0002 | P0-06、P0-09 | AT-102～105 | 待实现 |
+| R-P0-20 | 首页明确本机保存、导出和云同步预告，不谎称 P0 已支持登录同步 | 产品 7.13；UI 13；ADR 0002 | P0-06、P0-09 | AT-102～105 | `src/features/app-shell/`<br>`src/features/dashboard/dashboard-home.tsx`<br>`src/features/dashboard/meeting-groups.ts`<br>`src/app/[locale]/page.tsx`<br>自动化证据：`meeting-groups.test.ts`、`e2e/dashboard-guide-creation.spec.ts` |
 
 ## 3. Stretch 追踪
 
