@@ -107,7 +107,7 @@ describe('meeting end check', () => {
         0,
         new Date('2026-08-29T10:30:00.000Z'),
       ),
-    ).toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
+    ).toMatchObject({ error: { code: 'INVALID_ATTENDEE_COUNT' }, ok: false });
     expect(liveMeeting.actualAttendeeCount).toBe(4);
   });
 

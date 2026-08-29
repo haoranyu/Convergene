@@ -46,13 +46,12 @@ export function buildMeetingEndCheck(
   attendeeCount: number,
   now: Date,
 ): Result<MeetingEndCheck, MeetingDomainErrorCode> {
-  if (
-    meeting.status !== 'LIVE' ||
-    meeting.startedAt === undefined ||
-    !Number.isInteger(attendeeCount) ||
-    attendeeCount <= 0
-  ) {
+  if (meeting.status !== 'LIVE' || meeting.startedAt === undefined) {
     return failure('INVALID_MEETING_STATE');
+  }
+
+  if (!Number.isInteger(attendeeCount) || attendeeCount <= 0) {
+    return failure('INVALID_ATTENDEE_COUNT');
   }
 
   if (!validCount(context.parkingLotCount)) {
