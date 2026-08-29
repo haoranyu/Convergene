@@ -76,7 +76,7 @@ function errorKey(code: CanvasCommandErrorCode): string {
   return 'errors.invalidOperation';
 }
 
-function CanvasContent({ aggregate, commands }: MeetingCanvasViewProps) {
+function CanvasContent({ aggregate, commands, onSelectedNodeChange }: MeetingCanvasViewProps) {
   const t = useTranslations('mindMap');
   const reducedMotion = useReducedMotion();
   const instanceRef = useRef<ReactFlowInstance<MeetingCanvasNode, MeetingCanvasEdge> | null>(null);
@@ -128,11 +128,12 @@ function CanvasContent({ aggregate, commands }: MeetingCanvasViewProps) {
     (nodeId?: string) => {
       const node = aggregate.nodes.find((candidate) => candidate.id === nodeId);
       setSelectedNodeId(node?.id);
+      onSelectedNodeChange?.(node);
       setEditTitle(node?.title ?? '');
       setEditNote(node?.note ?? '');
       setNextParentId(undefined);
     },
-    [aggregate.nodes],
+    [aggregate.nodes, onSelectedNodeChange],
   );
 
   const topicsResult = useMemo(() => orderedTopicIds(graph), [graph]);

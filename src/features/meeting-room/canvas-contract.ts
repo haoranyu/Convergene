@@ -1,5 +1,5 @@
 import type { MeetingAggregate } from '@/modules/meeting-db';
-import type { MeetingGraph, NodeKind } from '@/modules/mind-map-domain';
+import type { MeetingGraph, MindMapNode, NodeKind } from '@/modules/mind-map-domain';
 
 export type CanvasCommandErrorCode = 'INVALID_OPERATION' | 'STALE_WRITE' | 'STORAGE_ERROR';
 
@@ -29,4 +29,5 @@ export interface CanvasCommands {
 export interface MeetingCanvasViewProps {
   aggregate: MeetingAggregate;
   commands: CanvasCommands;
+  onSelectedNodeChange?: (node?: MindMapNode) => void;
 }

@@ -1,9 +1,17 @@
 'use client';
 
-import { Empty, Spin } from '@arco-design/web-react';
+import { Button, Empty, Spin } from '@arco-design/web-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import {
+  createLiveMeetingCommands,
+  EndMeetingDialog,
+  LiveMeetingToolbar,
+  OutcomePanel,
+  StartMeetingDialog,
+} from '@/features/live-meeting';
+import { useRouter } from '@/i18n/navigation';
 import {
   MeetingDatabase,
   MeetingRepository,
@@ -11,6 +19,7 @@ import {
   type MeetingAggregate,
   type MeetingRepositoryErrorCode,
 } from '@/modules/meeting-db';
+import type { MindMapNode } from '@/modules/mind-map-domain';
 import { layoutMeetingGraph } from '@/modules/mind-map-layout';
 
 import type { CanvasCommandResult, CanvasCommands, ManualCanvasNodeDraft } from './canvas-contract';
@@ -30,10 +39,16 @@ function commandFailure(code: MeetingRepositoryErrorCode): CanvasCommandResult {
 
 export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProps) {
   const t = useTranslations('mindMap');
+  const meetingT = useTranslations('meeting');
+  const router = useRouter();
   const database = useMemo(() => new MeetingDatabase(), []);
   const repository = useMemo(() => new MeetingRepository(database), [database]);
   const [aggregate, setAggregate] = useState<MeetingAggregate>();
   const [failedMeetingId, setFailedMeetingId] = useState<string>();
+  const [activeMeetingId, setActiveMeetingId] = useState<string>();
+  const [endOpen, setEndOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<MindMapNode>();
+  const [startOpen, setStartOpen] = useState(false);
   const aggregateRef = useRef<MeetingAggregate | undefined>(undefined);
 
   const receiveAggregate = useCallback((next: MeetingAggregate | undefined) => {
@@ -51,11 +66,19 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
   useEffect(() => () => database.close(), [database]);
 
   const refresh = useCallback(async (): Promise<boolean> => {
-    const result = await repository.getMeetingAggregate(meetingId);
+    const [result, activeId] = await Promise.all([
+      repository.getMeetingAggregate(meetingId),
+      repository.getActiveMeetingId(),
+    ]);
+    setActiveMeetingId(activeId);
     if (!result.ok || result.value === undefined) return false;
     receiveAggregate(result.value);
     return true;
   }, [meetingId, receiveAggregate, repository]);
+
+  useEffect(() => {
+    void repository.getActiveMeetingId().then(setActiveMeetingId);
+  }, [aggregate?.meeting.updatedAt, repository]);
 
   const execute = useCallback(
     async (
@@ -146,6 +169,11 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
     [execute, meetingId, repository],
   );
 
+  const liveCommands = useMemo(
+    () => (aggregate ? createLiveMeetingCommands(repository, aggregate.meeting) : undefined),
+    [aggregate, repository],
+  );
+
   if (failedMeetingId === meetingId) {
     return <Empty className={styles.state} description={t('errors.storage')} />;
   }
@@ -157,5 +185,72 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
       </div>
     );
   }
-  return <MeetingCanvasView aggregate={aggregate} commands={commands} />;
+  const existingOutcome = selectedNode
+    ? aggregate.outcomes.find((outcome) => outcome.nodeId === selectedNode.id)
+    : undefined;
+
+  return (
+    <div className={styles.meetingWorkspace}>
+      {aggregate.meeting.status === 'PREPARING' ? (
+        <div className={styles.lifecycleControls}>
+          <Button onClick={() => setStartOpen(true)} type="primary">
+            {meetingT('actions.start')}
+          </Button>
+        </div>
+      ) : null}
+      {aggregate.meeting.status === 'LIVE' ? (
+        <LiveMeetingToolbar
+          meeting={aggregate.meeting}
+          onEndRequest={() => setEndOpen(true)}
+          outcomes={aggregate.outcomes}
+        />
+      ) : null}
+      <MeetingCanvasView
+        aggregate={aggregate}
+        commands={commands}
+        onSelectedNodeChange={setSelectedNode}
+      />
+      {aggregate.meeting.status === 'LIVE' && selectedNode && liveCommands ? (
+        <div className={styles.outcomeDock}>
+          <OutcomePanel
+            existingOutcome={existingOutcome}
+            meeting={aggregate.meeting}
+            node={selectedNode}
+            onMark={liveCommands.markOutcome}
+            onUnmark={liveCommands.unmarkOutcome}
+            onUpdate={liveCommands.updateOutcome}
+          />
+        </div>
+      ) : null}
+      {liveCommands ? (
+        <>
+          <StartMeetingDialog
+            activeMeetingId={activeMeetingId}
+            meeting={aggregate.meeting}
+            onCancel={() => setStartOpen(false)}
+            onOpenActiveMeeting={(id) => router.push(`/meetings/${id}`)}
+            onRequestEndActiveMeeting={(id) => router.push(`/meetings/${id}`)}
+            onStarted={() => {
+              setStartOpen(false);
+              void refresh();
+            }}
+            onStart={liveCommands.start}
+            open={startOpen}
+          />
+          <EndMeetingDialog
+            meeting={aggregate.meeting}
+            nodes={aggregate.nodes}
+            onCancel={() => setEndOpen(false)}
+            onEnd={liveCommands.end}
+            onEnded={() => {
+              setEndOpen(false);
+              void refresh();
+            }}
+            open={endOpen}
+            outcomes={aggregate.outcomes}
+          />
+        </>
+      ) : null}
+    </div>
+  );
 }
