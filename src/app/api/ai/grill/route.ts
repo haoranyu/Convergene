@@ -40,6 +40,7 @@ export async function POST(request: Request): Promise<Response> {
       role: 'grill',
       schema: grillOutputSchema,
       schemaName: 'GrillOutput',
+      timeoutMs: 30_000,
     });
     let output;
     try {

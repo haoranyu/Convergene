@@ -42,6 +42,7 @@ export async function POST(request: Request): Promise<Response> {
       role: 'grill',
       schema: initialMapOutputSchema,
       schemaName: 'InitialMapOutput',
+      timeoutMs: 30_000,
     });
     if (!generatedTextMatchesLocale(initialMapOutputGeneratedText(output), envelope.outputLocale)) {
       throw new MeetingAIContractError();
