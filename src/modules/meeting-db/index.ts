@@ -7,9 +7,12 @@ export { MeetingRepository } from './repository';
 export { MeetingReadError } from './read';
 export type { MeetingAggregate, MeetingReadErrorCode } from './read';
 export type {
+  DeleteSubtreeWrite,
   GrillTurnWrite,
+  ManualNodeInput,
   MeetingRepositoryErrorCode,
   MeetingSetupPatch,
   NodeTextPatch,
+  NodePositionPatch,
   OutcomeMetadataPatch,
 } from './repository';

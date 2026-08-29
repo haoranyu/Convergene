@@ -356,6 +356,153 @@ describe('MeetingRepository', () => {
     expect(await database.meetings.count()).toBe(1);
   });
 
+  it('persists manual nodes and drag positions with optimistic revisions', async () => {
+    const firstDatabase = openDatabase();
+    const repository = new MeetingRepository(firstDatabase);
+    const prepared = await createPreparedMeeting(repository, 'meeting-1');
+
+    const inserted = await repository.insertNode(
+      'meeting-1',
+      {
+        edgeId: 'meeting-1-manual-edge',
+        id: 'meeting-1-manual',
+        kind: 'NOTE',
+        parentNodeId: 'meeting-1-topic-2',
+        position: { x: 640, y: 240 },
+        title: 'Confirm the success threshold',
+      },
+      prepared.updatedAt,
+      new Date('2026-08-29T09:50:00.000Z'),
+    );
+    expect(inserted).toMatchObject({
+      ok: true,
+      value: {
+        edges: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'meeting-1-manual-edge',
+            sourceNodeId: 'meeting-1-topic-2',
+            targetNodeId: 'meeting-1-manual',
+          }),
+        ]),
+        nodes: expect.arrayContaining([
+          expect.objectContaining({ id: 'meeting-1-manual', source: 'USER' }),
+        ]),
+      },
+    });
+    const afterInsert = await readStoredAggregate(repository, 'meeting-1');
+    expect(afterInsert).toBeDefined();
+    if (afterInsert === undefined) return;
+
+    const positioned = await repository.updateNodePositions(
+      'meeting-1',
+      [
+        { nodeId: 'meeting-1-manual', position: { x: 812, y: 366 } },
+        { nodeId: 'meeting-1-topic-2', position: { x: 400, y: 300 } },
+      ],
+      afterInsert.meeting.updatedAt,
+      new Date('2026-08-29T09:51:00.000Z'),
+    );
+    expect(positioned).toMatchObject({ ok: true });
+    await expect(
+      repository.updateNodePositions(
+        'meeting-1',
+        [{ nodeId: 'meeting-1-manual', position: { x: 0, y: 0 } }],
+        afterInsert.meeting.updatedAt,
+        new Date('2026-08-29T09:52:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'STALE_WRITE' }, ok: false });
+
+    firstDatabase.close();
+    const reopened = new MeetingRepository(openDatabase());
+    expect(await readStoredAggregate(reopened, 'meeting-1')).toMatchObject({
+      nodes: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'meeting-1-manual',
+          position: { x: 812, y: 366 },
+        }),
+        expect.objectContaining({
+          id: 'meeting-1-topic-2',
+          position: { x: 400, y: 300 },
+        }),
+      ]),
+    });
+  });
+
+  it('cascades an explicit branch deletion and advances a deleted active topic', async () => {
+    const database = openDatabase();
+    const repository = new MeetingRepository(database);
+    await createPreparedMeeting(repository, 'meeting-1');
+    const started = await startStoredMeeting(
+      repository,
+      'meeting-1',
+      4,
+      new Date('2026-08-29T10:00:00.000Z'),
+    );
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    const marked = await repository.markOutcome(
+      'meeting-1',
+      { id: 'outcome-1', kind: 'DECISION', nodeId: 'meeting-1-detail' },
+      started.value.updatedAt,
+      new Date('2026-08-29T10:01:00.000Z'),
+    );
+    expect(marked.ok).toBe(true);
+    const current = await storedMeeting(repository, 'meeting-1');
+
+    const deleted = await repository.deleteNodeSubtree(
+      'meeting-1',
+      'meeting-1-topic-1',
+      current.updatedAt,
+      new Date('2026-08-29T10:02:00.000Z'),
+    );
+    expect(deleted).toMatchObject({
+      ok: true,
+      value: {
+        deletedNodeIds: expect.arrayContaining(['meeting-1-topic-1', 'meeting-1-detail']),
+        meeting: { activeTopicNodeId: 'meeting-1-topic-2' },
+      },
+    });
+    expect(await readStoredAggregate(repository, 'meeting-1')).toMatchObject({
+      meeting: { activeTopicNodeId: 'meeting-1-topic-2' },
+      nodes: [
+        expect.objectContaining({ id: 'meeting-1-root' }),
+        expect.objectContaining({ id: 'meeting-1-topic-2' }),
+        expect.objectContaining({ id: 'meeting-1-topic-3' }),
+      ],
+      outcomes: [],
+    });
+    expect(await database.edges.get('meeting-1-edge-2')).toMatchObject({ order: 0 });
+    expect(await database.edges.get('meeting-1-edge-3')).toMatchObject({ order: 1 });
+  });
+
+  it('requires explicit topic metadata for a manual root topic and never deletes the root', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const prepared = await createPreparedMeeting(repository, 'meeting-1');
+    await expect(
+      repository.insertNode(
+        'meeting-1',
+        {
+          edgeId: 'meeting-1-topic-4-edge',
+          id: 'meeting-1-topic-4',
+          kind: 'TOPIC',
+          parentNodeId: 'meeting-1-root',
+          position: { x: 320, y: 480 },
+          title: 'Dependencies',
+        },
+        prepared.updatedAt,
+        new Date('2026-08-29T09:50:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_TOPIC' }, ok: false });
+    await expect(
+      repository.deleteNodeSubtree(
+        'meeting-1',
+        'meeting-1-root',
+        prepared.updatedAt,
+        new Date('2026-08-29T09:50:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_DELETE' }, ok: false });
+  });
+
   it('recovers a complete aggregate after the database is closed and reopened', async () => {
     const firstDatabase = openDatabase();
     const firstRepository = new MeetingRepository(firstDatabase);

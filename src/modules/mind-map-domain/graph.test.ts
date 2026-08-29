@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyExpansion,
+  deleteSubtree,
+  insertNode,
   orderedTopicIds,
   reparentNode,
   subtreeNodeIds,
@@ -324,6 +326,82 @@ describe('meeting graph invariants', () => {
     expect(orderedTopicIds(movedBack.value)).toEqual({
       ok: true,
       value: ['topic-1', 'topic-2', 'topic-3'],
+    });
+  });
+
+  it('inserts explicit user nodes without mutating the source graph', () => {
+    const graph = initialGraph();
+    const inserted = insertNode(
+      graph,
+      'topic-2',
+      node({ id: 'manual-note', kind: 'NOTE', source: 'USER', title: 'Confirm the threshold' }),
+      'edge-manual-note',
+    );
+
+    expect(inserted.ok).toBe(true);
+    if (!inserted.ok) return;
+    expect(inserted.value.nodes.map(({ id }) => id)).toContain('manual-note');
+    expect(inserted.value.edges).toContainEqual(edge('edge-manual-note', 'topic-2', 'manual-note'));
+    expect(graph.nodes.map(({ id }) => id)).not.toContain('manual-note');
+  });
+
+  it('appends and renumbers explicit topic changes', () => {
+    const graph = initialGraph();
+    const inserted = insertNode(
+      graph,
+      'root',
+      node({
+        id: 'topic-4',
+        kind: 'TOPIC',
+        source: 'USER',
+        title: 'Dependencies',
+        topicPrompt: 'Which dependency blocks the decision?',
+        transitionHint: 'Return to the final choice.',
+      }),
+      'edge-topic-4',
+    );
+    expect(inserted.ok).toBe(true);
+    if (!inserted.ok) return;
+    expect(orderedTopicIds(inserted.value)).toEqual({
+      ok: true,
+      value: ['topic-1', 'topic-2', 'topic-3', 'topic-4'],
+    });
+
+    const removed = deleteSubtree(inserted.value, 'topic-2');
+    expect(removed.ok).toBe(true);
+    if (!removed.ok) return;
+    expect(removed.value.nodes.map(({ id }) => id)).not.toContain('topic-2');
+    expect(orderedTopicIds(removed.value)).toEqual({
+      ok: true,
+      value: ['topic-1', 'topic-3', 'topic-4'],
+    });
+    expect(
+      removed.value.edges
+        .filter(({ sourceNodeId }) => sourceNodeId === 'root')
+        .map(({ order }) => order),
+    ).toEqual([1, 0, 2]);
+  });
+
+  it('rejects manual nested topics and root deletion', () => {
+    const graph = initialGraph();
+    expect(
+      insertNode(
+        graph,
+        'topic-1',
+        node({
+          id: 'nested-topic',
+          kind: 'TOPIC',
+          source: 'USER',
+          title: 'Nested topic',
+          topicPrompt: 'Why?',
+          transitionHint: 'Continue.',
+        }),
+        'edge-nested-topic',
+      ),
+    ).toMatchObject({ error: { code: 'INVALID_TOPIC' }, ok: false });
+    expect(deleteSubtree(graph, 'root')).toMatchObject({
+      error: { code: 'INVALID_DELETE' },
+      ok: false,
     });
   });
 });
