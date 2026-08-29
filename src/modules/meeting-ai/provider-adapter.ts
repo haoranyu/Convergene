@@ -232,7 +232,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       providerOptions:
         config.provider === 'SILICONFLOW'
           ? { [preset.name]: { enable_thinking: false } }
-          : undefined,
+          : { [preset.name]: { reasoningEffort: 'low' } },
       temperature: 0,
     });
 

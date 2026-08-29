@@ -119,7 +119,7 @@ export async function runProviderStructuredOutputProbe({
       providerOptions:
         provider === 'SILICONFLOW'
           ? { siliconflowValidation: { enable_thinking: false } }
-          : undefined,
+          : { stepfunValidation: { reasoningEffort: 'low' } },
       temperature: 0,
     });
     const output = await result.output;

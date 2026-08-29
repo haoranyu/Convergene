@@ -389,9 +389,9 @@ const providerPresets = {
 } as const
 ```
 
-2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema。所有硅基流动产品结构化请求（包括配置连接测试）还必须在以 preset `name` 为 key 的 `providerOptions` 中发送 `enable_thinking: false`；这批交互任务需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担可靠性边界。该字段不得发送给 StepFun。
+2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema。所有产品结构化请求（包括配置连接测试）必须在以 preset `name` 为 key 的 `providerOptions` 中使用该供应商最低推理策略：硅基流动发送 `enable_thinking: false` 完全关闭 thinking；StepFun `step-3.7-flash` 没有关闭档，只支持 `low`、`medium`、`high`，因此发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担可靠性边界。
 
-StepFun 会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免 StepFun 在稍复杂的分类中发出 JSON 前耗尽 reasoning budget。probe 使用与产品一致的硅基流动 Non-Think 策略和 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
+StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免 StepFun 在稍复杂的分类中发出 JSON 前耗尽 reasoning budget。probe 使用与产品一致的双方最低推理策略和 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 
