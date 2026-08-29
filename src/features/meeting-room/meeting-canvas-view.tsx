@@ -39,6 +39,7 @@ import {
   type OnSelectionChangeParams,
   type ReactFlowInstance,
 } from '@xyflow/react';
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -315,6 +316,7 @@ function CanvasContent({ aggregate, commands }: MeetingCanvasViewProps) {
     <section
       aria-label={t('workspaceLabel')}
       className={styles.workspace}
+      data-reduced-motion={reducedMotion}
       onKeyDown={(event) => {
         if (event.key === 'Escape' && selectedNodeId !== undefined) {
           selectNode();
@@ -322,10 +324,28 @@ function CanvasContent({ aggregate, commands }: MeetingCanvasViewProps) {
       }}
     >
       <header className={styles.toolbar}>
-        <div className={styles.activeSummary}>
-          <span className={styles.toolbarLabel}>{t('activeTopic.label')}</span>
-          <Typography.Text bold>{activeTopic?.title ?? t('activeTopic.none')}</Typography.Text>
-          <Tag color={aggregate.meeting.status === 'LIVE' ? 'blue' : 'gray'}>{activePosition}</Tag>
+        <div className={styles.toolbarContext}>
+          <div className={styles.brandLockup}>
+            <Image
+              alt=""
+              className={styles.brandMark}
+              data-testid="brand-mark"
+              height={24}
+              src="/brand/convergene-mark.svg"
+              unoptimized
+              width={24}
+            />
+            <span className={styles.brandName}>Convergene</span>
+          </div>
+          <div className={styles.activeSummary}>
+            <span className={styles.toolbarLabel}>{t('activeTopic.label')}</span>
+            <Typography.Text bold data-testid="active-topic-title">
+              {activeTopic?.title ?? t('activeTopic.none')}
+            </Typography.Text>
+            <Tag color={aggregate.meeting.status === 'LIVE' ? 'blue' : 'gray'}>
+              {activePosition}
+            </Tag>
+          </div>
         </div>
         <Space className={styles.toolbarActions} size="small" wrap>
           <Button
