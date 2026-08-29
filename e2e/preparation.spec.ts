@@ -228,6 +228,32 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
   }
 });
 
+test('resumes a browser-local Grill meeting from the Dashboard and direct links', async ({
+  page,
+}) => {
+  await page.goto('/en-US');
+  await expect(page.getByText('No meetings yet. Start with a real request')).toBeVisible();
+  await seedPendingGrill(page);
+  await page.reload();
+
+  await page.getByRole('link', { name: /Launch decision/u }).click();
+  await expect(page).toHaveURL('/en-US/meetings/meeting-1/prepare');
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
+  ).toBeVisible();
+
+  await page.reload();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
+  ).toBeVisible();
+
+  await page.goto('/zh-CN/meetings/meeting-1');
+  await expect(page).toHaveURL('/zh-CN/meetings/meeting-1/prepare');
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
+  ).toBeVisible();
+});
+
 test('runs the canvas lifecycle through one outcome and a persisted Markdown report', async ({
   page,
 }) => {

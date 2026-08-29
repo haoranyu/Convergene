@@ -517,7 +517,7 @@
       "title": "準備會議 · Convergene"
     },
     "modeSelection": {
-      "action": "返回會議建立",
+      "action": "確認並開始拷問",
       "description": "開始拷問前，請先確認 AI 建議或手動選擇的會議劇本。",
       "title": "請先選擇會議劇本"
     },

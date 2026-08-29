@@ -100,6 +100,46 @@ function renderWorkspace(client: PreparationAIClient) {
 }
 
 describe('PreparationWorkspace', () => {
+  it('resumes a draft at meeting mode selection before starting Grill', async () => {
+    databaseName = `preparation-ui-${crypto.randomUUID()}`;
+    database = new MeetingDatabase(databaseName);
+    const repository = new MeetingRepository(database);
+    const createdAt = new Date(Date.now() - 1_000).toISOString();
+    const created = await repository.createMeeting(
+      createMeeting({ createdAt, updatedAt: createdAt }),
+    );
+    if (!created.ok) throw new Error(created.error.code);
+
+    const client: PreparationAIClient = {
+      grill: vi.fn().mockResolvedValue(grillOutputFixtures.DECISION),
+      initialMap: vi.fn(),
+    };
+    const user = userEvent.setup();
+    renderWorkspace(client);
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Choose the meeting script first',
+      }),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Align on a decision' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm and start Grill' }));
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
+    ).toBeVisible();
+    await waitFor(async () => {
+      const aggregate = await readMeetingAggregate(database, 'meeting-1');
+      expect(aggregate).toMatchObject({
+        ok: true,
+        value: {
+          meeting: { mode: 'DECISION', preparationStage: 'GRILLING' },
+        },
+      });
+    });
+  });
+
   it('shows one current question and persists its answer before requesting the next', async () => {
     databaseName = `preparation-ui-${crypto.randomUUID()}`;
     database = new MeetingDatabase(databaseName);

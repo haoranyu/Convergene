@@ -2,9 +2,24 @@ import { describe, expect, it } from 'vitest';
 
 import { createMapReadyMeeting, createMeeting } from '@/fixtures/meeting';
 
-import { groupMeetings, meetingCardTimingKey, staleLiveMeetings } from './meeting-groups';
+import {
+  groupMeetings,
+  meetingCardHref,
+  meetingCardTimingKey,
+  staleLiveMeetings,
+} from './meeting-groups';
 
 describe('dashboard meeting groups', () => {
+  it('routes every pre-map preparation stage back to its workspace', () => {
+    for (const preparationStage of ['DRAFT', 'GRILLING', 'BRIEF_READY'] as const) {
+      expect(meetingCardHref(createMeeting({ preparationStage }))).toBe(
+        '/meetings/meeting-1/prepare',
+      );
+    }
+
+    expect(meetingCardHref(createMapReadyMeeting())).toBe('/meetings/meeting-1');
+  });
+
   it('keeps lifecycle and canonical timing groups deterministic', () => {
     const meetings = [
       createMeeting({ id: 'draft' }),

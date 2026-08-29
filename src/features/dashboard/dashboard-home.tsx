@@ -40,7 +40,12 @@ import {
 } from '@/modules/meeting-db/client';
 
 import styles from './dashboard-home.module.css';
-import { groupMeetings, meetingCardTimingKey, staleLiveMeetings } from './meeting-groups';
+import {
+  groupMeetings,
+  meetingCardHref,
+  meetingCardTimingKey,
+  staleLiveMeetings,
+} from './meeting-groups';
 
 const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = {
   BRAINSTORM: 'purple',
@@ -109,7 +114,7 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
           />
         </Popconfirm>
       </div>
-      <Link className={styles.cardLink} href={`/meetings/${meeting.id}`}>
+      <Link className={styles.cardLink} href={meetingCardHref(meeting)}>
         <Typography.Title className={styles.cardTitle} heading={5}>
           {meeting.title}
         </Typography.Title>

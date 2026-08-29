@@ -16,7 +16,7 @@ import { useEffect, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
 import { PersistedMeetingCanvas } from '@/features/meeting-room';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import type { Meeting } from '@/modules/meeting-domain';
 import { getBrowserMeetingDatabase, observeMeetingAggregate } from '@/modules/meeting-db/client';
 
@@ -24,6 +24,7 @@ import styles from './meeting-setup-summary.module.css';
 
 export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
   const format = useFormatter();
+  const router = useRouter();
   const t = useTranslations('meetingSetup');
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,11 +48,33 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
     [meetingId, reloadToken],
   );
 
+  const shouldResumePreparation =
+    meeting?.status === 'PREPARING' && meeting.preparationStage !== 'MAP_READY';
+
+  useEffect(() => {
+    if (!loading && !error && shouldResumePreparation) {
+      router.replace(`/meetings/${meetingId}/prepare`);
+    }
+  }, [error, loading, meetingId, router, shouldResumePreparation]);
+
   if (!loading && !error && meeting?.preparationStage === 'MAP_READY') {
     return (
       <>
         <AppHeader title={meeting.title} />
         <PersistedMeetingCanvas meetingId={meetingId} />
+      </>
+    );
+  }
+
+  if (!loading && !error && shouldResumePreparation) {
+    return (
+      <>
+        <AppHeader title={meeting.title} />
+        <main className={styles.shell}>
+          <div aria-busy="true" aria-label={t('loading')}>
+            <Skeleton animation text={{ rows: 6 }} />
+          </div>
+        </main>
       </>
     );
   }

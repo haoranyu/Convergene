@@ -12,7 +12,14 @@ import {
   observeMeetingAggregate,
   type MeetingAggregate,
 } from '@/modules/meeting-db';
-import type { GrillTurn, MeetingBriefDraft, ReadinessDimension } from '@/modules/meeting-domain';
+import {
+  confirmMeetingMode,
+  meetingModes,
+  type GrillTurn,
+  type MeetingBriefDraft,
+  type MeetingMode,
+  type ReadinessDimension,
+} from '@/modules/meeting-domain';
 import { ProviderConfigGate, type ProviderConfigGateController } from '@/features/provider-config';
 
 import type { PreparationAIClient } from './ai-contract';
@@ -39,7 +46,7 @@ function defaultMeetingDatabase(): MeetingDatabase {
   return browserDatabase;
 }
 
-type Operation = 'IDLE' | 'GRILL' | 'SAVE_BRIEF' | 'GENERATE_MAP' | 'ROLLBACK';
+type Operation = 'IDLE' | 'SELECT_MODE' | 'GRILL' | 'SAVE_BRIEF' | 'GENERATE_MAP' | 'ROLLBACK';
 
 interface BriefFields {
   assumptions: string;
@@ -96,6 +103,7 @@ function PreparationWorkspaceBody({
   const [errorCode, setErrorCode] = useState<string>();
   const [answer, setAnswer] = useState('');
   const [requestedDimension, setRequestedDimension] = useState<string>();
+  const [selectedMode, setSelectedMode] = useState<MeetingMode>();
   const [fields, setFields] = useState<BriefFields>();
   const [fieldsRevision, setFieldsRevision] = useState<string>();
   const autoStarted = useRef<string | undefined>(undefined);
@@ -229,18 +237,50 @@ function PreparationWorkspaceBody({
 
   if (meeting?.preparationStage === 'DRAFT') {
     return (
-      <main className={styles.shell}>
+      <main aria-busy={busy} className={styles.shell}>
         <h1 className={styles.srOnly}>{t('modeSelection.title')}</h1>
         <header className={styles.topbar}>
           <strong>{meeting.title}</strong>
           <Tag>{t('localOnly')}</Tag>
         </header>
         <section className={styles.centeredPanel}>
+          {errorAlert}
           <Typography.Title heading={2}>{t('modeSelection.title')}</Typography.Title>
           <Typography.Paragraph>{t('modeSelection.description')}</Typography.Paragraph>
-          <Link className={styles.primaryLink} href="/">
+          <fieldset className={styles.modeFieldset} disabled={busy}>
+            <legend className={styles.srOnly}>{t('modeSelection.title')}</legend>
+            {meetingModes.map((mode) => (
+              <button
+                aria-pressed={selectedMode === mode}
+                className={styles.modeButton}
+                key={mode}
+                onClick={() => setSelectedMode(mode)}
+                type="button"
+              >
+                {t(`modes.${mode}`)}
+              </button>
+            ))}
+          </fieldset>
+          <Button
+            disabled={selectedMode === undefined || busy}
+            loading={operation === 'SELECT_MODE'}
+            onClick={() =>
+              void perform('SELECT_MODE', async () => {
+                if (selectedMode === undefined) return;
+                const transition = confirmMeetingMode(meeting, selectedMode, undefined, new Date());
+                if (!transition.ok) throw transition.error;
+                const saved = await repository.savePreparationTransition(
+                  transition.value,
+                  meeting.updatedAt,
+                );
+                if (!saved.ok) throw saved.error;
+              })
+            }
+            size="large"
+            type="primary"
+          >
             {t('modeSelection.action')}
-          </Link>
+          </Button>
         </section>
       </main>
     );
