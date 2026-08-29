@@ -298,6 +298,7 @@ db.version(1).stores({
 - Cookie 名称：`convergene_session`；
 - 值：至少 256 bit 的加密随机 id；
 - 属性：`HttpOnly; Secure; SameSite=Strict; Path=/`；
+- 重复同名 Cookie 直接拒绝；只有 Cookie 对应的 Redis record 存在时才能复用 session，否则保存时由服务端重新生成随机 id；
 - 服务端只在用户保存模型配置时创建；浏览导览不创建会话；
 - Redis key 使用 `provider-config:${sha256(sessionId)}`，不直接使用 Cookie 值；
 - 每次成功读取配置后原子更新 Redis `lastUsedAt` 与 30 天 TTL，并同步续期 Cookie；状态读取只校验加密 envelope 结构，不能为展示状态而解密 Key。
@@ -324,6 +325,7 @@ interface EncryptedProviderConfig {
 ```
 
 - `APP_ENCRYPTION_SECRET` 必须是独立的 32-byte base64 secret；
+- runtime 初始化时必须先校验它是 canonical base64 且恰好解码为 32 bytes；格式错误统一视为配置存储不可用；
 - 每次写入使用新的 96-bit IV；
 - Provider 和模型 id 可以明文保存，API Key 必须在 `ciphertext` 中；
 - 解密只发生在调用模型前的服务端内存；
@@ -526,7 +528,8 @@ Schema、超时/取消及错误归一化的唯一共享边界。
 - 模型 id 只作为白名单 Provider 的路径参数值，不允许换行、URL 或 header 注入；
 - Redis 连接和 `APP_ENCRYPTION_SECRET` 只在服务端环境变量；
 - 生产日志不记录 Key、Cookie、Prompt、Brief、节点或模型完整响应；
-- CSP 至少限制 `script-src` 和 `connect-src` 到自身及必要资源；
+- CSP 为每个页面请求生成 nonce，生产 `script-src` 使用 `strict-dynamic` 且禁止 `unsafe-inline`，`connect-src` 只允许同源；因此页面和全局 404 采用动态渲染；matcher 只排除 API、Next/Vercel 内部路径和明确的 metadata 资源，不按“路径含点”跳过未知 HTML；
+- API Key 表单关闭浏览器自动完成，并标记为不应由常见密码管理器捕获；
 - Markdown 不渲染原始 HTML，Mermaid 使用 strict。
 
 ### 数据说明

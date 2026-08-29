@@ -23,8 +23,16 @@ function readErrorCode(value: unknown): unknown {
   return undefined;
 }
 
-export function isProviderNotConfigured(value: unknown): boolean {
-  return readErrorCode(value) === 'PROVIDER_NOT_CONFIGURED';
+type ProviderGateReason =
+  'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID' | 'PROVIDER_NOT_CONFIGURED';
+
+export function providerConfigGateReason(value: unknown): ProviderGateReason | null {
+  const code = readErrorCode(value);
+  return code === 'PROVIDER_NOT_CONFIGURED' ||
+    code === 'PROVIDER_CONFIG_INVALID' ||
+    code === 'PROVIDER_AUTH_FAILED'
+    ? code
+    : null;
 }
 
 export interface ProviderConfigGateController {
@@ -41,9 +49,13 @@ interface ProviderConfigGateProps {
 export function ProviderConfigGate({ api, children, onConfigured }: ProviderConfigGateProps) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
+  const [reconfigurationErrorCode, setReconfigurationErrorCode] = useState<
+    'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID' | undefined
+  >();
   const [trigger, setTrigger] = useState<HTMLElement | null>(null);
 
   const openDialog = useCallback(() => {
+    setReconfigurationErrorCode(undefined);
     setTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setMounted(true);
     setOpen(true);
@@ -53,17 +65,18 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
     setOpen(false);
   }, []);
 
-  const handleAIError = useCallback(
-    (error: unknown) => {
-      if (!isProviderNotConfigured(error)) {
-        return false;
-      }
+  const handleAIError = useCallback((error: unknown) => {
+    const reason = providerConfigGateReason(error);
+    if (!reason) {
+      return false;
+    }
 
-      openDialog();
-      return true;
-    },
-    [openDialog],
-  );
+    setReconfigurationErrorCode(reason === 'PROVIDER_NOT_CONFIGURED' ? undefined : reason);
+    setTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setMounted(true);
+    setOpen(true);
+    return true;
+  }, []);
 
   return (
     <>
@@ -74,6 +87,7 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
           onAfterClose={() => {
             trigger?.focus();
             setTrigger(null);
+            setReconfigurationErrorCode(undefined);
             setMounted(false);
           }}
           onClose={closeDialog}
@@ -82,6 +96,7 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
             closeDialog();
           }}
           open={open}
+          reconfigurationErrorCode={reconfigurationErrorCode}
         />
       ) : null}
     </>

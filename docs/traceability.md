@@ -14,7 +14,7 @@
 | ID | 可验证需求 | 主要规格 | 实施任务 | 验收 | 实现位置 |
 |---|---|---|---|---|---|
 | R-P0-01 | 无 Key 可完成三种主剧本的内存导览，只有显式复制才写本地 | 产品 7.1；UI 5 | P0-10 | AT-001～003 | 待实现 |
-| R-P0-02 | 用户以匿名设备会话保存自己的 StepFun/硅基流动配置，Key 不回显 | 产品 7.2；ADR 0002 | P0-07、P0-08 | AT-010～015 | `src/modules/provider-config/`<br>`src/modules/api-security/provider-config-http.ts`<br>`src/modules/meeting-ai/provider-adapter.ts`<br>`src/app/api/provider-config/`<br>`src/features/provider-config/`<br>`src/app/[locale]/settings/model/`<br>自动化证据：`service.test.ts`、`provider-config-http.test.ts`、`provider-adapter.test.ts`、`e2e/provider-config.spec.ts`；AT-010 的真实创建/AI 触发入口随 P0-11～P0-15 接入，当前复用配置 gate |
+| R-P0-02 | 用户以匿名设备会话保存自己的 StepFun/硅基流动配置，Key 不回显 | 产品 7.2；ADR 0002 | P0-07、P0-08 | AT-010～015 | `src/modules/provider-config/`<br>`src/modules/api-security/provider-config-http.ts`<br>`src/modules/meeting-ai/provider-adapter.ts`<br>`src/app/api/provider-config/`<br>`src/features/provider-config/`<br>`src/app/[locale]/settings/model/`<br>自动化证据：`service.test.ts`、`provider-config-http.test.ts`、`provider-adapter.test.ts`、`e2e/provider-config.spec.ts`；AT-010 的真实创建/AI 触发入口随 P0-11～P0-15 接入，当前复用配置 gate；AT-104 已覆盖清配置不删会议，清会议不删配置随 P0-10 数据设置入口验收 |
 | R-P0-03 | AI 推荐三主一辅剧本，用户确认；Grill 后不能静默改模式 | 产品 5、7.3；ADR 0003 | P0-11 | AT-020～023 | 待实现 |
 | R-P0-04 | Grill 单问题进行，默认 5 轮，可有一次临门一问，用户续问总上限 10 | 产品 7.4；AI 5 | P0-12、P0-13 | AT-030～035 | 待实现 |
 | R-P0-05 | 准备度按维度和三级文案表达，用户可指定下一轮优先维度 | 产品 7.4；UI 8 | P0-12、P0-13 | AT-030、AT-034～035 | 待实现 |

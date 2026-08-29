@@ -202,3 +202,84 @@ test('keeps the settings page usable at a 375px viewport', async ({ page }) => {
     true,
   );
 });
+
+test('serves the BYOK page with a restrictive content security policy', async ({ page }) => {
+  await page.route('**/api/provider-config/status', async (route) => {
+    await route.fulfill({
+      json: { ok: true, value: { configured: false, state: 'NOT_CONFIGURED' } },
+    });
+  });
+  await page.route(
+    '**/en-US/settings/model',
+    async (route) => {
+      const original = await route.fetch();
+      const html = await original.text();
+      await route.fulfill({
+        body: html.replace(
+          '</head>',
+          '<script>window.__convergeneUnsafeInlineProbe = true</script></head>',
+        ),
+        response: original,
+      });
+    },
+    { times: 1 },
+  );
+
+  const response = await page.goto('/en-US/settings/model');
+  const policy = response?.headers()['content-security-policy'];
+  const scriptPolicy = policy
+    ?.split(';')
+    .map((directive) => directive.trim())
+    .find((directive) => directive.startsWith('script-src '));
+
+  expect(scriptPolicy).toContain("script-src 'self'");
+  expect(scriptPolicy).toContain("'strict-dynamic'");
+  expect(policy).toContain("connect-src 'self'");
+  expect(policy).toContain("object-src 'none'");
+  expect(policy).toContain("frame-ancestors 'none'");
+  expect(policy).not.toContain('api.stepfun.com');
+  expect(policy).not.toContain('api.siliconflow.cn');
+  expect(scriptPolicy).not.toContain("'unsafe-inline'");
+
+  expect(
+    await page.evaluate(
+      () =>
+        (window as Window & { __convergeneUnsafeInlineProbe?: boolean })
+          .__convergeneUnsafeInlineProbe,
+    ),
+  ).toBeUndefined();
+});
+
+test('protects dotted unknown HTML routes with the same nonce policy', async ({ page }) => {
+  await page.route(
+    '**/en-US/agenda.v2',
+    async (route) => {
+      const original = await route.fetch();
+      const html = await original.text();
+      await route.fulfill({
+        body: html.replace(
+          '</head>',
+          '<script>window.__convergeneDottedPathProbe = true</script></head>',
+        ),
+        response: original,
+      });
+    },
+    { times: 1 },
+  );
+
+  const response = await page.goto('/en-US/agenda.v2');
+  const policy = response?.headers()['content-security-policy'];
+  const nonce = policy?.match(/'nonce-([^']+)'/)?.[1];
+
+  expect(response?.status()).toBe(404);
+  expect(policy).toContain("script-src 'self'");
+  expect(policy).toContain("'strict-dynamic'");
+  expect(nonce).toBeTruthy();
+  await expect(page.getByRole('heading', { level: 1, name: 'Page not found' })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        (window as Window & { __convergeneDottedPathProbe?: boolean }).__convergeneDottedPathProbe,
+    ),
+  ).toBeUndefined();
+});

@@ -45,7 +45,7 @@ export interface ProviderConfigStore {
   get(key: string): Promise<unknown>;
   has(key: string): Promise<boolean>;
   set(key: string, value: EncryptedProviderConfig, ttlSeconds: number): Promise<void>;
-  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<boolean>;
+  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<string | null>;
 }
 
 export function providerConfigKey(sessionId: string): string {

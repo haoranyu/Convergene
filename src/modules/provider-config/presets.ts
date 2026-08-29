@@ -1,4 +1,4 @@
-import type { ProviderId, ProviderModelMapping } from './model';
+import { providerModelPresets, type ProviderId, type ProviderModelMapping } from './model';
 
 interface ProviderPreset {
   baseURL: string;
@@ -9,20 +9,12 @@ interface ProviderPreset {
 export const providerPresets = {
   SILICONFLOW: {
     baseURL: 'https://api.siliconflow.cn/v1',
-    models: {
-      fast: 'deepseek-ai/DeepSeek-V4-Flash',
-      grill: 'deepseek-ai/DeepSeek-V4-Flash',
-      report: 'deepseek-ai/DeepSeek-V4-Flash',
-    },
+    models: providerModelPresets.SILICONFLOW,
     name: 'siliconflow',
   },
   STEPFUN: {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
-    models: {
-      fast: 'step-3.7-flash',
-      grill: 'step-3.7-flash',
-      report: 'step-3.7-flash',
-    },
+    models: providerModelPresets.STEPFUN,
     name: 'stepfun',
   },
 } as const satisfies Record<ProviderId, ProviderPreset>;

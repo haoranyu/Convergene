@@ -37,6 +37,10 @@ function decodeEncryptionSecret(encodedSecret: string): Buffer {
   return secret;
 }
 
+export function assertValidEncryptionSecret(encodedSecret: string): void {
+  decodeEncryptionSecret(encodedSecret);
+}
+
 function decodeEnvelopePart(value: string, label: string, expectedBytes?: number): Buffer {
   const decoded = decodeCanonicalBase64(value, label);
 

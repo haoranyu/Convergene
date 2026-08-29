@@ -138,9 +138,11 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         return { configured: false, state: 'NOT_CONFIGURED' };
       }
 
-      const touchedRecord = { ...record, lastUsedAt: now().toISOString() };
+      const requestedLastUsedAt = now().toISOString();
+      let persistedLastUsedAt: string | null;
       try {
-        if (!(await store.touch(key, touchedRecord.lastUsedAt, providerConfigTtlSeconds))) {
+        persistedLastUsedAt = await store.touch(key, requestedLastUsedAt, providerConfigTtlSeconds);
+        if (!persistedLastUsedAt) {
           session.clear();
           return { configured: false, state: 'NOT_CONFIGURED' };
         }
@@ -148,6 +150,7 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         throw unavailable();
       }
 
+      const touchedRecord = { ...record, lastUsedAt: persistedLastUsedAt };
       session.set(sessionId);
       return availableSummary(touchedRecord);
     },
@@ -181,15 +184,15 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       } catch {
         throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
       }
-      const touchedRecord = { ...record, lastUsedAt: now().toISOString() };
+      const requestedLastUsedAt = now().toISOString();
+      let persistedLastUsedAt: string | null;
       try {
-        if (
-          !(await store.touch(
-            providerConfigKey(sessionId),
-            touchedRecord.lastUsedAt,
-            providerConfigTtlSeconds,
-          ))
-        ) {
+        persistedLastUsedAt = await store.touch(
+          providerConfigKey(sessionId),
+          requestedLastUsedAt,
+          providerConfigTtlSeconds,
+        );
+        if (!persistedLastUsedAt) {
           session.clear();
           throw new ResolvedProviderConfigError('PROVIDER_NOT_CONFIGURED');
         }
@@ -200,6 +203,7 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         throw new ResolvedProviderConfigError('PROVIDER_CONFIG_UNAVAILABLE');
       }
 
+      const touchedRecord = { ...record, lastUsedAt: persistedLastUsedAt };
       session.set(sessionId);
       return {
         apiKey,
@@ -212,13 +216,14 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       await testConnection(input, signal);
 
       const existingSessionId = parseProviderSessionId(session.get());
-      const sessionId = existingSessionId ?? createSessionId();
       const timestamp = now().toISOString();
       let existingRecord: EncryptedProviderConfig | null = null;
+      let sessionId: string;
 
       if (existingSessionId) {
         try {
           existingRecord = await readRecord(store, existingSessionId);
+          sessionId = existingRecord ? existingSessionId : createSessionId();
         } catch (error) {
           if (
             !(error instanceof ProviderConfigServiceError) ||
@@ -226,7 +231,10 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
           ) {
             throw error;
           }
+          sessionId = existingSessionId;
         }
+      } else {
+        sessionId = createSessionId();
       }
 
       let encryptedRecord: EncryptedProviderConfig;

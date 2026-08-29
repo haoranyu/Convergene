@@ -43,14 +43,15 @@ class MemoryProviderConfigStore implements ProviderConfigStore {
     this.records.set(key, value);
   }
 
-  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<boolean> {
+  touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<string | null> {
     this.touched.push({ key, lastUsedAt, ttlSeconds });
     const current = this.records.get(key);
     if (!current) {
-      return Promise.resolve(false);
+      return Promise.resolve(null);
     }
-    this.records.set(key, { ...current, lastUsedAt });
-    return Promise.resolve(true);
+    const persistedLastUsedAt = lastUsedAt > current.lastUsedAt ? lastUsedAt : current.lastUsedAt;
+    this.records.set(key, { ...current, lastUsedAt: persistedLastUsedAt });
+    return Promise.resolve(persistedLastUsedAt);
   }
 }
 
@@ -112,6 +113,29 @@ describe('provider configuration service', () => {
     });
   });
 
+  it('replaces a forged session cookie that has no backing record', async () => {
+    const store = new MemoryProviderConfigStore();
+    const forgedSessionId = createProviderSessionId();
+    const createdSessionId = createProviderSessionId();
+    const session = createMemorySession(forgedSessionId);
+    const service = createProviderConfigService({
+      createSessionId: () => createdSessionId,
+      encryptionSecret,
+      session,
+      store,
+      testConnection: vi.fn().mockResolvedValue({
+        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        provider: 'STEPFUN',
+      }),
+    });
+
+    await service.save(input);
+
+    expect(session.values).toEqual([createdSessionId]);
+    expect(store.records.has(providerConfigKey(forgedSessionId))).toBe(false);
+    expect(store.records.has(providerConfigKey(createdSessionId))).toBe(true);
+  });
+
   it('does not create or overwrite a valid record when the provider test fails', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
@@ -141,8 +165,9 @@ describe('provider configuration service', () => {
   it('renews both storage and the anonymous session after a valid read', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession(sessionId);
+    const session = createMemorySession();
     const service = createProviderConfigService({
+      createSessionId: () => sessionId,
       encryptionSecret,
       now: () => fixedNow,
       session,
@@ -197,6 +222,34 @@ describe('provider configuration service', () => {
     });
   });
 
+  it('keeps lastUsedAt monotonic when touches arrive out of order', async () => {
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession();
+    const service = createProviderConfigService({
+      createSessionId: () => sessionId,
+      encryptionSecret,
+      now: () => fixedNow,
+      session,
+      store,
+      testConnection: vi.fn().mockResolvedValue({
+        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        provider: 'STEPFUN',
+      }),
+    });
+    await service.save(input);
+    const key = providerConfigKey(sessionId);
+    const laterTimestamp = '2026-08-29T02:00:00.000Z';
+
+    await expect(store.touch(key, laterTimestamp, providerConfigTtlSeconds)).resolves.toBe(
+      laterTimestamp,
+    );
+    await expect(store.touch(key, fixedNow.toISOString(), providerConfigTtlSeconds)).resolves.toBe(
+      laterTimestamp,
+    );
+    expect(store.records.get(key)?.lastUsedAt).toBe(laterTimestamp);
+  });
+
   it('rejects a malformed encrypted record without treating it as missing', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
@@ -238,8 +291,9 @@ describe('provider configuration service', () => {
   it('resolves plaintext only in request memory and renews the sliding TTL', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession(sessionId);
+    const session = createMemorySession();
     const service = createProviderConfigService({
+      createSessionId: () => sessionId,
       encryptionSecret,
       session,
       store,

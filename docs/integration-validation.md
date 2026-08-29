@@ -75,6 +75,14 @@ SiliconFlow 的 400/`20012` 归一化为 `PROVIDER_MODEL_NOT_FOUND`；其他 400
 无效，避免把任意客户端错误误报成模型不存在。adapter 只解析有界错误体中的安全业务码，不
 返回或记录原始 body。
 
+最终安全回归还验证了：production CSP 不允许浏览器直连两个 Provider；无后端 record 的伪造
+Cookie 在保存时会被服务端随机 session 替换；真实 Redis Lua touch 对乱序时间戳保持
+`lastUsedAt` 单调且仍续期 TTL；两个 Provider 的连接测试继续成功；最终两次删除幂等，真实 record
+与伪造 session key 均不存在。production client 静态包不包含两个 Provider base URL。另用本地
+production server 的受控 500 探针验证 Next 全局错误响应：响应保留严格 CSP，7 个 framework
+script（含 2 个 inline script）全部带有并匹配本次请求 nonce；动态全局 404 和含点未知路径也由
+浏览器回归覆盖，不存在因 `agenda.v2` 一类路径跳过 CSP 的分支。
+
 提供三个变量后可运行同一测试；代码不会输出它们：
 
 ```bash

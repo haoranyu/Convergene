@@ -25,7 +25,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
-  providerPresets,
+  providerModelPresets,
   type ProviderConfigErrorCode,
   type ProviderConfigInput,
   type ProviderConfigSummary,
@@ -61,6 +61,7 @@ export interface ProviderConfigPanelProps {
   api?: ProviderConfigClient;
   compact?: boolean;
   onConfigured?: (summary: ProviderConfigSummary) => void;
+  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID';
 }
 
 function providerLabel(provider: ProviderId, t: ReturnType<typeof useTranslations>) {
@@ -86,6 +87,7 @@ export function ProviderConfigPanel({
   api = providerConfigClient,
   compact = false,
   onConfigured,
+  reconfigurationErrorCode,
 }: ProviderConfigPanelProps) {
   const t = useTranslations('providerConfig');
   const format = useFormatter();
@@ -105,7 +107,16 @@ export function ProviderConfigPanel({
     (result: Awaited<ReturnType<ProviderConfigClient['getStatus']>>) => {
       if (result.ok) {
         setStatus(result.value);
-        setEditing(result.value.configured && result.value.state === 'NEEDS_RECONFIGURATION');
+        setEditing(
+          result.value.configured &&
+            (result.value.state === 'NEEDS_RECONFIGURATION' || Boolean(reconfigurationErrorCode)),
+        );
+        if (reconfigurationErrorCode) {
+          setNotice({
+            kind: 'error',
+            message: t(errorMessageKeys[reconfigurationErrorCode]),
+          });
+        }
         if (result.value.configured) {
           form.setFieldValue('provider', result.value.provider);
         }
@@ -119,7 +130,7 @@ export function ProviderConfigPanel({
       );
       setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
     },
-    [form, t],
+    [form, reconfigurationErrorCode, t],
   );
 
   const loadStatus = useCallback(async () => {
@@ -369,6 +380,7 @@ export function ProviderConfigPanel({
           </div>
 
           <Form<ProviderConfigInput>
+            autoComplete="off"
             form={form}
             initialValues={{ apiKey: '', provider: 'STEPFUN' }}
             layout="vertical"
@@ -388,7 +400,7 @@ export function ProviderConfigPanel({
                 <Typography.Text bold>{t('models.presetTitle')}</Typography.Text>
                 <Tag>{t('models.fixed')}</Tag>
               </div>
-              <ModelMapping models={providerPresets[selectedProvider].models} />
+              <ModelMapping models={providerModelPresets[selectedProvider]} />
             </div>
 
             <Form.Item
@@ -404,7 +416,10 @@ export function ProviderConfigPanel({
               <Input.Password
                 aria-label={t('fields.apiKey')}
                 aria-describedby="provider-key-help"
-                autoComplete="new-password"
+                autoComplete="off"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-lpignore="true"
                 disabled={busy}
                 id="apiKey_input"
                 onChange={() => resetTestedInput()}

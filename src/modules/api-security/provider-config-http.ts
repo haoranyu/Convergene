@@ -97,17 +97,21 @@ function getCookie(request: Request, name: string): string | undefined {
     return undefined;
   }
 
+  let value: string | undefined;
   for (const part of cookieHeader.split(';')) {
     const separator = part.indexOf('=');
     if (separator === -1) {
       continue;
     }
     if (part.slice(0, separator).trim() === name) {
-      return part.slice(separator + 1).trim();
+      if (value !== undefined) {
+        throw new ApiSecurityError('INPUT_INVALID');
+      }
+      value = part.slice(separator + 1).trim();
     }
   }
 
-  return undefined;
+  return value;
 }
 
 async function requestRateLimitScope(

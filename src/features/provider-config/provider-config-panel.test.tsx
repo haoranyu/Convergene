@@ -27,10 +27,13 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
-function renderPanel(api: ProviderConfigClient) {
+function renderPanel(
+  api: ProviderConfigClient,
+  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID',
+) {
   return render(
     <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
-      <ProviderConfigPanel api={api} />
+      <ProviderConfigPanel api={api} reconfigurationErrorCode={reconfigurationErrorCode} />
     </NextIntlClientProvider>,
   );
 }
@@ -80,7 +83,10 @@ describe('ProviderConfigPanel', () => {
     renderPanel(api);
 
     const apiKey = await screen.findByLabelText('API key');
-    expect(apiKey).toHaveAttribute('autocomplete', 'new-password');
+    expect(apiKey).toHaveAttribute('autocomplete', 'off');
+    expect(apiKey).toHaveAttribute('data-1p-ignore', 'true');
+    expect(apiKey).toHaveAttribute('data-bwignore', 'true');
+    expect(apiKey).toHaveAttribute('data-lpignore', 'true');
     await user.type(apiKey, 'sk-test-secret');
     await user.click(screen.getByRole('button', { name: 'Test connection' }));
 
@@ -141,6 +147,36 @@ describe('ProviderConfigPanel', () => {
     };
 
     renderPanel(api);
+
+    expect(await screen.findByLabelText('API key')).toBeVisible();
+    expect(
+      screen.getByText('The saved configuration can no longer be used. Enter the key again.'),
+    ).toBeVisible();
+  });
+
+  it('forces reconfiguration after an AI call discovers a rotated encryption secret', async () => {
+    const api: ProviderConfigClient = {
+      deleteConfig: vi.fn(),
+      getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
+        ok: true,
+        value: {
+          configured: true,
+          keyHint: '••••••••',
+          lastUsedAt: '2026-08-29T00:00:00.000Z',
+          models: {
+            fast: 'step-3.7-flash',
+            grill: 'step-3.7-flash',
+            report: 'step-3.7-flash',
+          },
+          provider: 'STEPFUN',
+          state: 'AVAILABLE',
+        },
+      }),
+      saveConfig: vi.fn(),
+      testConnection: vi.fn(),
+    };
+
+    renderPanel(api, 'PROVIDER_CONFIG_INVALID');
 
     expect(await screen.findByLabelText('API key')).toBeVisible();
     expect(

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
-import { providerPresets } from '../provider-config';
+import { providerPresets } from '../provider-config/server';
 import { ProviderGatewayError, runStructuredProviderCall } from './provider-adapter';
 
 const outputSchema = z.object({ status: z.literal('ok') }).strict();
@@ -84,7 +84,6 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     [401, 'PROVIDER_AUTH_FAILED'],
     [403, 'PROVIDER_AUTH_FAILED'],
     [400, 'OUTPUT_INVALID'],
-    [404, 'PROVIDER_MODEL_NOT_FOUND'],
     [429, 'PROVIDER_RATE_LIMITED'],
     [503, 'PROVIDER_UNAVAILABLE'],
   ] as const)('normalizes HTTP %s without raw provider detail', async (status, code) => {
@@ -115,6 +114,23 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       consoleError.mockRestore();
       stderrWrite.mockRestore();
     }
+  });
+
+  it('classifies HTTP 404 as a missing model only for the verified StepFun endpoint', async () => {
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch: () => Promise.resolve(new Response(null, { status: 404 })),
+        prompt: 'Return status=ok.',
+        role: 'fast',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).rejects.toEqual(
+      new ProviderGatewayError(
+        provider === 'STEPFUN' ? 'PROVIDER_MODEL_NOT_FOUND' : 'OUTPUT_INVALID',
+      ),
+    );
   });
 
   it('recognizes only the verified SiliconFlow missing-model code on HTTP 400', async () => {

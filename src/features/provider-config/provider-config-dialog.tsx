@@ -15,6 +15,7 @@ interface ProviderConfigDialogProps {
   onClose: () => void;
   onConfigured?: (summary: ProviderConfigSummary) => void;
   open: boolean;
+  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID';
 }
 
 export function ProviderConfigDialog({
@@ -23,6 +24,7 @@ export function ProviderConfigDialog({
   onClose,
   onConfigured,
   open,
+  reconfigurationErrorCode,
 }: ProviderConfigDialogProps) {
   const t = useTranslations('providerConfig');
 
@@ -43,7 +45,12 @@ export function ProviderConfigDialog({
       <Typography.Paragraph className={styles.dialogIntro}>
         {t('dialog.description')}
       </Typography.Paragraph>
-      <ProviderConfigPanel api={api} compact onConfigured={onConfigured} />
+      <ProviderConfigPanel
+        api={api}
+        compact
+        onConfigured={onConfigured}
+        reconfigurationErrorCode={reconfigurationErrorCode}
+      />
     </Modal>
   );
 }

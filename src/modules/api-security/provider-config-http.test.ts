@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import type { ProviderConfigStore } from '../provider-config/server';
+import {
+  createProviderSessionId,
+  providerSessionCookieName,
+  type ProviderConfigStore,
+} from '../provider-config/server';
 import {
   ApiSecurityError,
   assertSameOrigin,
@@ -86,7 +90,7 @@ describe('provider configuration HTTP security', () => {
       get: () => Promise.resolve(null),
       has: () => Promise.resolve(false),
       set: () => Promise.resolve(),
-      touch: () => Promise.resolve(false),
+      touch: () => Promise.resolve(null),
     } as ProviderConfigStore;
     const request = new Request('https://convergene.example/api/provider-config', {
       headers: { 'x-forwarded-for': '203.0.113.10' },
@@ -113,7 +117,7 @@ describe('provider configuration HTTP security', () => {
       get: () => Promise.resolve(null),
       has: () => Promise.resolve(false),
       set: () => Promise.resolve(),
-      touch: () => Promise.resolve(false),
+      touch: () => Promise.resolve(null),
     } as ProviderConfigStore;
 
     for (const sessionId of ['A'.repeat(43), 'B'.repeat(43)]) {
@@ -132,6 +136,26 @@ describe('provider configuration HTTP security', () => {
     expect(receivedKeys[0]).toBe(receivedKeys[1]);
   });
 
+  it('rejects duplicate session cookies before choosing a rate-limit scope', async () => {
+    const sessionId = createProviderSessionId();
+    const store = {
+      consumeRateLimit: vi.fn(),
+      has: vi.fn(),
+    } as unknown as ProviderConfigStore;
+    const request = new Request('https://convergene.example/api/provider-config/status', {
+      headers: {
+        cookie: `${providerSessionCookieName}=${sessionId}; ${providerSessionCookieName}=${createProviderSessionId()}`,
+        'x-forwarded-for': '203.0.113.10',
+      },
+    });
+
+    await expect(enforceProviderConfigRateLimit(request, store)).rejects.toMatchObject({
+      code: 'INPUT_INVALID',
+    });
+    expect(store.has).not.toHaveBeenCalled();
+    expect(store.consumeRateLimit).not.toHaveBeenCalled();
+  });
+
   it('distinguishes rate-store failure from a consumed limit', async () => {
     const store = {
       consumeRateLimit: () => Promise.reject(new Error('raw Redis failure')),
@@ -139,7 +163,7 @@ describe('provider configuration HTTP security', () => {
       get: () => Promise.resolve(null),
       has: () => Promise.resolve(false),
       set: () => Promise.resolve(),
-      touch: () => Promise.resolve(false),
+      touch: () => Promise.resolve(null),
     } as ProviderConfigStore;
 
     await expect(

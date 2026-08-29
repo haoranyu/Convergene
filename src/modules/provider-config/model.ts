@@ -24,6 +24,19 @@ export const providerModelMappingSchema = z
 
 export type ProviderModelMapping = z.infer<typeof providerModelMappingSchema>;
 
+export const providerModelPresets = {
+  SILICONFLOW: {
+    fast: 'deepseek-ai/DeepSeek-V4-Flash',
+    grill: 'deepseek-ai/DeepSeek-V4-Flash',
+    report: 'deepseek-ai/DeepSeek-V4-Flash',
+  },
+  STEPFUN: {
+    fast: 'step-3.7-flash',
+    grill: 'step-3.7-flash',
+    report: 'step-3.7-flash',
+  },
+} as const satisfies Record<ProviderId, ProviderModelMapping>;
+
 export type ProviderConfigSummary =
   | {
       configured: false;

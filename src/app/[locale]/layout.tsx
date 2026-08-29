@@ -2,6 +2,7 @@ import '@arco-design/web-react/dist/css/arco.css';
 import '../globals.css';
 
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -25,6 +26,7 @@ interface LocaleLayoutProps {
 }
 
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+  await connection();
   const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {

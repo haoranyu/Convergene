@@ -15,7 +15,7 @@ return count
 const touchProviderConfigScript = `
 local value = redis.call('GET', KEYS[1])
 if not value then
-  return 0
+  return false
 end
 
 local decoded, record = pcall(cjson.decode, value)
@@ -23,9 +23,11 @@ if not decoded or type(record) ~= 'table' then
   return redis.error_reply('invalid provider configuration')
 end
 
-record.lastUsedAt = ARGV[1]
+if type(record.lastUsedAt) ~= 'string' or ARGV[1] > record.lastUsedAt then
+  record.lastUsedAt = ARGV[1]
+end
 redis.call('SET', KEYS[1], cjson.encode(record), 'EX', ARGV[2], 'XX')
-return 1
+return record.lastUsedAt
 `;
 
 export class UpstashProviderConfigStore implements ProviderConfigStore {
@@ -56,8 +58,8 @@ export class UpstashProviderConfigStore implements ProviderConfigStore {
     await this.redis.set(key, value, { ex: ttlSeconds });
   }
 
-  async touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<boolean> {
-    const script = this.redis.createScript<number>(touchProviderConfigScript);
-    return (await script.exec([key], [lastUsedAt, String(ttlSeconds)])) === 1;
+  async touch(key: string, lastUsedAt: string, ttlSeconds: number): Promise<string | null> {
+    const script = this.redis.createScript<string | null>(touchProviderConfigScript);
+    return script.exec([key], [lastUsedAt, String(ttlSeconds)]);
   }
 }

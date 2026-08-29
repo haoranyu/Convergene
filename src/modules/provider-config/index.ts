@@ -6,9 +6,9 @@ export {
   providerConnectionResultSchema,
   providerIdSchema,
   providerIds,
+  providerModelPresets,
   providerModelMappingSchema,
 } from './model';
-export { providerPresets } from './presets';
 export type {
   ProviderConfigApiResponse,
   ProviderConfigErrorCode,

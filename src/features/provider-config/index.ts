@@ -2,7 +2,7 @@ export { createProviderConfigClient, providerConfigClient } from './api-client';
 export type { ProviderConfigClient } from './api-client';
 export { ProviderConfigDialog } from './provider-config-dialog';
 export {
-  isProviderNotConfigured,
+  providerConfigGateReason,
   ProviderConfigGate,
   type ProviderConfigGateController,
 } from './provider-config-gate';

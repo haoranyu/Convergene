@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
+import { assertValidEncryptionSecret } from './credential-crypto';
 import type { ProviderConfigApiResponse, ProviderConfigErrorCode } from './model';
 import { ProviderConnectionError, testProviderConnection } from './provider-connection';
 import {
@@ -12,15 +13,42 @@ import {
 import { createProviderConfigService, ProviderConfigServiceError } from './service';
 import { UpstashProviderConfigStore } from './upstash-store';
 
-function requiredEnvironmentVariable(name: string): string {
-  const value = process.env[name]?.trim();
+function requiredEnvironmentVariable(
+  environment: Record<string, string | undefined>,
+  name: string,
+): string {
+  const value = environment[name]?.trim();
   if (!value) {
     throw new ProviderConfigServiceError('PROVIDER_CONFIG_UNAVAILABLE');
   }
   return value;
 }
 
+interface ProviderConfigRuntimeEnvironment {
+  encryptionSecret: string;
+  redisToken: string;
+  redisUrl: string;
+}
+
+export function readProviderConfigRuntimeEnvironment(
+  environment: Record<string, string | undefined> = process.env,
+): ProviderConfigRuntimeEnvironment {
+  const encryptionSecret = requiredEnvironmentVariable(environment, 'APP_ENCRYPTION_SECRET');
+  try {
+    assertValidEncryptionSecret(encryptionSecret);
+  } catch {
+    throw new ProviderConfigServiceError('PROVIDER_CONFIG_UNAVAILABLE');
+  }
+
+  return {
+    encryptionSecret,
+    redisToken: requiredEnvironmentVariable(environment, 'UPSTASH_REDIS_REST_TOKEN'),
+    redisUrl: requiredEnvironmentVariable(environment, 'UPSTASH_REDIS_REST_URL'),
+  };
+}
+
 export async function createProviderConfigRuntime() {
+  const environment = readProviderConfigRuntimeEnvironment();
   const cookieStore = await cookies();
   const session: ProviderSessionCookie = {
     clear() {
@@ -36,12 +64,9 @@ export async function createProviderConfigRuntime() {
       cookieStore.set(providerSessionCookieName, sessionId, providerSessionCookieOptions);
     },
   };
-  const store = new UpstashProviderConfigStore(
-    requiredEnvironmentVariable('UPSTASH_REDIS_REST_URL'),
-    requiredEnvironmentVariable('UPSTASH_REDIS_REST_TOKEN'),
-  );
+  const store = new UpstashProviderConfigStore(environment.redisUrl, environment.redisToken);
   const service = createProviderConfigService({
-    encryptionSecret: requiredEnvironmentVariable('APP_ENCRYPTION_SECRET'),
+    encryptionSecret: environment.encryptionSecret,
     session,
     store,
     testConnection: (input, signal) => testProviderConnection({ ...input, abortSignal: signal }),

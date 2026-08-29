@@ -5,8 +5,8 @@ import { APICallError, Output, streamText } from 'ai';
 import type { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
-import { providerPresets } from '../provider-config';
 import type { ProviderModelMapping } from '../provider-config';
+import { providerPresets } from '../provider-config/server';
 
 const defaultTimeoutMs = 15_000;
 const maximumTimeoutMs = 30_000;
@@ -132,7 +132,7 @@ function isKnownMissingModel(
   provider: ProviderId,
   metadata: SafeApiErrorMetadata | undefined,
 ): boolean {
-  if (metadata?.statusCode === 404) {
+  if (provider === 'STEPFUN' && metadata?.statusCode === 404) {
     return true;
   }
 
