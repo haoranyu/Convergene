@@ -8,7 +8,6 @@
 .topNav {
   align-items: center;
   display: flex;
-  justify-content: space-between;
   margin-bottom: clamp(40px, 7vw, 80px);
 }
 
@@ -25,12 +24,6 @@
 
 .backLink:hover {
   background: var(--color-primary-subtle);
-}
-
-.brand {
-  color: var(--color-primary);
-  font-size: 18px;
-  letter-spacing: -0.02em;
 }
 
 .layout {

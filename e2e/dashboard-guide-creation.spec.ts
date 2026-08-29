@@ -182,3 +182,18 @@ test('exports and clears meetings without deleting provider configuration', asyn
   expect(await readMeetings(page)).toEqual([]);
   expect(providerDeleteCalls).toBe(0);
 });
+
+test('keeps the first-use flow operable at a 375px viewport', async ({ page }) => {
+  await mockStatus(page);
+  await page.setViewportSize({ height: 812, width: 375 });
+
+  for (const path of ['/en-US', '/en-US/guide', '/en-US/meetings/new']) {
+    await page.goto(path);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  }
+
+  await expect(page.getByLabel('The original meeting request')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Recommend a meeting script' })).toBeVisible();
+});

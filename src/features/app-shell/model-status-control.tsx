@@ -5,11 +5,12 @@ import { IconCheckCircleFill, IconSafe } from '@arco-design/web-react/icon';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 
-import { providerConfigClient, ProviderConfigGate } from '@/features/provider-config';
 import { Link } from '@/i18n/navigation';
 import type { ProviderConfigSummary } from '@/modules/provider-config';
 
 import styles from './app-shell.module.css';
+import { providerConfigClient } from '../provider-config/api-client';
+import { ProviderConfigGate } from '../provider-config/provider-config-gate';
 
 export function ModelStatusControl() {
   const t = useTranslations('appShell.model');

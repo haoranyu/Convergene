@@ -18,10 +18,11 @@ const localeLabels: Record<AppLocale, string> = {
 };
 
 interface AppHeaderProps {
+  showModelStatus?: boolean;
   title?: string;
 }
 
-export function AppHeader({ title }: AppHeaderProps) {
+export function AppHeader({ showModelStatus = true, title }: AppHeaderProps) {
   const pathname = usePathname();
   const t = useTranslations('appShell');
 
@@ -46,7 +47,7 @@ export function AppHeader({ title }: AppHeaderProps) {
       </div>
       <nav aria-label={t('navigationLabel')} className={styles.headerActions}>
         <LocalDataDrawer />
-        <ModelStatusControl />
+        {showModelStatus ? <ModelStatusControl /> : null}
         <Link aria-label={t('settings')} className={styles.iconLink} href="/settings/model">
           <IconSettings aria-hidden="true" />
         </Link>
