@@ -53,6 +53,14 @@ describe('report polish validation', () => {
         { bullets: [], headingKey: 'retro_actions', paragraphs: ['Agree on criteria'] },
       ],
     },
+    {
+      closingSummary: '',
+      executiveSummary: 'Compare options is the recorded decision.',
+      modeSections: [
+        { bullets: [], headingKey: 'decision_outcomes', paragraphs: ['Compare options'] },
+        { bullets: [], headingKey: 'decision_outcomes', paragraphs: ['Agree on criteria'] },
+      ],
+    },
   ])('rejects invented owners, dates, costs, decisions, or section keys', (candidate) => {
     expect(validateReportPolish(decisionFacts(), candidate)).toBeUndefined();
   });

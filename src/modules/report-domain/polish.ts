@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { reportModeFactKeys, type ReportFacts, type ReportPolishOutput } from './types';
+import {
+  reportModeFactKeys,
+  type ReportFacts,
+  type ReportModeFactKey,
+  type ReportPolishOutput,
+} from './types';
 
 const allHeadingKeys = [...new Set(Object.values(reportModeFactKeys).flat())] as [
   (typeof reportModeFactKeys)[keyof typeof reportModeFactKeys][number],
@@ -39,17 +44,13 @@ function containsKnownValue(text: string, values: readonly string[]): boolean {
 }
 
 function isGrounded(facts: ReportFacts, output: ReportPolishOutput): boolean {
-  const allowedHeadings = new Set(reportModeFactKeys[facts.mode]);
-  const seenHeadings = new Set<string>();
-  if (
-    output.modeSections.some(
-      (section) =>
-        !allowedHeadings.has(section.headingKey as never) ||
-        seenHeadings.has(section.headingKey) ||
-        !seenHeadings.add(section.headingKey),
-    )
-  ) {
-    return false;
+  const allowedHeadings = new Set<ReportModeFactKey>(reportModeFactKeys[facts.mode]);
+  const seenHeadings = new Set<ReportModeFactKey>();
+  for (const section of output.modeSections) {
+    if (seenHeadings.has(section.headingKey) || !allowedHeadings.has(section.headingKey)) {
+      return false;
+    }
+    seenHeadings.add(section.headingKey);
   }
 
   const knownOwners = facts.outcomes.flatMap((outcome) =>

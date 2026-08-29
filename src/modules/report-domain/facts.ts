@@ -17,6 +17,15 @@ function stableUnique(values: readonly string[]): string[] {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
+function isValidTimezone(timezone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date(0));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function outcomesOfKind(
   outcomes: readonly MeetingOutcome[],
   nodeTitles: ReadonlyMap<string, string>,
@@ -104,7 +113,10 @@ export function buildReportFacts(
   ) {
     return failure('INVALID_MEETING_STATE');
   }
-  if (timezone.trim() === '') return failure('INVALID_MEETING');
+  const normalizedTimezone = timezone.trim();
+  if (normalizedTimezone === '' || !isValidTimezone(normalizedTimezone)) {
+    return failure('INVALID_MEETING');
+  }
 
   const economics = calculateMeetingEconomics(
     meeting,
@@ -161,7 +173,7 @@ export function buildReportFacts(
       schedule: {
         actual: { endAt: meeting.endedAt, startAt: meeting.startedAt },
         planned: { endAt: meeting.scheduledEndAt, startAt: meeting.scheduledStartAt },
-        timezone: timezone.trim(),
+        timezone: normalizedTimezone,
       },
       title: meeting.title,
       totalPersonMinutes: economics.value.totalPersonMinutes,

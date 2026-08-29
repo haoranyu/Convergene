@@ -59,4 +59,11 @@ describe('report fact draft', () => {
       ok: false,
     });
   });
+
+  it('rejects an invalid IANA timezone before localized rendering', () => {
+    expect(buildReportFacts(createReportFixture(), 'Mars/Olympus_Mons')).toMatchObject({
+      error: { code: 'INVALID_MEETING' },
+      ok: false,
+    });
+  });
 });
