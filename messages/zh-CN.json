@@ -517,7 +517,7 @@
       "title": "准备会议 · Convergene"
     },
     "modeSelection": {
-      "action": "返回会议创建",
+      "action": "确认并开始拷问",
       "description": "开始拷问前，请先确认 AI 推荐或手动选择的会议剧本。",
       "title": "请先选择会议剧本"
     },

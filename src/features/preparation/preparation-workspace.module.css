@@ -249,17 +249,6 @@
   color: var(--color-primary);
   font-weight: 600;
 }
-.primaryLink {
-  background: var(--color-primary);
-  border-radius: var(--radius-md);
-  color: white;
-  display: inline-flex;
-  font-weight: 650;
-  min-height: 44px;
-  padding: 0 18px;
-  place-items: center;
-  text-decoration: none;
-}
 .successMark {
   background: color-mix(in srgb, var(--color-success) 14%, white);
   border-radius: 999px;

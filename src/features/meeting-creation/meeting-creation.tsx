@@ -13,17 +13,12 @@ import {
   Tag,
   Typography,
 } from '@arco-design/web-react';
-import {
-  IconArrowLeft,
-  IconCheck,
-  IconExperiment,
-  IconRefresh,
-  IconSend,
-} from '@arco-design/web-react/icon';
+import { IconArrowLeft, IconExperiment, IconRefresh, IconSend } from '@arco-design/web-react/icon';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
+import { MeetingModeSelector } from '@/features/meeting-mode-selector';
 import { ProviderConfigGate } from '@/features/provider-config';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
@@ -38,8 +33,6 @@ import { getBrowserMeetingDatabase, MeetingRepository } from '@/modules/meeting-
 import { classifyMeetingClient } from './classify-client';
 import styles from './meeting-creation.module.css';
 import { buildLocalMeetingDraft } from './local-meeting';
-
-const primaryModes = ['DECISION', 'BRAINSTORM', 'RETRO'] as const;
 
 interface CreationFormValues {
   contentLocale: SupportedLocale;
@@ -131,38 +124,11 @@ function RecommendationView({
         )}
       </div>
 
-      <fieldset className={styles.modeFieldset}>
-        <legend>{t('recommendation.chooseMode')}</legend>
-        <div className={styles.modeGrid}>
-          {primaryModes.map((mode) => (
-            <button
-              aria-pressed={selectedMode === mode}
-              className={`${styles.modeCard} ${selectedMode === mode ? styles.modeSelected : ''}`}
-              key={mode}
-              onClick={() => setSelectedMode(mode)}
-              type="button"
-            >
-              <span className={styles.modeCheck} aria-hidden="true">
-                {selectedMode === mode ? <IconCheck /> : null}
-              </span>
-              <strong>{t(`modes.${mode.toLowerCase()}.title`)}</strong>
-              <span>{t(`modes.${mode.toLowerCase()}.description`)}</span>
-            </button>
-          ))}
-        </div>
-        <button
-          aria-pressed={selectedMode === 'GENERAL'}
-          className={`${styles.generalMode} ${selectedMode === 'GENERAL' ? styles.generalSelected : ''}`}
-          onClick={() => setSelectedMode('GENERAL')}
-          type="button"
-        >
-          <span>
-            <strong>{t('modes.general.title')}</strong>
-            <span>{t('modes.general.description')}</span>
-          </span>
-          {selectedMode === 'GENERAL' ? <IconCheck aria-hidden="true" /> : null}
-        </button>
-      </fieldset>
+      <MeetingModeSelector
+        legend={t('recommendation.chooseMode')}
+        onSelect={setSelectedMode}
+        selectedMode={selectedMode}
+      />
 
       <div className={styles.confirmBar}>
         {recommendation ? (

@@ -517,7 +517,7 @@
       "title": "Prepare meeting · Convergene"
     },
     "modeSelection": {
-      "action": "Return to meeting setup",
+      "action": "Confirm and start Grill",
       "description": "Confirm a recommended or manually selected meeting script before the Grill begins.",
       "title": "Choose the meeting script first"
     },
