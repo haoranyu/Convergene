@@ -66,6 +66,15 @@ function buildModeFacts(
         )
         .map((node) => node.title),
     );
+  const parentTitlesOf = (childKind: (typeof aggregate.nodes)[number]['kind']) => {
+    const nodeById = new Map(aggregate.nodes.map((node) => [node.id, node]));
+    return stableUnique(
+      aggregate.edges
+        .filter((edge) => nodeById.get(edge.targetNodeId)?.kind === childKind)
+        .sort((left, right) => left.id.localeCompare(right.id))
+        .map((edge) => nodeById.get(edge.sourceNodeId)?.title ?? ''),
+    );
+  };
   const facts: Record<ReportModeFactKey, string[]> = {
     brainstorm_assumptions: [],
     brainstorm_candidates: [],
@@ -92,14 +101,12 @@ function buildModeFacts(
         nodeTitles,
         'CANDIDATE_IDEA',
       );
-      facts.brainstorm_groups = byKind('TOPIC');
+      facts.brainstorm_groups = parentTitlesOf('IDEA');
       facts.brainstorm_assumptions = stableUnique(aggregate.meeting.brief?.assumptions ?? []);
       break;
     case 'RETRO':
-      facts.retro_differences = byKind('NOTE');
       facts.retro_insights = outcomesOfKind(aggregate.outcomes, nodeTitles, 'INSIGHT');
       facts.retro_actions = outcomesOfKind(aggregate.outcomes, nodeTitles, 'ACTION');
-      facts.retro_causes = byKind('TOPIC');
       break;
     case 'GENERAL':
       break;

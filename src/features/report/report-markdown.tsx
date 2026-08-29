@@ -17,6 +17,15 @@ export function ReportMarkdown({ markdown, renderMermaid }: ReportMarkdownProps)
     <article className={styles.markdown}>
       <ReactMarkdown
         components={{
+          a({ children, href, ...props }) {
+            return href ? (
+              <a href={href} {...props}>
+                {children}
+              </a>
+            ) : (
+              <span>{children}</span>
+            );
+          },
           code({ children, className, ...props }) {
             if (className === 'language-mermaid') {
               return (

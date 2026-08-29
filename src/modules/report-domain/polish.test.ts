@@ -16,13 +16,13 @@ describe('report polish validation', () => {
   it('accepts wording anchored to known outcome facts and allowed mode sections', () => {
     const facts = decisionFacts();
     const candidate = {
-      closingSummary: 'Agree on criteria is the recorded next step.',
-      executiveSummary: 'Compare options is the recorded decision.',
+      closingSummary: 'Agree on criteria',
+      executiveSummary: 'Choose the launch plan',
       modeSections: [
         {
           bullets: ['Compare options'],
           headingKey: 'decision_outcomes',
-          paragraphs: ['Compare options is the recorded decision.'],
+          paragraphs: [],
         },
       ],
     };
@@ -63,6 +63,16 @@ describe('report polish validation', () => {
     },
     {
       closingSummary: '',
+      executiveSummary: 'Compare options produced 300 outcomes.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
+      executiveSummary: 'Compare options cured cancer.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
       executiveSummary: 'The group chose an enterprise rollout.',
       modeSections: [],
     },
@@ -81,7 +91,10 @@ describe('report polish validation', () => {
         { bullets: [], headingKey: 'decision_outcomes', paragraphs: ['Agree on criteria'] },
       ],
     },
-  ])('rejects invented owners, dates, costs, decisions, or section keys', (candidate) => {
-    expect(validateReportPolish(decisionFacts(), candidate)).toBeUndefined();
-  });
+  ])(
+    'rejects any text that is not an exact referenced fact or allowed section value',
+    (candidate) => {
+      expect(validateReportPolish(decisionFacts(), candidate)).toBeUndefined();
+    },
+  );
 });

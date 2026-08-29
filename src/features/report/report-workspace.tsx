@@ -7,7 +7,7 @@ import {
   IconSafe,
 } from '@arco-design/web-react/icon';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { MeetingAggregate } from '@/modules/meeting-db';
 import {
@@ -28,7 +28,7 @@ interface ReportCandidate {
   report: MeetingReport;
 }
 
-export interface ReportWorkspaceProps {
+export interface ReportWorkspaceViewProps {
   aggregate: MeetingAggregate;
   copyMarkdown?: (markdown: string) => Promise<void>;
   downloadMarkdown?: (markdown: string) => void;
@@ -52,14 +52,14 @@ function newerReport(
     : persisted;
 }
 
-export function ReportWorkspace({
+export function ReportWorkspaceView({
   aggregate,
   copyMarkdown = copyReportMarkdown,
   downloadMarkdown = downloadReportMarkdown,
   onGenerate,
   renderMermaid,
   timezone,
-}: ReportWorkspaceProps) {
+}: ReportWorkspaceViewProps) {
   const t = useTranslations('report');
   const meetingT = useTranslations('meeting');
   const format = useFormatter();
@@ -79,6 +79,14 @@ export function ReportWorkspace({
     report: aggregate.meeting.report,
   };
   const current = newerReport(persisted, generated);
+  const activeGeneration = useRef<AbortController | undefined>(undefined);
+
+  useEffect(
+    () => () => {
+      activeGeneration.current?.abort();
+    },
+    [],
+  );
 
   if (!facts.ok) {
     return <Alert content={t('errors.invalidMeeting')} showIcon type="warning" />;
@@ -89,11 +97,15 @@ export function ReportWorkspace({
     current !== undefined && current.report.sourceUpdatedAt !== current.meetingUpdatedAt;
 
   async function handleGenerate() {
+    const controller = new AbortController();
+    activeGeneration.current?.abort();
+    activeGeneration.current = controller;
     setError(undefined);
     setNotice(undefined);
     setPending(true);
     try {
-      const result = await onGenerate(locale);
+      const result = await onGenerate(locale, controller.signal);
+      if (controller.signal.aborted || activeGeneration.current !== controller) return;
       if (!result.ok) {
         setError(current ? 'generationFailed' : 'generationFailedEmpty');
         return;
@@ -101,9 +113,13 @@ export function ReportWorkspace({
       setGenerated(result.value);
       setNotice(result.value.draft.usedFactDraft ? 'factDraft' : 'saved');
     } catch {
+      if (controller.signal.aborted || activeGeneration.current !== controller) return;
       setError(current ? 'generationFailed' : 'generationFailedEmpty');
     } finally {
-      setPending(false);
+      if (activeGeneration.current === controller) {
+        activeGeneration.current = undefined;
+        if (!controller.signal.aborted) setPending(false);
+      }
     }
   }
 

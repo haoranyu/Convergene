@@ -64,9 +64,11 @@ export function createMeetingReportCommand(
   const snapshot = structuredClone(aggregate);
 
   return async (locale, signal) => {
+    signal?.throwIfAborted();
     const facts = buildReportFacts(snapshot, timezone);
     if (!facts.ok) return facts;
     const copy = await loadCopy(locale);
+    signal?.throwIfAborted();
     const generatedAt = now();
     const draft = await generateReportDraft({
       copy,
@@ -76,6 +78,7 @@ export function createMeetingReportCommand(
       requestId: requestId(),
       signal,
     });
+    signal?.throwIfAborted();
     const report: MeetingReport = {
       generatedAt: generatedAt.toISOString(),
       locale,

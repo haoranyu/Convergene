@@ -41,4 +41,20 @@ describe('deterministic report Markdown', () => {
     expect(markdown).not.toContain('## Mode-specific details');
     expect(markdown).toContain('## Meeting outcomes');
   });
+
+  it('preserves a non-calendar due-date note without crashing localized rendering', () => {
+    const aggregate = createReportFixture();
+    aggregate.outcomes = aggregate.outcomes.map((outcome) =>
+      outcome.kind === 'ACTION' ? { ...outcome, dueDate: 'After legal review' } : outcome,
+    );
+
+    const markdown = assembleReportMarkdown(
+      factsFor(aggregate),
+      'en-US',
+      englishReportDocumentCopy,
+      [],
+    );
+
+    expect(markdown).toContain('After legal review');
+  });
 });

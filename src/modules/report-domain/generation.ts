@@ -44,11 +44,12 @@ export async function generateReportDraft({
   requestId,
   signal,
 }: GenerateReportDraftInput): Promise<ReportGenerationDraft> {
+  signal?.throwIfAborted();
   let polished: ReportPolishOutput | undefined;
   let polishFailure: ReportGenerationDraft['polishFailure'];
   if (polish !== undefined) {
     try {
-      const response = await polish(
+      const response: unknown = await polish(
         {
           input: structuredClone(facts),
           outputLocale: locale,
@@ -57,12 +58,20 @@ export async function generateReportDraft({
         },
         signal,
       );
+      signal?.throwIfAborted();
       polished =
-        response.requestId === requestId && response.task === 'report'
+        typeof response === 'object' &&
+        response !== null &&
+        'requestId' in response &&
+        response.requestId === requestId &&
+        'task' in response &&
+        response.task === 'report' &&
+        'output' in response
           ? validateReportPolish(facts, response.output)
           : undefined;
       if (polished === undefined) polishFailure = 'OUTPUT_INVALID';
-    } catch {
+    } catch (error) {
+      if (signal?.aborted) throw error;
       polishFailure = 'TRANSPORT_FAILED';
     }
   }

@@ -13,7 +13,7 @@ import { buildReportFacts } from '@/modules/report-domain';
 
 import type { GeneratedMeetingReport } from './commands';
 import { ReportMarkdown } from './report-markdown';
-import { ReportWorkspace } from './report-workspace';
+import { ReportWorkspaceView as ReportWorkspace } from './report-workspace';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -255,10 +255,15 @@ flowchart LR
   });
 
   it('does not render raw HTML embedded in Markdown', () => {
-    renderEnglish(<ReportMarkdown markdown={'# Safe\n\n<script>alert(1)</script>'} />);
+    renderEnglish(
+      <ReportMarkdown
+        markdown={'# Safe\n\n<script>alert(1)</script>\n\n[unsafe](javascript:alert(1))'}
+      />,
+    );
 
     expect(screen.getByRole('heading', { name: 'Safe' })).toBeVisible();
     expect(document.querySelector('script')).toBeNull();
     expect(screen.queryByText('alert(1)')).not.toBeInTheDocument();
+    expect(screen.getByText('unsafe').closest('a')).toBeNull();
   });
 });

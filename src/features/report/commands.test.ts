@@ -107,4 +107,21 @@ describe('meeting report command', () => {
     expect(aggregate.meeting.contentLocale).toBe('zh-CN');
     expect(aggregate.nodes).toEqual(before.nodes);
   });
+
+  it('does not save a fact draft after the caller cancels generation', async () => {
+    const aggregate = createReportFixture();
+    const saveMeetingReport = vi.fn<ReportRepositoryPort['saveMeetingReport']>();
+    const controller = new AbortController();
+    const command = createMeetingReportCommand({ saveMeetingReport }, aggregate, {
+      loadCopy: async () => englishReportDocumentCopy,
+      polish: async (_request, signal) => {
+        controller.abort();
+        throw signal?.reason ?? new Error('cancelled');
+      },
+      timezone: 'UTC',
+    });
+
+    await expect(command('en-US', controller.signal)).rejects.toBeDefined();
+    expect(saveMeetingReport).not.toHaveBeenCalled();
+  });
 });

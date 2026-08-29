@@ -48,6 +48,15 @@ describe('report fact draft', () => {
     });
   });
 
+  it('does not relabel generic topics or notes as retro evidence', () => {
+    const result = buildReportFacts(createReportFixture({ mode: 'RETRO' }), 'UTC');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.modeFacts.retro_causes).toEqual([]);
+    expect(result.value.modeFacts.retro_differences).toEqual([]);
+  });
+
   it('assigns all effort to unallocated time when no outcome was marked', () => {
     const aggregate = createReportFixture({ outcomes: [] });
     const result = buildReportFacts(aggregate, 'UTC');

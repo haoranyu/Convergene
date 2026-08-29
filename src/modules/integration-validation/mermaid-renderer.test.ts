@@ -101,4 +101,15 @@ describe('Mermaid strict-mode rendering validation', () => {
       renderStrictMermaid('unsafe', 'flowchart LR', '| fallback |', renderer),
     ).resolves.toMatchObject({ errorCode: 'MERMAID_RENDER_FAILED', ok: false });
   });
+
+  it('rejects active event handlers in renderer output', async () => {
+    const renderer = {
+      initialize: vi.fn(),
+      render: vi.fn().mockResolvedValue({ svg: '<svg onload="alert(1)"></svg>' }),
+    };
+
+    await expect(
+      renderStrictMermaid('unsafe-event', 'flowchart LR', '', renderer),
+    ).resolves.toMatchObject({ errorCode: 'MERMAID_RENDER_FAILED', ok: false });
+  });
 });
