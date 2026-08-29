@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-labelledby="title desc">
+  <title id="title">Convergene mark</title>
+  <desc id="desc">Three open paths converge into one amber outcome.</desc>
+  <g fill="none" stroke="#1D4ED8" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75">
+    <path d="M6 5.5h1.5c1.6 0 2.55.75 3.8 1.55L17.5 11"/>
+    <path d="M3.75 12H17.5"/>
+    <path d="M6.75 18.5H8c1.45 0 2.35-.7 3.55-1.45L17.5 13"/>
+  </g>
+  <circle cx="17.5" cy="12" r="2.35" fill="#D97706"/>
+</svg>

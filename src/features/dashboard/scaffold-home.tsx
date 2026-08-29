@@ -3,6 +3,7 @@
 import { Button, Card, Progress, Space, Tag, Typography } from '@arco-design/web-react';
 import { IconSafe, IconSettings } from '@arco-design/web-react/icon';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
 import { ProviderConfigGate } from '@/features/provider-config';
 import { Link, usePathname } from '@/i18n/navigation';
@@ -43,7 +44,18 @@ export function ScaffoldHome({ copy }: ScaffoldHomeProps) {
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
-        <strong className={styles.brand}>Convergene</strong>
+        <strong className={styles.brand}>
+          <Image
+            alt=""
+            aria-hidden="true"
+            className={styles.brandMark}
+            height={24}
+            src="/brand/convergene-mark.svg"
+            unoptimized
+            width={24}
+          />
+          <span>Convergene</span>
+        </strong>
         <div className={styles.headerActions}>
           <Link className={styles.settingsLink} href="/settings/model">
             <IconSettings />

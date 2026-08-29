@@ -13,6 +13,28 @@ import { AppProviders } from '@/ui/app-providers';
 
 export const metadata: Metadata = {
   description: 'A personal meeting copilot for people who would rather leave with an answer.',
+  icons: {
+    apple: [
+      {
+        sizes: '180x180',
+        type: 'image/png',
+        url: '/brand/apple-touch-icon-180.png',
+      },
+    ],
+    icon: [
+      {
+        sizes: '32x32',
+        type: 'image/png',
+        url: '/brand/favicon-32.png',
+      },
+      {
+        sizes: 'any',
+        type: 'image/x-icon',
+        url: '/brand/favicon.ico',
+      },
+    ],
+    shortcut: '/brand/favicon.ico',
+  },
   title: 'Convergene',
 };
 

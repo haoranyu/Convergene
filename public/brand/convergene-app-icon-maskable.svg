@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Convergene maskable app icon</title>
+  <desc id="desc">A white three-path convergence mark inside the maskable safe area on blue.</desc>
+  <rect width="1024" height="1024" fill="#1D4ED8"/>
+  <g transform="translate(176 176) scale(28)">
+    <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75">
+      <path d="M6 5.5h1.5c1.6 0 2.55.75 3.8 1.55L17.5 11"/>
+      <path d="M3.75 12H17.5"/>
+      <path d="M6.75 18.5H8c1.45 0 2.35-.7 3.55-1.45L17.5 13"/>
+    </g>
+    <circle cx="17.5" cy="12" r="2.35" fill="#FFFFFF"/>
+  </g>
+</svg>
