@@ -11,13 +11,6 @@ export function meetingCardTimingKey(meeting: Meeting, now: Date): string {
   return deriveTimingState(meeting, now).toLowerCase();
 }
 
-export function meetingCardHref(meeting: Meeting): string {
-  const path = `/meetings/${meeting.id}`;
-  return meeting.status === 'PREPARING' && meeting.preparationStage !== 'MAP_READY'
-    ? `${path}/prepare`
-    : path;
-}
-
 const groupOrder: MeetingGroupId[] = ['active', 'waiting', 'preparing', 'ended'];
 
 export function groupMeetings(meetings: readonly Meeting[], now: Date): MeetingGroup[] {

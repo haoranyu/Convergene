@@ -26,6 +26,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
+import { meetingHref } from '@/features/meeting-navigation';
 import { Link } from '@/i18n/navigation';
 import {
   calculateMeetingEconomics,
@@ -40,12 +41,7 @@ import {
 } from '@/modules/meeting-db/client';
 
 import styles from './dashboard-home.module.css';
-import {
-  groupMeetings,
-  meetingCardHref,
-  meetingCardTimingKey,
-  staleLiveMeetings,
-} from './meeting-groups';
+import { groupMeetings, meetingCardTimingKey, staleLiveMeetings } from './meeting-groups';
 
 const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = {
   BRAINSTORM: 'purple',
@@ -114,7 +110,7 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
           />
         </Popconfirm>
       </div>
-      <Link className={styles.cardLink} href={meetingCardHref(meeting)}>
+      <Link className={styles.cardLink} href={meetingHref(meeting)}>
         <Typography.Title className={styles.cardTitle} heading={5}>
           {meeting.title}
         </Typography.Title>

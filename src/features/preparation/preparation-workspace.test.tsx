@@ -54,6 +54,7 @@ let databaseName: string;
 
 afterEach(async () => {
   cleanup();
+  vi.restoreAllMocks();
   database.close();
   await Dexie.delete(databaseName);
 });
@@ -123,6 +124,14 @@ describe('PreparationWorkspace', () => {
         name: 'Choose the meeting script first',
       }),
     ).toBeVisible();
+    expect(
+      screen.getByText('Surface alternatives, criteria, risks, and the person who owns the call.'),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        'A low-key fallback when the request does not fit the three focused scripts.',
+      ),
+    ).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'Align on a decision' }));
     await user.click(screen.getByRole('button', { name: 'Confirm and start Grill' }));
 
@@ -138,6 +147,53 @@ describe('PreparationWorkspace', () => {
         },
       });
     });
+  });
+
+  it('clears the prior mode selection when preparation restarts', async () => {
+    databaseName = `preparation-ui-${crypto.randomUUID()}`;
+    database = new MeetingDatabase(databaseName);
+    const repository = new MeetingRepository(database);
+    const createdAt = new Date(Date.now() - 1_000).toISOString();
+    const created = await repository.createMeeting(
+      createMeeting({ createdAt, updatedAt: createdAt }),
+    );
+    if (!created.ok) throw new Error(created.error.code);
+
+    const client: PreparationAIClient = {
+      grill: vi.fn().mockResolvedValue({
+        ...grillOutputFixtures.DECISION,
+        question: undefined,
+        reason: undefined,
+        shouldAsk: false,
+        suggestedBrief: briefDraft,
+      }),
+      initialMap: vi.fn(),
+    };
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup();
+    renderWorkspace(client);
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Align on a decision',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Confirm and start Grill' }));
+    expect(await screen.findByRole('heading', { level: 2, name: 'Meeting Brief' })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Prepare again' }));
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Choose the meeting script first',
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Align on a decision' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.getByRole('button', { name: 'Confirm and start Grill' })).toBeDisabled();
   });
 
   it('shows one current question and persists its answer before requesting the next', async () => {

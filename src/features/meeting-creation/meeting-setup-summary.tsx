@@ -15,6 +15,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
+import { meetingHref } from '@/features/meeting-navigation';
 import { PersistedMeetingCanvas } from '@/features/meeting-room';
 import { Link, useRouter } from '@/i18n/navigation';
 import type { Meeting } from '@/modules/meeting-domain';
@@ -48,14 +49,14 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
     [meetingId, reloadToken],
   );
 
-  const shouldResumePreparation =
-    meeting?.status === 'PREPARING' && meeting.preparationStage !== 'MAP_READY';
+  const meetingDestination = meeting ? meetingHref(meeting) : undefined;
+  const shouldResumePreparation = meetingDestination === `/meetings/${meetingId}/prepare`;
 
   useEffect(() => {
-    if (!loading && !error && shouldResumePreparation) {
-      router.replace(`/meetings/${meetingId}/prepare`);
+    if (!loading && !error && shouldResumePreparation && meetingDestination) {
+      router.replace(meetingDestination);
     }
-  }, [error, loading, meetingId, router, shouldResumePreparation]);
+  }, [error, loading, meetingDestination, router, shouldResumePreparation]);
 
   if (!loading && !error && meeting?.preparationStage === 'MAP_READY') {
     return (
@@ -66,7 +67,7 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
     );
   }
 
-  if (!loading && !error && shouldResumePreparation) {
+  if (!loading && !error && meeting && shouldResumePreparation) {
     return (
       <>
         <AppHeader title={meeting.title} />

@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AppHeader } from '@/features/app-shell';
+import { MeetingModeSelector } from '@/features/meeting-mode-selector';
 import { Link } from '@/i18n/navigation';
 import {
   MeetingDatabase,
@@ -14,7 +15,6 @@ import {
 } from '@/modules/meeting-db';
 import {
   confirmMeetingMode,
-  meetingModes,
   type GrillTurn,
   type MeetingBriefDraft,
   type MeetingMode,
@@ -247,20 +247,12 @@ function PreparationWorkspaceBody({
           {errorAlert}
           <Typography.Title heading={2}>{t('modeSelection.title')}</Typography.Title>
           <Typography.Paragraph>{t('modeSelection.description')}</Typography.Paragraph>
-          <fieldset className={styles.modeFieldset} disabled={busy}>
-            <legend className={styles.srOnly}>{t('modeSelection.title')}</legend>
-            {meetingModes.map((mode) => (
-              <button
-                aria-pressed={selectedMode === mode}
-                className={styles.modeButton}
-                key={mode}
-                onClick={() => setSelectedMode(mode)}
-                type="button"
-              >
-                {t(`modes.${mode}`)}
-              </button>
-            ))}
-          </fieldset>
+          <MeetingModeSelector
+            disabled={busy}
+            legend={t('modeSelection.title')}
+            onSelect={setSelectedMode}
+            selectedMode={selectedMode}
+          />
           <Button
             disabled={selectedMode === undefined || busy}
             loading={operation === 'SELECT_MODE'}
@@ -345,7 +337,10 @@ function PreparationWorkspaceBody({
     }
     await perform('ROLLBACK', async () => {
       if (kind === 'GRILL') await returnToGrill(currentMeeting, repository);
-      else await returnToModeSelection(currentMeeting, repository);
+      else {
+        await returnToModeSelection(currentMeeting, repository);
+        setSelectedMode(undefined);
+      }
     });
   }
 
