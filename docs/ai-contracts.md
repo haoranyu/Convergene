@@ -152,6 +152,7 @@ interface GrillInput {
   mode: MeetingMode
   rawRequest: string
   turnIndex: number
+  finishRequested?: true
   history: Array<{
     question: string
     answer?: string
@@ -168,6 +169,8 @@ interface GrillInput {
 ```
 
 客户端决定 `phase` 和是否允许下一轮；模型不能自行突破 10 轮上限。
+`finishRequested` 只表示用户明确要求结束 Grill；此时模型必须直接返回
+`shouldAsk = false` 和 `suggestedBrief`，即使准备度仍为 `INSUFFICIENT`。
 
 ### 输出
 
