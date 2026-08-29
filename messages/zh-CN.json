@@ -490,6 +490,7 @@
     "grill": {
       "answerLabel": "你的回答",
       "answerPlaceholder": "尽量具体，也可以使用下面的快捷操作。",
+      "choiceLabel": "请选择一个答案",
       "critical": "临门一问",
       "defaultComplete": "默认拷问已完成",
       "defaultCompleteDescription": "现在可以生成 Brief，也可以再主动增加一轮；总轮次不会超过 10。",
@@ -500,9 +501,11 @@
       },
       "history": "过往回答（{count}）",
       "nextQuestion": "正在准备下一问…",
+      "otherAnswer": "没有合适的选项，改为作答",
       "resumeDescription": "已有回答都已保存；模型连接可用后即可继续。",
       "resumeTitle": "可以继续下一问",
       "round": "第 {current} 轮 · 最多 10 轮",
+      "useChoices": "改回选择选项",
       "why": "为什么问：{reason}"
     },
     "loading": "正在恢复本机会前准备…",

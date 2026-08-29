@@ -146,6 +146,8 @@ export function projectGrillTurn(record: GrillTurn): GrillTurn {
     },
     meetingId: record.meetingId,
     phase: record.phase,
+    questionType: record.questionType ?? 'FREE_TEXT',
+    options: record.options?.map((option) => ({ ...option })),
     question: record.question,
     readiness: {
       dimensions: record.readiness.dimensions.map((dimension) => ({ ...dimension })),

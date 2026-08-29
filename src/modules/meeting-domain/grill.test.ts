@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { readinessDimensions } from '@/fixtures/preparation';
 
-import { answerGrillTurn, nextGrillPhase, validateGrillHistory } from './grill';
+import { answerGrillTurn, nextGrillPhase, validateGrillHistory, validateGrillTurn } from './grill';
 import type { GrillTurn } from './model';
 
 function turn(index: number, overrides: Partial<GrillTurn> = {}): GrillTurn {
@@ -30,6 +30,49 @@ describe('Grill policy', () => {
     });
     if (!completed.ok) return;
     expect(validateGrillHistory([completed.value], 'DECISION').ok).toBe(true);
+  });
+
+  it('accepts a single-choice question and keeps its options after answering', () => {
+    const pending = turn(0, {
+      disposition: 'PENDING',
+      options: [
+        { label: 'One named decision maker', value: 'named_decision_maker' },
+        { label: 'The group decides by consensus', value: 'group_consensus' },
+      ],
+      questionType: 'SINGLE_CHOICE',
+    });
+    const completed = answerGrillTurn(pending, 'DECISION', 'ANSWERED', 'One named decision maker');
+
+    expect(completed).toMatchObject({
+      ok: true,
+      value: {
+        answer: 'One named decision maker',
+        options: pending.options,
+        questionType: 'SINGLE_CHOICE',
+      },
+    });
+  });
+
+  it.each([
+    {
+      options: [
+        { label: 'Duplicate one', value: 'one' },
+        { label: 'Duplicate one', value: 'two' },
+      ],
+    },
+    {
+      options: [
+        { label: 'One', value: 'same' },
+        { label: 'Two', value: 'same' },
+      ],
+    },
+  ])('rejects duplicate single-choice options', ({ options }) => {
+    expect(
+      validateGrillTurn(
+        turn(0, { disposition: 'PENDING', options, questionType: 'SINGLE_CHOICE' }),
+        'DECISION',
+      ).ok,
+    ).toBe(false);
   });
 
   it('rejects gaps, a non-final pending question, and an eleventh turn', () => {

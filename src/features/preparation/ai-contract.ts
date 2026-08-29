@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  grillQuestionTypes,
   meetingModes,
   modeReadinessDimensionKeys,
   readinessLevels,
@@ -38,6 +39,34 @@ export const initialMapMaximumRequestBodyBytes = 262_144;
 
 export const grillHistoryDispositionSchema = z.enum(['ANSWERED', 'UNKNOWN', 'SKIPPED']);
 export const grillPhaseSchema = z.enum(['DEFAULT', 'CRITICAL_EXTRA', 'USER_EXTENDED']);
+export const grillQuestionTypeSchema = z.enum(grillQuestionTypes);
+
+const grillQuestionOptionValueSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/);
+
+export const grillQuestionOptionSchema = z
+  .object({
+    label: boundedText(240),
+    value: grillQuestionOptionValueSchema,
+  })
+  .strict();
+
+export const grillQuestionOptionsSchema = z
+  .array(grillQuestionOptionSchema)
+  .min(2)
+  .max(6)
+  .superRefine((options, context) => {
+    if (new Set(options.map(({ label }) => label)).size !== options.length) {
+      context.addIssue({ code: 'custom', message: 'question option labels must be unique' });
+    }
+    if (new Set(options.map(({ value }) => value)).size !== options.length) {
+      context.addIssue({ code: 'custom', message: 'question option values must be unique' });
+    }
+  });
 
 export const grillKnownStateSchema = z
   .object({
@@ -84,12 +113,20 @@ const grillHistoryItemSchema = z
   .object({
     answer: z.string().trim().min(1).max(4_000).optional(),
     disposition: grillHistoryDispositionSchema,
+    options: grillQuestionOptionsSchema.optional(),
     question: boundedText(600),
+    questionType: grillQuestionTypeSchema.optional(),
   })
   .strict()
   .superRefine((item, context) => {
     if ((item.disposition === 'ANSWERED') !== (item.answer !== undefined)) {
       context.addIssue({ code: 'custom', message: 'ANSWERED must include one answer' });
+    }
+    if (item.questionType === 'SINGLE_CHOICE' && item.options === undefined) {
+      context.addIssue({ code: 'custom', message: 'single-choice history must include options' });
+    }
+    if (item.questionType === 'FREE_TEXT' && item.options !== undefined) {
+      context.addIssue({ code: 'custom', message: 'free-text history cannot include options' });
     }
   });
 
@@ -147,7 +184,9 @@ const suggestedBriefSchema = z
 export const grillOutputSchema = z
   .object({
     criticalExtraReason: z.string().trim().min(1).max(600).optional(),
+    options: grillQuestionOptionsSchema.optional(),
     question: z.string().trim().min(1).max(600).optional(),
+    questionType: grillQuestionTypeSchema.optional(),
     readiness: readinessSchema,
     reason: z.string().trim().min(1).max(600).optional(),
     shouldAsk: z.boolean(),
@@ -160,6 +199,16 @@ export const grillOutputSchema = z
       if (output.question === undefined || output.reason === undefined) {
         context.addIssue({ code: 'custom', message: 'a question must include its reason' });
       }
+      if (output.questionType === undefined) {
+        context.addIssue({ code: 'custom', message: 'a question must include its type' });
+      } else if (output.questionType === 'SINGLE_CHOICE' && output.options === undefined) {
+        context.addIssue({
+          code: 'custom',
+          message: 'single-choice question must include options',
+        });
+      } else if (output.questionType === 'FREE_TEXT' && output.options !== undefined) {
+        context.addIssue({ code: 'custom', message: 'free-text question cannot include options' });
+      }
       if (output.suggestedBrief !== undefined) {
         context.addIssue({ code: 'custom', message: 'asking output cannot include a Brief' });
       }
@@ -170,6 +219,12 @@ export const grillOutputSchema = z
     }
     if (output.question !== undefined || output.reason !== undefined) {
       context.addIssue({ code: 'custom', message: 'completed Grill cannot include a question' });
+    }
+    if (output.questionType !== undefined || output.options !== undefined) {
+      context.addIssue({
+        code: 'custom',
+        message: 'completed Grill cannot include question controls',
+      });
     }
   });
 
@@ -191,7 +246,9 @@ const providerReadinessSchema = z
 export const providerGrillOutputSchema = z
   .object({
     criticalExtraReason: z.string().trim().min(1).max(600).nullish(),
+    options: grillQuestionOptionsSchema.nullish(),
     question: z.string().trim().min(1).max(600).nullish(),
+    questionType: grillQuestionTypeSchema.nullish(),
     readiness: providerReadinessSchema,
     reason: z.string().trim().min(1).max(600).nullish(),
     shouldAsk: z.boolean(),
@@ -206,7 +263,9 @@ export function parseProviderGrillOutput(value: unknown): GrillOutput {
     ...(output.criticalExtraReason == null
       ? {}
       : { criticalExtraReason: output.criticalExtraReason }),
+    ...(output.options == null ? {} : { options: output.options }),
     ...(output.question == null ? {} : { question: output.question }),
+    ...(output.questionType == null ? {} : { questionType: output.questionType }),
     readiness: {
       dimensions: output.readiness.dimensions.map(({ key, status, summary }) => ({
         key,

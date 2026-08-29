@@ -3,6 +3,8 @@ import { isCanonicalUtcTimestamp, type Result } from '@/modules/shared';
 import type {
   GrillKnownState,
   GrillPhase,
+  GrillQuestionOption,
+  GrillQuestionType,
   GrillTurn,
   GrillTurnDisposition,
   MeetingMode,
@@ -26,6 +28,8 @@ export const modeReadinessDimensionKeys = {
 } as const satisfies Record<MeetingMode, readonly string[]>;
 
 export type GrillPolicyErrorCode = 'GRILL_LIMIT_REACHED' | 'INVALID_GRILL_TURN';
+
+const grillQuestionOptionValuePattern = /^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/;
 
 function failure(code: GrillPolicyErrorCode): Result<never, GrillPolicyErrorCode> {
   return { error: { code }, ok: false };
@@ -92,6 +96,24 @@ function validReadinessDimensions(
   return keys.length === expected.size && keys.every((key) => expected.has(key));
 }
 
+function validQuestionOptions(options: readonly GrillQuestionOption[] | undefined): boolean {
+  return (
+    options !== undefined &&
+    options.length >= 2 &&
+    options.length <= 6 &&
+    options.every(
+      ({ label, value }) =>
+        typeof label === 'string' &&
+        nonEmptyString(label) &&
+        label.length <= 240 &&
+        typeof value === 'string' &&
+        grillQuestionOptionValuePattern.test(value),
+    ) &&
+    new Set(options.map(({ label }) => label)).size === options.length &&
+    new Set(options.map(({ value }) => value)).size === options.length
+  );
+}
+
 export function validateGrillTurn(
   turn: GrillTurn,
   mode: MeetingMode,
@@ -102,6 +124,7 @@ export function validateGrillTurn(
     USER_EXTENDED: [5, 9],
   };
   const bounds = phaseBounds[turn.phase];
+  const questionType: GrillQuestionType = turn.questionType ?? 'FREE_TEXT';
 
   if (
     typeof turn.id !== 'string' ||
@@ -114,6 +137,10 @@ export function validateGrillTurn(
     turn.index > bounds[1] ||
     !nonEmptyString(turn.question) ||
     turn.question.length > 600 ||
+    (questionType !== 'SINGLE_CHOICE' && questionType !== 'FREE_TEXT') ||
+    (questionType === 'SINGLE_CHOICE'
+      ? !validQuestionOptions(turn.options)
+      : turn.options !== undefined) ||
     !isCanonicalUtcTimestamp(turn.createdAt) ||
     (turn.reason !== undefined && (!nonEmptyString(turn.reason) || turn.reason.length > 600)) ||
     !validKnownState(turn.knownState) ||
@@ -169,7 +196,12 @@ export function answerGrillTurn(
   answer?: string,
 ): Result<GrillTurn, GrillPolicyErrorCode> {
   if (turn.disposition !== 'PENDING') return failure('INVALID_GRILL_TURN');
-  const completed = { ...turn, answer, disposition };
+  const completed = {
+    ...turn,
+    answer,
+    disposition,
+    questionType: turn.questionType ?? 'FREE_TEXT',
+  };
   return validateGrillTurn(completed, mode);
 }
 

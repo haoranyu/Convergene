@@ -44,7 +44,13 @@ async function seedPendingGrill(page: Page) {
             knownState: { assumptions: [], confirmed: [], unknowns: ['decision owner'] },
             meetingId: 'meeting-1',
             phase: 'DEFAULT',
+            options: [
+              { label: 'One named decision maker', value: 'named_decision_maker' },
+              { label: 'The group decides by consensus', value: 'group_consensus' },
+              { label: 'No decision owner yet', value: 'not_decided' },
+            ],
             question: 'Who owns the final decision?',
+            questionType: 'SINGLE_CHOICE',
             readiness: {
               dimensions: readinessKeys.map((key) => ({
                 key,
@@ -208,8 +214,15 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
     page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
   ).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Meeting readiness' })).toBeVisible();
-  await expect(page.getByLabel('Your answer')).toBeVisible();
+  await expect(page.getByText('Choose one answer')).toBeVisible();
+  const selectedOption = page.getByRole('radio', { name: 'One named decision maker' });
+  await expect(page.getByText('One named decision maker', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Submit answer' })).toBeDisabled();
+  await page.getByText('One named decision maker', { exact: true }).click();
+  await expect(selectedOption).toBeChecked();
+  await expect(page.getByRole('button', { name: 'Submit answer' })).toBeEnabled();
+  await page.getByRole('button', { name: 'None of these — write another answer' }).click();
+  await expect(page.getByLabel('Your answer')).toBeVisible();
   await expect(page.locator('img[src="/brand/convergene-mark.svg"]')).toHaveAttribute('alt', '');
   expect(await page.locator('h1').count()).toBe(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(

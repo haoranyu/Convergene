@@ -4,6 +4,7 @@ import {
   type MeetingBriefSnapshot,
   type MeetingMode,
   type ReadinessDimension,
+  type GrillQuestionOption,
   type SupportedLocale,
 } from '@/modules/meeting-domain';
 import { graphemeCount, maximumNodeTitleGraphemes } from '@/modules/mind-map-domain';
@@ -24,6 +25,8 @@ export type GrillOutputBranch = (typeof grillOutputBranches)[number];
 interface GrillCopy {
   checklist: [string, string];
   criticalReason: string;
+  decisionOwnerOptions: GrillQuestionOption[];
+  decisionOwnerQuestion: string;
   desiredOutcome: Record<MeetingMode, string>;
   openingLine: string;
   question: Record<MeetingMode, string>;
@@ -35,6 +38,12 @@ const grillCopy: Record<SupportedLocale, GrillCopy> = {
   'en-US': {
     checklist: ['Confirm the result', 'Name the next step'],
     criticalReason: 'This final gap could prevent the meeting from reaching a usable result.',
+    decisionOwnerOptions: [
+      { label: 'One named decision maker', value: 'named_decision_maker' },
+      { label: 'The group decides by consensus', value: 'group_consensus' },
+      { label: 'No decision owner yet', value: 'not_decided' },
+    ],
+    decisionOwnerQuestion: 'Who owns the final decision?',
     desiredOutcome: {
       BRAINSTORM: 'Select ideas that are ready for a concrete test.',
       DECISION: 'Reach a clear decision and name the next step.',
@@ -54,6 +63,12 @@ const grillCopy: Record<SupportedLocale, GrillCopy> = {
   'zh-CN': {
     checklist: ['确认会议结果', '明确下一步行动'],
     criticalReason: '这个最后的缺口可能导致会议无法产出可用结果。',
+    decisionOwnerOptions: [
+      { label: '由一位明确的负责人拍板', value: 'named_decision_maker' },
+      { label: '由团队共识决定', value: 'group_consensus' },
+      { label: '还没有确定负责人', value: 'not_decided' },
+    ],
+    decisionOwnerQuestion: '谁负责做出最终决策？',
     desiredOutcome: {
       BRAINSTORM: '选出可以进入具体测试的想法。',
       DECISION: '形成明确决策并确定下一步行动。',
@@ -73,6 +88,12 @@ const grillCopy: Record<SupportedLocale, GrillCopy> = {
   'zh-TW': {
     checklist: ['確認會議結果', '明確下一步行動'],
     criticalReason: '這個最後缺口可能讓會議無法產出可用結果。',
+    decisionOwnerOptions: [
+      { label: '由一位明確的負責人拍板', value: 'named_decision_maker' },
+      { label: '由團隊共識決定', value: 'group_consensus' },
+      { label: '還沒有確定負責人', value: 'not_decided' },
+    ],
+    decisionOwnerQuestion: '誰負責做出最終決策？',
     desiredOutcome: {
       BRAINSTORM: '選出可以進入具體測試的想法。',
       DECISION: '形成明確決策並確認下一步行動。',
@@ -362,29 +383,61 @@ function fallbackKnownState(input: GrillInput): GrillInput['knownState'] {
   return state;
 }
 
-function fallbackQuestion(input: GrillInput, outputLocale: SupportedLocale): string {
+function fallbackQuestion(
+  input: GrillInput,
+  outputLocale: SupportedLocale,
+): {
+  question: string;
+  questionType: 'SINGLE_CHOICE' | 'FREE_TEXT';
+  options?: GrillQuestionOption[];
+} {
   const copy = grillCopy[outputLocale];
   if (input.turnIndex === 0 && input.requestedDimension === undefined) {
-    return copy.question[input.mode];
+    if (input.mode === 'DECISION') {
+      return {
+        options: copy.decisionOwnerOptions,
+        question: copy.decisionOwnerQuestion,
+        questionType: 'SINGLE_CHOICE',
+      };
+    }
+    return { question: copy.question[input.mode], questionType: 'FREE_TEXT' };
   }
   const round = input.turnIndex + 1;
   if (input.requestedDimension !== undefined) {
     const dimension = input.requestedDimension.replaceAll('_', ' ');
     if (outputLocale === 'en-US') {
-      return `What should we confirm next about ${dimension}? (round ${round})`;
+      return {
+        question: `What should we confirm next about ${dimension}? (round ${round})`,
+        questionType: 'FREE_TEXT',
+      };
     }
     if (outputLocale === 'zh-CN') {
-      return `关于“${dimension}”，下一步最需要确认什么？（第 ${round} 轮）`;
+      return {
+        question: `关于“${dimension}”，下一步最需要确认什么？（第 ${round} 轮）`,
+        questionType: 'FREE_TEXT',
+      };
     }
-    return `關於「${dimension}」，下一步最需要確認什麼？（第 ${round} 輪）`;
+    return {
+      question: `關於「${dimension}」，下一步最需要確認什麼？（第 ${round} 輪）`,
+      questionType: 'FREE_TEXT',
+    };
   }
   if (outputLocale === 'en-US') {
-    return `What is the most important remaining detail to confirm? (round ${round})`;
+    return {
+      question: `What is the most important remaining detail to confirm? (round ${round})`,
+      questionType: 'FREE_TEXT',
+    };
   }
   if (outputLocale === 'zh-CN') {
-    return `下一步最需要确认的细节是什么？（第 ${round} 轮）`;
+    return {
+      question: `下一步最需要确认的细节是什么？（第 ${round} 轮）`,
+      questionType: 'FREE_TEXT',
+    };
   }
-  return `下一步最需要確認的細節是什麼？（第 ${round} 輪）`;
+  return {
+    question: `下一步最需要確認的細節是什麼？（第 ${round} 輪）`,
+    questionType: 'FREE_TEXT',
+  };
 }
 
 export function createDeterministicGrillFallback(
@@ -401,7 +454,7 @@ export function createDeterministicGrillFallback(
   if (!complete) {
     return parseGrillOutput(input, {
       ...(input.phase === 'CRITICAL_EXTRA' ? { criticalExtraReason: copy.criticalReason } : {}),
-      question: fallbackQuestion(input, outputLocale),
+      ...fallbackQuestion(input, outputLocale),
       readiness,
       reason: copy.reason,
       shouldAsk: true,

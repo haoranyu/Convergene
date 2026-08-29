@@ -93,6 +93,15 @@ export type GrillTurnDisposition = 'ANSWERED' | 'UNKNOWN' | 'SKIPPED';
 
 export type GrillPhase = 'DEFAULT' | 'CRITICAL_EXTRA' | 'USER_EXTENDED';
 
+export type GrillQuestionType = 'SINGLE_CHOICE' | 'FREE_TEXT';
+
+export const grillQuestionTypes = ['SINGLE_CHOICE', 'FREE_TEXT'] as const;
+
+export interface GrillQuestionOption {
+  label: string;
+  value: string;
+}
+
 export interface GrillKnownState {
   assumptions: string[];
   confirmed: string[];
@@ -108,7 +117,10 @@ export interface GrillTurn {
   index: number;
   knownState: GrillKnownState;
   meetingId: string;
+  /** Optional at runtime so turns created before single-choice support remain readable. */
+  questionType?: GrillQuestionType;
   phase: GrillPhase;
+  options?: GrillQuestionOption[];
   question: string;
   readiness: MeetingBriefContent['readiness'];
   reason?: string;

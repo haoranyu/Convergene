@@ -91,6 +91,41 @@
   margin-top: 24px;
 }
 
+.choiceFieldset {
+  border: 0;
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.choiceFieldset legend {
+  font-weight: 600;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.choiceFieldset :global(.arco-radio-group) {
+  gap: 8px;
+}
+
+.choiceFieldset :global(.arco-radio-group-direction-vertical .arco-radio) {
+  align-items: center;
+  display: flex;
+  min-height: 44px;
+  padding: 6px 8px;
+}
+
+.choiceFieldset :global(.arco-radio-group-direction-vertical .arco-radio:hover) {
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+}
+
+.choiceToggle {
+  min-height: 44px;
+  padding: 8px;
+}
+
 .actionRow {
   align-items: center;
   display: flex;

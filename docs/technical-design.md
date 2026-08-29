@@ -193,6 +193,8 @@ interface GrillTurn {
   meetingId: string
   index: number
   phase: 'DEFAULT' | 'CRITICAL_EXTRA' | 'USER_EXTENDED'
+  questionType: 'SINGLE_CHOICE' | 'FREE_TEXT'
+  options?: Array<{ value: string; label: string }>
   question: string
   reason?: string
   criticalExtraReason?: string
@@ -267,6 +269,8 @@ interface MeetingReport {
   sourceUpdatedAt: string
 }
 ```
+
+旧版本地轮次缺少 `questionType` 时按 `FREE_TEXT` 兼容读取；新写入轮次必须保存题型，单选选项为 2–6 个、值为稳定 ASCII 标识、标签为内容语言文本。
 
 准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 保存可编辑草稿，并兼容读取旧版本留下的已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认先在内存构造候选快照，完整图通过校验后，repository 才在同一事务中写入快照、Node、Edge 并转入 `MAP_READY`。
 

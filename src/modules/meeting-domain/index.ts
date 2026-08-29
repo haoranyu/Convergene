@@ -28,6 +28,7 @@ export {
 } from './preparation';
 export {
   isSupportedLocale,
+  grillQuestionTypes,
   meetingModes,
   meetingStatuses,
   outcomeKinds,
@@ -40,6 +41,8 @@ export type {
   GrillTurnDisposition,
   GrillKnownState,
   GrillPhase,
+  GrillQuestionOption,
+  GrillQuestionType,
   Meeting,
   MeetingBriefContent,
   MeetingBriefDraft,

@@ -57,10 +57,12 @@ export function buildGrillInput(
   const completed = completedTurns(turns);
   return grillInputSchema.parse({
     finishRequested: options.finishRequested,
-    history: completed.map(({ answer, disposition, question }) => ({
+    history: completed.map(({ answer, disposition, options, question, questionType }) => ({
       answer,
       disposition,
       question,
+      options,
+      questionType,
     })),
     knownState: completed.at(-1)?.knownState ?? createEmptyKnownState(),
     mode: meeting.mode,
@@ -128,8 +130,10 @@ export async function runGrillStep(
     index: input.turnIndex,
     knownState: structuredClone(output.updatedState),
     meetingId: aggregate.meeting.id,
+    options: output.options?.map((option) => ({ ...option })),
     phase,
     question: output.question!,
+    questionType: output.questionType!,
     readiness: structuredClone(output.readiness),
     reason: output.reason,
   };

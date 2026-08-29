@@ -1,6 +1,16 @@
 'use client';
 
-import { Alert, Button, Card, Empty, Input, Spin, Tag, Typography } from '@arco-design/web-react';
+import {
+  Alert,
+  Button,
+  Card,
+  Empty,
+  Input,
+  Radio,
+  Spin,
+  Tag,
+  Typography,
+} from '@arco-design/web-react';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -102,6 +112,8 @@ function PreparationWorkspaceBody({
   const [operation, setOperation] = useState<Operation>('IDLE');
   const [errorCode, setErrorCode] = useState<string>();
   const [answer, setAnswer] = useState('');
+  const [answerTurnId, setAnswerTurnId] = useState<string>();
+  const [textAnswerTurnId, setTextAnswerTurnId] = useState<string>();
   const [requestedDimension, setRequestedDimension] = useState<string>();
   const [selectedMode, setSelectedMode] = useState<MeetingMode>();
   const [fields, setFields] = useState<BriefFields>();
@@ -128,6 +140,10 @@ function PreparationWorkspaceBody({
   }, [database, meetingId]);
 
   const meeting = aggregate?.meeting;
+  const pendingTurn = aggregate?.grillTurns.find(({ disposition }) => disposition === 'PENDING');
+  const pendingTurnId = pendingTurn?.id;
+  const pendingQuestionType = pendingTurn?.questionType;
+
   if (
     meeting?.preparationStage === 'BRIEF_READY' &&
     meeting.brief !== undefined &&
@@ -209,10 +225,19 @@ function PreparationWorkspaceBody({
   const currentAggregate = aggregate;
   const currentMeeting = currentAggregate.meeting;
 
-  const pending = aggregate.grillTurns.find(({ disposition }) => disposition === 'PENDING');
+  const pending = pendingTurn;
   const latest = pending ?? aggregate.grillTurns.at(-1);
   const readiness = meeting?.brief?.readiness ?? latest?.readiness;
   const busy = operation !== 'IDLE';
+  const answerMode =
+    pendingQuestionType === 'SINGLE_CHOICE' && textAnswerTurnId !== pendingTurnId
+      ? 'CHOICE'
+      : 'TEXT';
+  const currentAnswer = pendingTurnId !== undefined && answerTurnId === pendingTurnId ? answer : '';
+  const selectedOptionValue =
+    answerMode === 'CHOICE'
+      ? pending?.options?.find(({ label }) => label === currentAnswer)?.value
+      : undefined;
 
   const errorAlert = errorCode ? (
     <div ref={errorRef} role="alert" tabIndex={-1}>
@@ -293,6 +318,8 @@ function PreparationWorkspaceBody({
         dependencies,
       );
       setAnswer('');
+      setAnswerTurnId(undefined);
+      setTextAnswerTurnId(undefined);
       const nextAggregate: MeetingAggregate = {
         ...currentAggregate,
         grillTurns: currentAggregate.grillTurns.map((item) =>
@@ -447,18 +474,77 @@ function PreparationWorkspaceBody({
                 {pending.criticalExtraReason ? (
                   <Alert content={pending.criticalExtraReason} type="warning" />
                 ) : null}
-                <label className={styles.answerField}>
-                  <span>{t('grill.answerLabel')}</span>
-                  <Input.TextArea
-                    autoFocus
+                {pending.questionType === 'SINGLE_CHOICE' && pending.options !== undefined ? (
+                  answerMode === 'CHOICE' ? (
+                    <fieldset className={styles.choiceFieldset}>
+                      <legend>{t('grill.choiceLabel')}</legend>
+                      <Radio.Group
+                        direction="vertical"
+                        disabled={busy}
+                        name={`grill-answer-${pending.id}`}
+                        onChange={(value) => {
+                          const selected = pending.options?.find(
+                            ({ value: optionValue }) => optionValue === String(value),
+                          );
+                          setAnswer(selected?.label ?? '');
+                          setAnswerTurnId(pending.id);
+                        }}
+                        options={pending.options.map(({ label, value }) => ({ label, value }))}
+                        value={selectedOptionValue}
+                      />
+                    </fieldset>
+                  ) : (
+                    <label className={styles.answerField}>
+                      <span>{t('grill.answerLabel')}</span>
+                      <Input.TextArea
+                        autoFocus
+                        disabled={busy}
+                        maxLength={4000}
+                        onChange={(value) => {
+                          setAnswer(value);
+                          setAnswerTurnId(pending.id);
+                          setTextAnswerTurnId(pending.id);
+                        }}
+                        placeholder={t('grill.answerPlaceholder')}
+                        rows={4}
+                        value={currentAnswer}
+                      />
+                    </label>
+                  )
+                ) : (
+                  <label className={styles.answerField}>
+                    <span>{t('grill.answerLabel')}</span>
+                    <Input.TextArea
+                      autoFocus
+                      disabled={busy}
+                      maxLength={4000}
+                      onChange={(value) => {
+                        setAnswer(value);
+                        setAnswerTurnId(pending.id);
+                        setTextAnswerTurnId(pending.id);
+                      }}
+                      placeholder={t('grill.answerPlaceholder')}
+                      rows={4}
+                      value={currentAnswer}
+                    />
+                  </label>
+                )}
+                {pending.questionType === 'SINGLE_CHOICE' && pending.options !== undefined ? (
+                  <Button
+                    className={styles.choiceToggle}
                     disabled={busy}
-                    maxLength={4000}
-                    onChange={setAnswer}
-                    placeholder={t('grill.answerPlaceholder')}
-                    rows={4}
-                    value={answer}
-                  />
-                </label>
+                    onClick={() => {
+                      setAnswer('');
+                      setAnswerTurnId(pending.id);
+                      if (answerMode === 'CHOICE') setTextAnswerTurnId(pending.id);
+                      else setTextAnswerTurnId(undefined);
+                    }}
+                    size="small"
+                    type="text"
+                  >
+                    {t(answerMode === 'CHOICE' ? 'grill.otherAnswer' : 'grill.useChoices')}
+                  </Button>
+                ) : null}
                 <div className={styles.actionRow}>
                   <Button disabled={busy} onClick={() => void completePending(pending, 'UNKNOWN')}>
                     {t('actions.unknown')}
@@ -473,9 +559,9 @@ function PreparationWorkspaceBody({
                     {t('actions.finish')}
                   </Button>
                   <Button
-                    disabled={busy || answer.trim() === ''}
+                    disabled={busy || currentAnswer.trim() === ''}
                     loading={busy}
-                    onClick={() => void completePending(pending, 'ANSWERED', answer.trim())}
+                    onClick={() => void completePending(pending, 'ANSWERED', currentAnswer.trim())}
                     type="primary"
                   >
                     {t('actions.submit')}
