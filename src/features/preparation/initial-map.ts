@@ -143,7 +143,7 @@ export function materializeInitialMap(
   if (!draftValidation.ok) {
     throw new InitialMapValidationError(draftValidation.error.code);
   }
-  const graph = buildGraph(output, meetingId, now, options.createId ?? crypto.randomUUID);
+  const graph = buildGraph(output, meetingId, now, options.createId ?? (() => crypto.randomUUID()));
   const validation = validateInitialMap(graph);
   if (!validation.ok) throw new InitialMapValidationError(validation.error.code);
   return graph;

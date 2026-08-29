@@ -181,6 +181,11 @@ export function parseGrillOutput(input: GrillInput, value: unknown): GrillOutput
       { code: 'custom', message: 'only the critical extra question needs its reason', path: [] },
     ]);
   }
+  if (!output.shouldAsk && output.criticalExtraReason !== undefined) {
+    throw new z.ZodError([
+      { code: 'custom', message: 'completed Grill cannot include a critical reason', path: [] },
+    ]);
+  }
   return output;
 }
 

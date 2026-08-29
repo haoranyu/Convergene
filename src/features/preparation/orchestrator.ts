@@ -124,7 +124,7 @@ export async function runGrillStep(
     criticalExtraReason: output.criticalExtraReason,
     createdAt: now.toISOString(),
     disposition: 'PENDING',
-    id: (dependencies.createId ?? crypto.randomUUID)(),
+    id: dependencies.createId?.() ?? crypto.randomUUID(),
     index: input.turnIndex,
     knownState: structuredClone(output.updatedState),
     meetingId: aggregate.meeting.id,
