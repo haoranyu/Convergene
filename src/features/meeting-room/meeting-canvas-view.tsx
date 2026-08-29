@@ -232,6 +232,7 @@ function CanvasContent({ aggregate, commands }: MeetingCanvasViewProps) {
       if (!isStructuralEditingAllowed || connection.source === connection.target) return false;
       const target = aggregate.nodes.find((node) => node.id === connection.target);
       if (target === undefined || target.id === elements.rootNodeId) return false;
+      if (currentParentId(aggregate, target.id) === connection.source) return false;
       if (target.kind === 'TOPIC') return connection.source === elements.rootNodeId;
       return (
         connection.source !== elements.rootNodeId &&
