@@ -93,18 +93,22 @@ export interface ReportDocumentCopy {
     actualTime: string;
     attendees: string;
     dueDate: string;
+    kind: string;
     mode: string;
+    note: string;
     origin: string;
     overtime: string;
     owner: string;
     plannedTime: string;
     reportLocale: string;
     timezone: string;
+    title: string;
     totalPersonHours: string;
     unallocatedPersonHours: string;
   };
   modeFacts: Record<ReportModeFactKey, string>;
   modes: Record<MeetingMode, string>;
+  factDraftSummary: string;
   noFormalOutcomesSummary: string;
   notSet: string;
   origin: {
