@@ -1,4 +1,6 @@
 export { deriveTimingState } from './derive-timing-state';
+export { buildMeetingEndCheck } from './end-check';
+export type { MeetingEndCheck, MeetingEndContext } from './end-check';
 export { calculateMeetingEconomics } from './economics';
 export type { MeetingEconomics, OutcomeFormationCost } from './economics';
 export {
@@ -11,7 +13,7 @@ export {
 } from './grill';
 export type { GrillPolicyErrorCode } from './grill';
 export { correctMeetingEndTime, endMeeting, startMeeting } from './lifecycle';
-export { markOutcome, unmarkOutcome } from './outcomes';
+export { defaultOutcomeKind, markOutcome, unmarkOutcome } from './outcomes';
 export type { MarkOutcomeInput } from './outcomes';
 export { validateMeeting } from './validation';
 export {

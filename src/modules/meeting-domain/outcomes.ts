@@ -1,7 +1,13 @@
 import type { Result } from '@/modules/shared';
 
 import { outcomeKinds } from './model';
-import type { Meeting, MeetingDomainErrorCode, MeetingOutcome, OutcomeKind } from './model';
+import type {
+  Meeting,
+  MeetingDomainErrorCode,
+  MeetingMode,
+  MeetingOutcome,
+  OutcomeKind,
+} from './model';
 
 export interface MarkOutcomeInput {
   id: string;
@@ -14,6 +20,17 @@ export interface MarkOutcomeInput {
 
 function failure(code: MeetingDomainErrorCode): Result<never, MeetingDomainErrorCode> {
   return { error: { code }, ok: false };
+}
+
+const defaultOutcomeKinds: Record<MeetingMode, OutcomeKind> = {
+  BRAINSTORM: 'CANDIDATE_IDEA',
+  DECISION: 'DECISION',
+  GENERAL: 'INSIGHT',
+  RETRO: 'INSIGHT',
+};
+
+export function defaultOutcomeKind(mode: MeetingMode): OutcomeKind {
+  return defaultOutcomeKinds[mode];
 }
 
 export function markOutcome(
