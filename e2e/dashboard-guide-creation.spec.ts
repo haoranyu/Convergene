@@ -133,18 +133,30 @@ test('applies an AI recommendation only after user confirmation and allows overr
   await page
     .getByLabel('The original meeting request')
     .fill('Choose one launch plan for the September release.');
+  await page.getByLabel('Title · optional').fill('September launch choice');
   await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
 
   await expect(page.getByRole('heading', { name: /Align on a decision/u })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit meeting details' }).click();
+  await expect(page.getByLabel('The original meeting request')).toHaveValue(
+    'Choose one launch plan for the September release.',
+  );
+  await expect(page.getByLabel('Title · optional')).toHaveValue('September launch choice');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
   await page.getByRole('button', { name: /Brainstorm together/u }).click();
   await page.getByRole('button', { name: 'Confirm and start Grill' }).click();
 
   await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
   expect(classifyBody).toEqual({
     rawRequest: 'Choose one launch plan for the September release.',
+    userTitle: 'September launch choice',
   });
   expect(await readMeetings(page)).toEqual([
-    expect.objectContaining({ mode: 'BRAINSTORM', modeReason: undefined }),
+    expect.objectContaining({
+      mode: 'BRAINSTORM',
+      modeReason: undefined,
+      title: 'September launch choice',
+    }),
   ]);
 });
 

@@ -346,11 +346,13 @@ export function MeetingCreation() {
               {({ handleAIError }) => (
                 <Form<CreationFormValues>
                   form={form}
-                  initialValues={{
-                    contentLocale: locale,
-                    expectedAttendeeCount: 5,
-                    scheduledRange: defaultSchedule(),
-                  }}
+                  initialValues={
+                    draftValues ?? {
+                      contentLocale: locale,
+                      expectedAttendeeCount: 5,
+                      scheduledRange: defaultSchedule(),
+                    }
+                  }
                   layout="vertical"
                   requiredSymbol={{ position: 'end' }}
                 >
