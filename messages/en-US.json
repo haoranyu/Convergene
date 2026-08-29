@@ -439,7 +439,7 @@
         "openingLine": "Suggested opening",
         "unknowns": "Still unknown · one per line"
       },
-      "lockWarning": "Confirming locks this exact Brief immediately. If map generation fails, it stays locked and retry uses the same snapshot.",
+      "lockWarning": "Confirming validates the map first, then locks this Brief and saves the graph together.",
       "locked": "Locked snapshot",
       "lockedDescription": "This Brief is locked. It remains visible while the map is generated or retried.",
       "title": "Meeting Brief"

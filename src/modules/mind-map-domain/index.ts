@@ -2,6 +2,8 @@ export {
   applyExpansion,
   deleteSubtree,
   insertNode,
+  graphemeCount,
+  maximumNodeTitleGraphemes,
   orderedTopicIds,
   reparentNode,
   subtreeNodeIds,

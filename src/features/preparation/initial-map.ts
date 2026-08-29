@@ -14,7 +14,6 @@ import {
   type InitialMapOutput,
   type PreparationAIClient,
 } from './ai-contract';
-import { PreparationAIClientError } from './api-client';
 
 export class InitialMapValidationError extends Error {
   constructor(readonly code: GraphErrorCode | 'OUTPUT_INVALID') {
@@ -149,10 +148,7 @@ export function materializeInitialMap(
   return graph;
 }
 
-/**
- * Requests from one immutable Brief snapshot. Only output/schema failures are
- * repairable, and a second invalid result is surfaced without a third request.
- */
+/** The server owns the single repair and fallback policy; the browser never repeats AI calls. */
 export async function requestValidInitialMap(
   client: PreparationAIClient,
   input: InitialMapInput,
@@ -161,16 +157,6 @@ export async function requestValidInitialMap(
   options: MaterializeInitialMapOptions & { signal?: AbortSignal } = {},
 ): Promise<MeetingGraph> {
   const snapshot = structuredClone(input);
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const output = await client.initialMap(snapshot, outputLocale, options.signal);
-      return materializeInitialMap(output, meetingId, options);
-    } catch (error) {
-      const repairable =
-        error instanceof InitialMapValidationError ||
-        (error instanceof PreparationAIClientError && error.code === 'OUTPUT_INVALID');
-      if (!repairable || attempt === 1) throw error;
-    }
-  }
-  throw new InitialMapValidationError('OUTPUT_INVALID');
+  const output = await client.initialMap(snapshot, outputLocale, options.signal);
+  return materializeInitialMap(output, meetingId, options);
 }

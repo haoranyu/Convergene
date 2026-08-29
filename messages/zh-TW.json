@@ -439,7 +439,7 @@
         "openingLine": "建議開場白",
         "unknowns": "仍待確認 · 每行一項"
       },
-      "lockWarning": "按下確認會立即鎖定目前 Brief。即使心智圖產生失敗，它也不會解鎖；重試仍使用同一份快照。",
+      "lockWarning": "按下確認會先驗證心智圖，再同時鎖定 Brief 並儲存完整圖譜。",
       "locked": "已鎖定快照",
       "lockedDescription": "這份 Brief 已鎖定；產生或重試心智圖時會一直保留在頁面上。",
       "title": "會議 Brief"

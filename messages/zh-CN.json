@@ -439,7 +439,7 @@
         "openingLine": "建议开场白",
         "unknowns": "仍待确认 · 每行一项"
       },
-      "lockWarning": "点击确认会立即锁定当前 Brief。即使脑图生成失败，它也不会解锁；重试仍使用同一份快照。",
+      "lockWarning": "点击确认会先验证脑图，再同时锁定 Brief 并保存完整图谱。",
       "locked": "已锁定快照",
       "lockedDescription": "这份 Brief 已锁定；生成或重试脑图时会一直保留在页面上。",
       "title": "会议 Brief"

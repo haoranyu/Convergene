@@ -15,7 +15,9 @@ function failure(code: GraphErrorCode, message?: string): Result<never, GraphErr
   return { error: { code, message }, ok: false };
 }
 
-function graphemeCount(value: string): number {
+export const maximumNodeTitleGraphemes = 48;
+
+export function graphemeCount(value: string): number {
   const Segmenter = Intl.Segmenter;
   return [...new Segmenter(undefined, { granularity: 'grapheme' }).segment(value)].length;
 }
@@ -82,7 +84,10 @@ export function validateTree(graph: MeetingGraph): Result<GraphSummary, GraphErr
   }
 
   if (
-    graph.nodes.some((node) => node.title.trim() === '' || graphemeCount(node.title.trim()) > 48)
+    graph.nodes.some(
+      (node) =>
+        node.title.trim() === '' || graphemeCount(node.title.trim()) > maximumNodeTitleGraphemes,
+    )
   ) {
     return failure('INVALID_TITLE');
   }

@@ -67,7 +67,10 @@ describe('preparation AI server contracts', () => {
     const input = { brief: preparationBriefFixtures.DECISION, mode: 'DECISION' as const };
     const mapPrompt = buildInitialMapPrompt(input, 'zh-TW');
     expect(mapPrompt).toContain('Traditional Chinese used in Taiwan');
-    expect(mapPrompt).toContain('3 to 5 direct TOPIC children');
+    expect(mapPrompt).toContain('3 to 5 direct topics');
+    expect(mapPrompt).toContain('at most 48 Unicode graphemes');
+    expect(mapPrompt).toContain('Do not generate keys, parent keys, node kinds, order values');
+    expect(mapPrompt).not.toContain('"parentKey"');
     expect(mapPrompt).toContain(JSON.stringify(input));
   });
 
