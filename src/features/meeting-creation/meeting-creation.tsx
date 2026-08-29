@@ -26,7 +26,12 @@ import { useEffect, useRef, useState } from 'react';
 import { AppHeader } from '@/features/app-shell';
 import { ProviderConfigGate } from '@/features/provider-config';
 import { Link, useRouter } from '@/i18n/navigation';
-import { supportedLocales, type MeetingMode, type SupportedLocale } from '@/modules/meeting-domain';
+import {
+  isSupportedLocale,
+  supportedLocales,
+  type MeetingMode,
+  type SupportedLocale,
+} from '@/modules/meeting-domain';
 import type { ClassifyMeetingOutput, MeetingAIErrorCode } from '@/modules/meeting-ai';
 import { getBrowserMeetingDatabase, MeetingRepository } from '@/modules/meeting-db/client';
 
@@ -42,10 +47,6 @@ interface CreationFormValues {
   rawRequest: string;
   scheduledRange: string[];
   title?: string;
-}
-
-function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return supportedLocales.includes(locale as SupportedLocale);
 }
 
 function defaultSchedule(): string[] {
@@ -263,10 +264,9 @@ export function MeetingCreation() {
         return;
       }
       if (!result.ok) {
-        if (!handleAIError(result)) {
-          setNotice(result.error.code);
-          setManualFallbackAvailable(true);
-        }
+        setNotice(result.error.code);
+        setManualFallbackAvailable(true);
+        handleAIError(result);
         return;
       }
       setDraftValues(values);

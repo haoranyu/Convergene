@@ -117,6 +117,7 @@
       "noActiveTopic": "尚未選擇議題",
       "personHours": "已累計 {hours, number} 人時"
     },
+    "localMarker": "已儲存到本機",
     "modes": {
       "brainstorm": "腦暴共創",
       "decision": "決策對齊",
@@ -128,18 +129,20 @@
     "stages": {
       "brief_ready": "Brief 已就緒",
       "draft": "需求已儲存",
-      "ended": "查看會議",
-      "ended_on_time": "已結束 · 準時",
-      "ended_overrun": "已結束 · 超時",
-      "grilling": "繼續會前追問",
-      "live": "返回進行中會議",
-      "live_overrun": "進行中 · 已超時",
-      "map_ready": "可以開始",
-      "waiting_to_start": "待開始"
+      "grilling": "會前追問中",
+      "map_ready": "會前準備已完成"
     },
     "staleLive": {
       "description": "{count, plural, one {有一場進行中會議已超過計畫結束時間，請先開啟處理，再開始下一場。} other {有 # 場進行中會議已超過計畫結束時間，請先處理，再開始下一場。}}",
       "title": "可能有會議忘記結束"
+    },
+    "timing": {
+      "ended_on_time": "已結束 · 準時",
+      "ended_overrun": "已結束 · 超時",
+      "live": "進行中",
+      "live_overrun": "進行中 · 已超時",
+      "preparing": "會前準備",
+      "waiting_to_start": "待開始"
     },
     "title": "讓下一場會配得上佔用的時間"
   },
@@ -153,7 +156,7 @@
     "copy": {
       "confirmDescription": "這會在目前瀏覽器建立一場獨立會議。導覽 fixture 不會改變，後續真正的 AI 操作仍需要連接你自己的模型。",
       "confirmTitle": "把這個範例複製到我的會議？",
-      "error": "暫時無法複製範例，記憶體中的導覽沒有變更。"
+      "error": "目前瀏覽器無法開啟本機會議儲存空間，因此沒有建立會議；記憶體導覽仍可繼續使用。"
     },
     "description": "切換三種會議劇本，在不用模型 Key、也不建立真正會議記錄的情況下，看完從會前準備到報告的完整節奏。",
     "eyebrow": "無需 Key · 不寫本機資料",
@@ -297,7 +300,7 @@
         "UNKNOWN": "推薦被意外中斷。輸入沒有變更，可以再試一次或手動選擇劇本。"
       },
       "form": "請檢查下方標出的會議資訊。目前輸入已完整保留。",
-      "save": "暫時無法建立本機會議。內容沒有寫入後端，請再試一次。"
+      "save": "目前瀏覽器無法開啟本機會議儲存空間，因此沒有建立會議；表單內容保持不變。"
     },
     "eyebrow": "建立一場真正的本機會議",
     "fallbackTitle": "未命名會議",

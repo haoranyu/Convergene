@@ -117,6 +117,7 @@
       "noActiveTopic": "No topic selected",
       "personHours": "{hours, number} person-hours so far"
     },
+    "localMarker": "Saved locally",
     "modes": {
       "brainstorm": "Brainstorm",
       "decision": "Decision",
@@ -128,18 +129,20 @@
     "stages": {
       "brief_ready": "Brief ready",
       "draft": "Request saved",
-      "ended": "View meeting",
-      "ended_on_time": "Ended · on time",
-      "ended_overrun": "Ended · overrun",
-      "grilling": "Continue preparation",
-      "live": "Return to live meeting",
-      "live_overrun": "In progress · overrun",
-      "map_ready": "Ready to start",
-      "waiting_to_start": "Waiting to start"
+      "grilling": "Grill in progress",
+      "map_ready": "Preparation complete"
     },
     "staleLive": {
       "description": "{count, plural, one {A live meeting is past its scheduled end. Open it before starting another meeting.} other {# live meetings are past their scheduled end. Resolve them before starting another meeting.}}",
       "title": "A meeting may have been left running"
+    },
+    "timing": {
+      "ended_on_time": "Ended · on time",
+      "ended_overrun": "Ended · overrun",
+      "live": "In progress",
+      "live_overrun": "In progress · overrun",
+      "preparing": "Preparing",
+      "waiting_to_start": "Waiting to start"
     },
     "title": "Make the next meeting earn its calendar slot"
   },
@@ -153,7 +156,7 @@
     "copy": {
       "confirmDescription": "This creates one independent local meeting in this browser. The tour fixture itself stays unchanged, and later AI actions will require your own model connection.",
       "confirmTitle": "Copy this example into your meetings?",
-      "error": "The example could not be copied. The in-memory tour is still unchanged."
+      "error": "This browser could not open local meeting storage, so no meeting was created. The in-memory tour is still available."
     },
     "description": "Switch among three meeting scripts and preview the full rhythm—from preparation to a report—without a model key or a real meeting record.",
     "eyebrow": "No key · no local write",
@@ -297,7 +300,7 @@
         "UNKNOWN": "Something unexpected interrupted the recommendation. Your input is unchanged; retry or choose manually."
       },
       "form": "Check the highlighted meeting details below. Your current input has been preserved.",
-      "save": "The local meeting could not be created. Nothing was sent to the backend; try again."
+      "save": "This browser could not open local meeting storage, so the meeting was not created. The form is unchanged."
     },
     "eyebrow": "Create a real local meeting",
     "fallbackTitle": "Untitled meeting",

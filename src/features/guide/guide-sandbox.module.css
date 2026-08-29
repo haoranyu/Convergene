@@ -180,7 +180,7 @@
 }
 
 .dimNode {
-  opacity: 0.42;
+  opacity: var(--opacity-dimmed);
 }
 
 .expansionList {

@@ -117,6 +117,7 @@
       "noActiveTopic": "尚未选择议题",
       "personHours": "已累计 {hours, number} 人时"
     },
+    "localMarker": "已保存到本机",
     "modes": {
       "brainstorm": "脑暴共创",
       "decision": "决策对齐",
@@ -128,18 +129,20 @@
     "stages": {
       "brief_ready": "Brief 已就绪",
       "draft": "需求已保存",
-      "ended": "查看会议",
-      "ended_on_time": "已结束 · 准时",
-      "ended_overrun": "已结束 · 超时",
-      "grilling": "继续会前拷问",
-      "live": "回到进行中会议",
-      "live_overrun": "进行中 · 已超时",
-      "map_ready": "可以开始",
-      "waiting_to_start": "待开始"
+      "grilling": "会前拷问中",
+      "map_ready": "会前准备已完成"
     },
     "staleLive": {
       "description": "{count, plural, one {有一场进行中会议已经超过计划结束时间，请先打开处理，再开始下一场。} other {有 # 场进行中会议已经超过计划结束时间，请先处理，再开始下一场。}}",
       "title": "可能有会议忘记结束"
+    },
+    "timing": {
+      "ended_on_time": "已结束 · 准时",
+      "ended_overrun": "已结束 · 超时",
+      "live": "进行中",
+      "live_overrun": "进行中 · 已超时",
+      "preparing": "会前筹备",
+      "waiting_to_start": "待开始"
     },
     "title": "让下一场会配得上占用的时间"
   },
@@ -153,7 +156,7 @@
     "copy": {
       "confirmDescription": "这会在当前浏览器创建一场独立会议。导览 fixture 不会改变，后续真实 AI 操作仍需要连接你自己的模型。",
       "confirmTitle": "把这个示例复制到我的会议？",
-      "error": "暂时无法复制示例，内存中的导览没有改变。"
+      "error": "当前浏览器无法打开本机会议存储，因此没有创建会议；内存导览仍可继续使用。"
     },
     "description": "切换三种会议剧本，在不用模型 Key、也不创建真实会议记录的情况下，看完从会前准备到报告的完整节奏。",
     "eyebrow": "无需 Key · 不写本机数据",
@@ -297,7 +300,7 @@
         "UNKNOWN": "推荐被意外中断。输入没有改变，可以重试或手动选择剧本。"
       },
       "form": "请检查下方标出的会议信息。当前输入已经完整保留。",
-      "save": "暂时无法创建本机会议。内容没有写入后端，请重试。"
+      "save": "当前浏览器无法打开本机会议存储，因此没有创建会议；表单内容保持不变。"
     },
     "eyebrow": "创建一场真实的本机会议",
     "fallbackTitle": "未命名会议",

@@ -155,6 +155,18 @@
   justify-content: space-between;
 }
 
+.cardStateLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cardStateLabels > :last-child::before {
+  color: var(--color-muted-foreground);
+  content: '·';
+  margin-right: var(--space-2);
+}
+
 .cardLink {
   display: block;
   text-decoration: none;

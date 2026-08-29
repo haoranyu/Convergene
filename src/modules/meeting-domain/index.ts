@@ -14,6 +14,7 @@ export {
   resumeGrill,
 } from './preparation';
 export {
+  isSupportedLocale,
   meetingModes,
   meetingStatuses,
   outcomeKinds,

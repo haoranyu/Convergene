@@ -98,7 +98,7 @@ export function classifyMeetingOutputMatchesLocale(
   const latinCount = matches(generatedText, /\p{Script=Latin}/gu);
 
   if (outputLocale === 'en-US') {
-    return hanCount < 2 || latinCount >= hanCount;
+    return hanCount < 2 || latinCount >= 8;
   }
   if (hanCount === 0 && latinCount >= 2) {
     return false;

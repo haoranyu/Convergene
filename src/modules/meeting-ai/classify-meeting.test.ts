@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { classifyMeetingProviderFixtures } from '@/fixtures/meeting-ai/classify-meeting';
 import { readJsonInput } from '@/modules/api-security';
+import { supportedLocales } from '@/modules/meeting-domain';
+import { providerIds, providerModelPresets } from '@/modules/provider-config';
 
 import { buildClassifyMeetingPrompt } from './classify-prompt';
 import {
@@ -131,11 +134,46 @@ describe('classify-meeting contract', () => {
     };
 
     expect(classifyMeetingOutputMatchesLocale(english, 'en-US')).toBe(true);
+    expect(
+      classifyMeetingOutputMatchesLocale(
+        {
+          ...english,
+          reason: 'The team must choose how 深圳 should enter the next launch plan.',
+          suggestedTitle: '深圳 launch plan',
+        },
+        'en-US',
+      ),
+    ).toBe(true);
     expect(classifyMeetingOutputMatchesLocale(english, 'zh-CN')).toBe(false);
     expect(classifyMeetingOutputMatchesLocale(simplified, 'zh-CN')).toBe(true);
     expect(classifyMeetingOutputMatchesLocale(simplified, 'zh-TW')).toBe(false);
     expect(classifyMeetingOutputMatchesLocale(traditional, 'zh-TW')).toBe(true);
     expect(classifyMeetingOutputMatchesLocale(traditional, 'zh-CN')).toBe(false);
+  });
+
+  it('keeps valid classification fixtures for every provider, model, and locale', () => {
+    expect(classifyMeetingProviderFixtures).toHaveLength(
+      providerIds.length * supportedLocales.length,
+    );
+
+    for (const provider of providerIds) {
+      const providerFixtures = classifyMeetingProviderFixtures.filter(
+        (fixture) => fixture.provider === provider,
+      );
+      expect(providerFixtures.map((fixture) => fixture.locale).sort()).toEqual(
+        [...supportedLocales].sort(),
+      );
+
+      for (const fixture of providerFixtures) {
+        expect(fixture.model).toBe(providerModelPresets[provider].fast);
+        expect(classifyMeetingInputSchema.safeParse(fixture.input).success).toBe(true);
+        expect(classifyMeetingOutputSchema.safeParse(fixture.output).success).toBe(true);
+        expect(classifyMeetingOutputMatchesLocale(fixture.output, fixture.locale)).toBe(true);
+        expect(buildClassifyMeetingPrompt(fixture.input, fixture.locale)).toContain(
+          JSON.stringify(fixture.input),
+        );
+      }
+    }
   });
 
   it('frames the raw request as JSON data instead of executable prompt instructions', () => {

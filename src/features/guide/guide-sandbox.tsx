@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { AppHeader } from '@/features/app-shell';
 import { Link, useRouter } from '@/i18n/navigation';
 import { buildLocalMeetingDraft } from '@/features/meeting-creation/local-meeting';
-import { supportedLocales, type MeetingMode, type SupportedLocale } from '@/modules/meeting-domain';
+import { isSupportedLocale, type MeetingMode } from '@/modules/meeting-domain';
 import { getBrowserMeetingDatabase, MeetingRepository } from '@/modules/meeting-db/client';
 
 import styles from './guide-sandbox.module.css';
@@ -40,10 +40,6 @@ const scenarioModes: Record<ScenarioId, MeetingMode> = {
 };
 
 const totalSteps = 5;
-
-function isSupportedLocale(locale: string): locale is SupportedLocale {
-  return supportedLocales.includes(locale as SupportedLocale);
-}
 
 interface ExampleMapProps {
   expanded?: boolean;

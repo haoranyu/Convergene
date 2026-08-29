@@ -19,6 +19,7 @@ import {
   IconExperiment,
   IconPlus,
   IconRefresh,
+  IconStorage,
   IconUserGroup,
 } from '@arco-design/web-react/icon';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -39,7 +40,7 @@ import {
 } from '@/modules/meeting-db/client';
 
 import styles from './dashboard-home.module.css';
-import { groupMeetings, meetingCardStateKey, staleLiveMeetings } from './meeting-groups';
+import { groupMeetings, meetingCardTimingKey, staleLiveMeetings } from './meeting-groups';
 
 const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = {
   BRAINSTORM: 'purple',
@@ -78,9 +79,12 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
   return (
     <Card className={styles.meetingCard} hoverable>
       <div className={styles.cardTopline}>
-        <Tag color={meeting.mode ? modeColor[meeting.mode] : 'gray'}>
-          {t(`modes.${modeKey(meeting.mode)}`)}
-        </Tag>
+        <Space size="small" wrap>
+          <Tag color={meeting.mode ? modeColor[meeting.mode] : 'gray'}>
+            {t(`modes.${modeKey(meeting.mode)}`)}
+          </Tag>
+          <Tag icon={<IconStorage aria-hidden="true" />}>{t('localMarker')}</Tag>
+        </Space>
         <Popconfirm
           content={t('delete.description')}
           disabled={deleting}
@@ -144,7 +148,10 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
           </span>
         </div>
         <div className={styles.cardFooter}>
-          <span>{t(`stages.${meetingCardStateKey(meeting, now)}`)}</span>
+          <span className={styles.cardStateLabels}>
+            <span>{t(`timing.${meetingCardTimingKey(meeting, now)}`)}</span>
+            <span>{t(`stages.${meeting.preparationStage.toLowerCase()}`)}</span>
+          </span>
           <span aria-hidden="true">→</span>
         </div>
       </Link>

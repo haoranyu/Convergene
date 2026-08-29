@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createMapReadyMeeting, createMeeting } from '@/fixtures/meeting';
 
-import { groupMeetings, meetingCardStateKey, staleLiveMeetings } from './meeting-groups';
+import { groupMeetings, meetingCardTimingKey, staleLiveMeetings } from './meeting-groups';
 
 describe('dashboard meeting groups', () => {
   it('keeps lifecycle and canonical timing groups deterministic', () => {
@@ -106,16 +106,16 @@ describe('dashboard meeting groups', () => {
       status: 'ENDED',
     });
 
-    expect(meetingCardStateKey(draft, new Date('2026-08-29T09:30:00.000Z'))).toBe('draft');
-    expect(meetingCardStateKey(draft, new Date('2026-08-29T10:30:00.000Z'))).toBe(
+    expect(meetingCardTimingKey(draft, new Date('2026-08-29T09:30:00.000Z'))).toBe('preparing');
+    expect(meetingCardTimingKey(draft, new Date('2026-08-29T10:30:00.000Z'))).toBe(
       'waiting_to_start',
     );
-    expect(meetingCardStateKey(live, new Date('2026-08-29T10:30:00.000Z'))).toBe('live');
-    expect(meetingCardStateKey(live, new Date('2026-08-29T11:00:01.000Z'))).toBe('live_overrun');
-    expect(meetingCardStateKey(endedOnTime, new Date('2026-08-29T12:00:00.000Z'))).toBe(
+    expect(meetingCardTimingKey(live, new Date('2026-08-29T10:30:00.000Z'))).toBe('live');
+    expect(meetingCardTimingKey(live, new Date('2026-08-29T11:00:01.000Z'))).toBe('live_overrun');
+    expect(meetingCardTimingKey(endedOnTime, new Date('2026-08-29T12:00:00.000Z'))).toBe(
       'ended_on_time',
     );
-    expect(meetingCardStateKey(endedOverrun, new Date('2026-08-29T12:00:00.000Z'))).toBe(
+    expect(meetingCardTimingKey(endedOverrun, new Date('2026-08-29T12:00:00.000Z'))).toBe(
       'ended_overrun',
     );
   });

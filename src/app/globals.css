@@ -2,14 +2,17 @@
   --color-accent: #d97706;
   --color-background: #f8fafc;
   --color-border: #cbd5e1;
+  --color-danger: #dc2626;
   --color-foreground: #0f172a;
   --color-muted-foreground: #475569;
   --color-primary: #1d4ed8;
   --color-primary-hover: #1e40af;
   --color-primary-subtle: #dbeafe;
-  --color-success: #166534;
+  --color-success: #15803d;
   --color-success-subtle: #ecfdf3;
   --color-surface: #ffffff;
+  --color-warning: #b45309;
+  --opacity-dimmed: 0.34;
   --radius-lg: 14px;
   --radius-md: 10px;
   --radius-sm: 6px;
