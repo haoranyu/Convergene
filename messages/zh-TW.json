@@ -820,5 +820,138 @@
       "keyTooLong": "API Key 太長。",
       "keyWhitespace": "API Key 不能包含空格或換行。"
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "複製 Markdown",
+      "download": "下載 .md",
+      "generate": "產生報告",
+      "preview": "查看報告",
+      "regenerate": "重新產生",
+      "source": "查看原始碼"
+    },
+    "description": "報告根據目前瀏覽器裡的會議事實組裝。模型潤飾可以失敗，成本和圖表始終由程式確定。",
+    "document": {
+      "chartData": "圖表資料",
+      "charts": {
+        "allocation": "人時分配",
+        "formation": "產出形成人時",
+        "from": "從",
+        "minute": "分鐘",
+        "narrative": "會議脈絡",
+        "outcome": "產出",
+        "personMinutes": "人分鐘",
+        "start": "開始",
+        "timeline": "產出時間軸",
+        "to": "到",
+        "unallocated": "未歸屬"
+      },
+      "empty": {
+        "modeFact": "沒有記錄對應事實。",
+        "nextSteps": "沒有記錄行動項目產出。",
+        "outcomes": "本次會議未標記正式產出。",
+        "parkingLot": "沒有記錄停車場問題。",
+        "unknowns": "沒有記錄 Brief 未決項目。"
+      },
+      "estimatedFormationEffort": "產出形成成本估算（人時）",
+      "factDraftSummary": "這場{mode}會議記錄了 {count} 項正式產出。",
+      "headings": {
+        "diagrams": "圖表",
+        "executiveSummary": "摘要",
+        "meetingFacts": "會議事實",
+        "modeDetails": "劇本專屬內容",
+        "nextSteps": "下一步",
+        "outcomes": "會議產出",
+        "parkingLot": "停車場",
+        "unresolved": "仍待解決"
+      },
+      "labels": {
+        "actualTime": "實際時間",
+        "attendees": "實際與會人數",
+        "dueDate": "截止日期",
+        "kind": "類型",
+        "mode": "會議劇本",
+        "note": "備註",
+        "origin": "來源",
+        "overtime": "超時（分鐘）",
+        "owner": "負責人",
+        "plannedTime": "計畫時間",
+        "reportLocale": "報告語言",
+        "timezone": "時區",
+        "title": "產出",
+        "totalPersonHours": "累計人時",
+        "unallocatedPersonHours": "未歸屬人時"
+      },
+      "modeFacts": {
+        "brainstorm_candidates": "入選候選",
+        "brainstorm_groups": "點子分組",
+        "brainstorm_ideas": "探索過的點子",
+        "decision_options": "考慮過的方案",
+        "decision_outcomes": "已記錄決策",
+        "decision_risks": "風險",
+        "general_outcomes": "已記錄產出",
+        "retro_actions": "改進行動",
+        "retro_causes": "原因方向",
+        "retro_insights": "經驗與洞察"
+      },
+      "modes": {
+        "BRAINSTORM": "腦力激盪",
+        "DECISION": "決策對齊",
+        "GENERAL": "一般討論",
+        "RETRO": "回顧改進"
+      },
+      "noFormalOutcomesSummary": "本次會議未標記正式產出。",
+      "notSet": "未填寫",
+      "origin": {
+        "live": "會中記錄",
+        "postMeeting": "會後補記"
+      },
+      "outcomeKinds": {
+        "ACTION": "行動項目",
+        "CANDIDATE_IDEA": "候選點子",
+        "DECISION": "決策",
+        "INSIGHT": "洞察"
+      },
+      "reportTitle": "會議報告"
+    },
+    "empty": {
+      "description": "先產生一份本機事實稿；即使模型潤飾失敗，同一份報告仍可使用。",
+      "title": "尚未產生報告"
+    },
+    "errors": {
+      "copyFailed": "無法複製 Markdown。請開啟原始碼後手動複製。",
+      "downloadFailed": "無法下載 Markdown 檔案。請開啟原始碼後手動儲存。",
+      "generationFailed": "新報告未能儲存，上一版報告仍可使用。",
+      "invalidMeeting": "會議結束後才能產生報告。",
+      "mermaidFailed": "這張圖未能渲染；原始碼和同一資料表仍可使用。"
+    },
+    "feedback": {
+      "copied": "已複製 Markdown。",
+      "factDraft": "模型潤飾不可用，已儲存確定性事實稿。",
+      "saved": "新報告已儲存在本機。"
+    },
+    "labels": {
+      "diagram": "會議報告圖表",
+      "language": "報告語言",
+      "outcomes": "正式產出",
+      "overtime": "超時",
+      "personHours": "累計人時",
+      "reportView": "報告檢視",
+      "reportSummary": "報告摘要",
+      "scrollTable": "可水平捲動的報告資料表",
+      "source": "Markdown 原始碼"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "正在產生新報告",
+      "localOnly": "僅儲存在這個瀏覽器",
+      "renderingDiagram": "正在呈現報告圖表",
+      "stale": "報告產生後會議事實有更新，請重新產生。"
+    },
+    "title": "會議報告"
   }
 }

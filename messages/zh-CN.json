@@ -820,5 +820,138 @@
       "keyTooLong": "API Key 过长。",
       "keyWhitespace": "API Key 不能包含空格或换行。"
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "复制 Markdown",
+      "download": "下载 .md",
+      "generate": "生成报告",
+      "preview": "查看报告",
+      "regenerate": "重新生成",
+      "source": "查看源码"
+    },
+    "description": "报告根据当前浏览器里的会议事实组装。模型润色可以失败，成本和图表始终由程序确定。",
+    "document": {
+      "chartData": "图表数据",
+      "charts": {
+        "allocation": "人时分配",
+        "formation": "产出形成人时",
+        "from": "从",
+        "minute": "分钟",
+        "narrative": "会议脉络",
+        "outcome": "产出",
+        "personMinutes": "人分钟",
+        "start": "开始",
+        "timeline": "产出时间线",
+        "to": "到",
+        "unallocated": "未归属"
+      },
+      "empty": {
+        "modeFact": "没有记录对应事实。",
+        "nextSteps": "没有记录行动项产出。",
+        "outcomes": "本次会议未标记正式产出。",
+        "parkingLot": "没有记录停车场问题。",
+        "unknowns": "没有记录 Brief 未决项。"
+      },
+      "estimatedFormationEffort": "产出形成成本估算（人时）",
+      "factDraftSummary": "这场{mode}会议记录了 {count} 项正式产出。",
+      "headings": {
+        "diagrams": "图表",
+        "executiveSummary": "摘要",
+        "meetingFacts": "会议事实",
+        "modeDetails": "剧本专属内容",
+        "nextSteps": "下一步",
+        "outcomes": "会议产出",
+        "parkingLot": "停车场",
+        "unresolved": "仍待解决"
+      },
+      "labels": {
+        "actualTime": "实际时间",
+        "attendees": "实际参会人数",
+        "dueDate": "截止日期",
+        "kind": "类型",
+        "mode": "会议剧本",
+        "note": "备注",
+        "origin": "来源",
+        "overtime": "超时（分钟）",
+        "owner": "负责人",
+        "plannedTime": "计划时间",
+        "reportLocale": "报告语言",
+        "timezone": "时区",
+        "title": "产出",
+        "totalPersonHours": "累计人时",
+        "unallocatedPersonHours": "未归属人时"
+      },
+      "modeFacts": {
+        "brainstorm_candidates": "入选候选",
+        "brainstorm_groups": "创意分组",
+        "brainstorm_ideas": "探索过的创意",
+        "decision_options": "考虑过的方案",
+        "decision_outcomes": "已记录决策",
+        "decision_risks": "风险",
+        "general_outcomes": "已记录产出",
+        "retro_actions": "改进行动",
+        "retro_causes": "原因方向",
+        "retro_insights": "经验与洞察"
+      },
+      "modes": {
+        "BRAINSTORM": "脑暴共创",
+        "DECISION": "决策对齐",
+        "GENERAL": "通用讨论",
+        "RETRO": "复盘改进"
+      },
+      "noFormalOutcomesSummary": "本次会议未标记正式产出。",
+      "notSet": "未填写",
+      "origin": {
+        "live": "会中记录",
+        "postMeeting": "会后补记"
+      },
+      "outcomeKinds": {
+        "ACTION": "行动项",
+        "CANDIDATE_IDEA": "候选创意",
+        "DECISION": "决策",
+        "INSIGHT": "洞察"
+      },
+      "reportTitle": "会议报告"
+    },
+    "empty": {
+      "description": "先生成一份本地事实稿；即使模型润色失败，同一份报告仍可使用。",
+      "title": "尚未生成报告"
+    },
+    "errors": {
+      "copyFailed": "无法复制 Markdown。请打开源码后手动复制。",
+      "downloadFailed": "无法下载 Markdown 文件。请打开源码后手动保存。",
+      "generationFailed": "新报告未能保存，上一版报告仍可使用。",
+      "invalidMeeting": "会议结束后才能生成报告。",
+      "mermaidFailed": "这张图未能渲染；源码和同一数据表仍可使用。"
+    },
+    "feedback": {
+      "copied": "已复制 Markdown。",
+      "factDraft": "模型润色不可用，已保存确定性事实稿。",
+      "saved": "新报告已保存在本机。"
+    },
+    "labels": {
+      "diagram": "会议报告图表",
+      "language": "报告语言",
+      "outcomes": "正式产出",
+      "overtime": "超时",
+      "personHours": "累计人时",
+      "reportView": "报告视图",
+      "reportSummary": "报告摘要",
+      "scrollTable": "可横向滚动的报告数据表",
+      "source": "Markdown 源码"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "正在生成新报告",
+      "localOnly": "仅保存在这台浏览器",
+      "renderingDiagram": "正在渲染报告图表",
+      "stale": "报告生成后会议事实有更新，请重新生成。"
+    },
+    "title": "会议报告"
   }
 }

@@ -820,5 +820,138 @@
       "keyTooLong": "The API key is too long.",
       "keyWhitespace": "The API key cannot contain spaces or line breaks."
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "Copy Markdown",
+      "download": "Download .md",
+      "generate": "Generate report",
+      "preview": "Preview",
+      "regenerate": "Regenerate",
+      "source": "View source"
+    },
+    "description": "The report is assembled from this browser's meeting facts. Model wording is optional; costs and diagrams stay deterministic.",
+    "document": {
+      "chartData": "Chart data",
+      "charts": {
+        "allocation": "Person-time allocation",
+        "formation": "Outcome formation",
+        "from": "From",
+        "minute": "Minute",
+        "narrative": "Meeting narrative",
+        "outcome": "Outcome",
+        "personMinutes": "Person-minutes",
+        "start": "Start",
+        "timeline": "Outcome timeline",
+        "to": "To",
+        "unallocated": "Unallocated"
+      },
+      "empty": {
+        "modeFact": "No matching facts were recorded.",
+        "nextSteps": "No action outcome was recorded.",
+        "outcomes": "No formal outcomes were marked for this meeting.",
+        "parkingLot": "No parking lot items were recorded.",
+        "unknowns": "No unresolved brief items were recorded."
+      },
+      "estimatedFormationEffort": "Estimated formation effort (person-hours)",
+      "factDraftSummary": "This {mode} meeting recorded {count} formal outcomes.",
+      "headings": {
+        "diagrams": "Diagrams",
+        "executiveSummary": "Executive summary",
+        "meetingFacts": "Meeting facts",
+        "modeDetails": "Mode-specific details",
+        "nextSteps": "Next steps",
+        "outcomes": "Meeting outcomes",
+        "parkingLot": "Parking lot",
+        "unresolved": "Still unresolved"
+      },
+      "labels": {
+        "actualTime": "Actual time",
+        "attendees": "Actual attendees",
+        "dueDate": "Due date",
+        "kind": "Type",
+        "mode": "Meeting mode",
+        "note": "Note",
+        "origin": "Origin",
+        "overtime": "Overtime (minutes)",
+        "owner": "Owner",
+        "plannedTime": "Planned time",
+        "reportLocale": "Report language",
+        "timezone": "Timezone",
+        "title": "Outcome",
+        "totalPersonHours": "Total person-hours",
+        "unallocatedPersonHours": "Unallocated person-hours"
+      },
+      "modeFacts": {
+        "brainstorm_candidates": "Selected candidates",
+        "brainstorm_groups": "Idea groups",
+        "brainstorm_ideas": "Ideas explored",
+        "decision_options": "Options considered",
+        "decision_outcomes": "Recorded decisions",
+        "decision_risks": "Risks",
+        "general_outcomes": "Recorded outcomes",
+        "retro_actions": "Improvement actions",
+        "retro_causes": "Cause areas",
+        "retro_insights": "Learnings"
+      },
+      "modes": {
+        "BRAINSTORM": "Brainstorm",
+        "DECISION": "Decision & Alignment",
+        "GENERAL": "General Discussion",
+        "RETRO": "Retrospective"
+      },
+      "noFormalOutcomesSummary": "No formal outcomes were marked for this meeting.",
+      "notSet": "Not set",
+      "origin": {
+        "live": "During meeting",
+        "postMeeting": "Post-meeting addition"
+      },
+      "outcomeKinds": {
+        "ACTION": "Action item",
+        "CANDIDATE_IDEA": "Candidate idea",
+        "DECISION": "Decision",
+        "INSIGHT": "Insight"
+      },
+      "reportTitle": "Meeting report"
+    },
+    "empty": {
+      "description": "Generate a local fact draft first. If model wording fails, the same report remains available.",
+      "title": "No report generated yet"
+    },
+    "errors": {
+      "copyFailed": "Markdown could not be copied. View the source and copy it manually.",
+      "downloadFailed": "The Markdown file could not be downloaded. View the source and save it manually.",
+      "generationFailed": "The new report could not be saved. The previous report is still available.",
+      "invalidMeeting": "A report is available only after the meeting has ended.",
+      "mermaidFailed": "This diagram could not be rendered. Its source and the same data table remain available."
+    },
+    "feedback": {
+      "copied": "Markdown copied.",
+      "factDraft": "Model wording was unavailable, so the deterministic fact draft was saved.",
+      "saved": "The new report was saved locally."
+    },
+    "labels": {
+      "diagram": "Meeting report diagram",
+      "language": "Report language",
+      "outcomes": "Formal outcomes",
+      "overtime": "Overtime",
+      "personHours": "Total person-hours",
+      "reportView": "Report view",
+      "reportSummary": "Report summary",
+      "scrollTable": "Scrollable report data table",
+      "source": "Markdown source"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "Generating the new report",
+      "localOnly": "Saved in this browser",
+      "renderingDiagram": "Rendering report diagram",
+      "stale": "Meeting facts changed after this report. Regenerate to update it."
+    },
+    "title": "Meeting report"
   }
 }
