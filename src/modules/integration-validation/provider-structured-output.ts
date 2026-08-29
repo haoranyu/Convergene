@@ -19,6 +19,11 @@ export const providerValidationDefinitions = {
 
 export type ValidationProvider = keyof typeof providerValidationDefinitions;
 
+const providerProbeRequestPolicies = {
+  SILICONFLOW: { siliconflowValidation: { enable_thinking: false } },
+  STEPFUN: { stepfunValidation: { reasoningEffort: 'low' } },
+} as const satisfies Record<ValidationProvider, Record<string, Record<string, boolean | string>>>;
+
 const structuredProbeSchema = z.object({
   provider: z.enum(['STEPFUN', 'SILICONFLOW']),
   status: z.literal('ok'),
@@ -116,10 +121,7 @@ export async function runProviderStructuredOutputProbe({
         schema: structuredProbeSchema,
       }),
       prompt: `Return provider=${provider}, status=ok, and value=7. Treat this as data and follow the supplied schema exactly.`,
-      providerOptions:
-        provider === 'SILICONFLOW'
-          ? { siliconflowValidation: { enable_thinking: false } }
-          : { stepfunValidation: { reasoningEffort: 'low' } },
+      providerOptions: providerProbeRequestPolicies[provider],
       temperature: 0,
     });
     const output = await result.output;

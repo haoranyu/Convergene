@@ -13,6 +13,11 @@ const maximumTimeoutMs = 60_000;
 const defaultMaxOutputTokens = 2_048;
 const minimumMaxOutputTokens = 512;
 
+const providerRequestPolicies = {
+  SILICONFLOW: { enable_thinking: false },
+  STEPFUN: { reasoningEffort: 'low' },
+} as const satisfies Record<ProviderId, Record<string, boolean | string>>;
+
 export type ProviderTaskRole = keyof ProviderModelMapping;
 
 export type ProviderGatewayErrorCode =
@@ -229,10 +234,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       },
       output: Output.object({ name: schemaName, schema }),
       prompt,
-      providerOptions:
-        config.provider === 'SILICONFLOW'
-          ? { [preset.name]: { enable_thinking: false } }
-          : { [preset.name]: { reasoningEffort: 'low' } },
+      providerOptions: { [preset.name]: providerRequestPolicies[config.provider] },
       temperature: 0,
     });
 
