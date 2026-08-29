@@ -329,7 +329,7 @@ function PreparationWorkspaceBody({
   const readinessPanel = readiness ? (
     <aside aria-label={t('readiness.title')} className={styles.readinessPanel}>
       <div className={styles.readinessHeading}>
-        <Typography.Title heading={4}>{t('readiness.title')}</Typography.Title>
+        <Typography.Title heading={2}>{t('readiness.title')}</Typography.Title>
         <Tag>{t(`readiness.levels.${readiness.level}`)}</Tag>
       </div>
       <div
@@ -423,7 +423,7 @@ function PreparationWorkspaceBody({
                 {pending.phase === 'CRITICAL_EXTRA' ? (
                   <Tag color="orange">{t('grill.critical')}</Tag>
                 ) : null}
-                <Typography.Title heading={3}>{pending.question}</Typography.Title>
+                <Typography.Title heading={2}>{pending.question}</Typography.Title>
                 {pending.reason ? (
                   <p className={styles.reason}>{t('grill.why', { reason: pending.reason })}</p>
                 ) : null}
@@ -472,7 +472,7 @@ function PreparationWorkspaceBody({
               </Card>
             ) : completedCount >= 5 ? (
               <Card className={styles.questionCard}>
-                <Typography.Title heading={3}>{t('grill.defaultComplete')}</Typography.Title>
+                <Typography.Title heading={2}>{t('grill.defaultComplete')}</Typography.Title>
                 <p>{t('grill.defaultCompleteDescription')}</p>
                 <div className={styles.actionRow}>
                   <Button
@@ -503,7 +503,7 @@ function PreparationWorkspaceBody({
               </Card>
             ) : (
               <Card className={styles.questionCard}>
-                <Typography.Title heading={3}>{t('grill.resumeTitle')}</Typography.Title>
+                <Typography.Title heading={2}>{t('grill.resumeTitle')}</Typography.Title>
                 <p>{t('grill.resumeDescription')}</p>
                 <Button
                   onClick={() =>
@@ -642,7 +642,7 @@ function PreparationWorkspaceBody({
   }
 
   return (
-    <main className={styles.shell}>
+    <main aria-busy={busy} className={styles.shell}>
       <h1 className={styles.srOnly}>{meeting?.title}</h1>
       <header className={styles.topbar}>
         <div className={styles.brandCluster}>
@@ -663,8 +663,10 @@ function PreparationWorkspaceBody({
           <Link className={styles.primaryLink} href="/">
             {t('actions.back')}
           </Link>
-          <Button onClick={() => void rollback('GRILL')}>{t('actions.returnGrill')}</Button>
-          <Button onClick={() => void rollback('DRAFT')} status="danger">
+          <Button disabled={busy} onClick={() => void rollback('GRILL')}>
+            {t('actions.returnGrill')}
+          </Button>
+          <Button disabled={busy} onClick={() => void rollback('DRAFT')} status="danger">
             {t('actions.restart')}
           </Button>
         </div>

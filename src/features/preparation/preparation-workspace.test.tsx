@@ -118,14 +118,13 @@ describe('PreparationWorkspace', () => {
     renderWorkspace(client);
 
     expect(
-      await screen.findByRole('heading', { name: 'Who owns the final decision?' }),
+      await screen.findByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
     ).toBeVisible();
-    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1);
     await user.type(screen.getByLabelText('Your answer'), 'The product sponsor');
     await user.click(screen.getByRole('button', { name: 'Submit answer' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Which options are genuinely viable?' }),
+      await screen.findByRole('heading', { level: 2, name: 'Which options are genuinely viable?' }),
     ).toBeVisible();
     const aggregate = await readMeetingAggregate(database, 'meeting-1');
     expect(aggregate).toMatchObject({

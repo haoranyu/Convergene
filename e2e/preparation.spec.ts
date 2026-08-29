@@ -75,7 +75,7 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
   await page.reload();
 
   await expect(
-    page.getByRole('heading', { level: 3, name: 'Who owns the final decision?' }),
+    page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
   ).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Meeting readiness' })).toBeVisible();
   await expect(page.getByLabel('Your answer')).toBeVisible();
@@ -93,7 +93,7 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
     await page.goto(`/${locale}/meetings/meeting-1/prepare`);
     await expect(page.getByRole('complementary', { name: readiness })).toBeVisible();
     await expect(
-      page.getByRole('heading', { level: 3, name: 'Who owns the final decision?' }),
+      page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
     ).toBeVisible();
   }
 });
