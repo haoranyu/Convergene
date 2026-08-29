@@ -183,6 +183,18 @@ Mermaid renderer。测试环境仅补齐 jsdom 缺少、但现代浏览器提供
 5. 任意 parse/render 失败都返回稳定 `MERMAID_RENDER_FAILED`、原始 Mermaid source 和同数据
    Markdown table，不阻塞正文、复制或下载。
 
+2026-08-29 补充（report-domain 底座实现时发现，已在
+`src/modules/report-domain/mermaid-render.test.ts` 形成可重复回归）：
+
+6. flowchart 节点形状必须保持默认矩形：Mermaid 11.17.2 中 stadium 等非矩形节点在 edge 布局
+   阶段会把 label 经 `btoa` 编码，label 含任何非 Latin-1 字符（中文、emoji）都会抛出
+   `InvalidCharacterError`；矩形节点不受此限制，中文与 emoji 均可渲染。产出标记因此使用
+   `★` 文本前缀而非节点形状。
+7. 引号与尖括号在 flowchart 引号 label 内也必须转义（裸 `<` 会导致解析失败）：先转义 `#`
+   为 `#35;`（防止用户文本里的 `#quot;` 被二次解码），再处理 `"`、`<`、`>` 为
+   `#quot;`、`#60;`、`#62;`；flowchart 与 pie 均会正确解码这些实体。timeline 事件文本没有
+   引号上下文，`:` 与 `;` 一律替换为全角 `：`、`；`。
+
 ## 6. 后续验证边界
 
 - 外部集成 Spike 没有遗留 blocker：两个 Provider 与真实 Redis 的本 Issue 完成标准均已满足。
