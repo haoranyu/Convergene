@@ -616,6 +616,107 @@
     },
     "workspaceLabel": "会议讨论画布"
   },
+  "meeting": {
+    "actions": {
+      "backToCheck": "返回散会检查",
+      "cancel": "取消",
+      "confirmEnd": "确认并结束会议",
+      "continueToConfirm": "继续确认",
+      "end": "结束会议",
+      "returnToLive": "返回正在进行的会议",
+      "returnToMeeting": "返回整理",
+      "start": "开始会议"
+    },
+    "end": {
+      "actionGaps": "行动项缺少负责人：{ownerCount} 项；缺少截止日期：{dueDateCount} 项。",
+      "actualAttendees": "实际参会人数",
+      "attendeeHelp": "结束前可修正这份人数快照；总人时和产出形成成本会统一重算。",
+      "confirmDescription": "结束后将冻结实际结束时间，这场会议不能再回到进行中。",
+      "confirmTitle": "确认结束会议",
+      "confirmZeroOutcomes": "这场会还没有正式产出，但仍可结束；全部人时会保留为未归属人时。",
+      "description": "先核对会议事实。完成最后一次确认前，不会写入结束时间。",
+      "elapsed": "实际时长",
+      "outcomeBreakdown": "会议产出分类",
+      "outcomeCount": "正式产出",
+      "overtime": "超时",
+      "parkingLot": "停车场问题",
+      "personHours": "累计人时",
+      "title": "准备散会？",
+      "unresolved": "Brief 未决项",
+      "zeroOutcomeWarning": "这场会还没有留下正式产出。"
+    },
+    "errors": {
+      "activeMeetingExists": "已有另一场会议正在进行。请返回或明确结束上一场，再开始这场会议。",
+      "generic": "本机会议更新失败。请重新加载会议后再试。",
+      "invalidAttendeeCount": "实际参会人数必须是至少 1 的整数。",
+      "invalidMeetingState": "当前会议状态已不允许执行这个操作。",
+      "invalidTimeRange": "会议时间无效。请重新加载最新会议状态后再试。",
+      "outcomeAlreadyExists": "这个节点已经是会议产出。请先编辑或取消已有标记。",
+      "staleWrite": "会议已在另一个标签页更新。请重新加载最新版本后继续。"
+    },
+    "live": {
+      "attendeeValue": "{count} 人",
+      "attendees": "实际人数",
+      "elapsed": "已进行",
+      "inProgress": "进行中",
+      "minuteValue": "{value} 分钟",
+      "overtime": "已超时",
+      "overrun": "进行中 · 已超时",
+      "personHours": "累计人时",
+      "personHourValue": "{value} 人时",
+      "status": "会议状态",
+      "summaryLabel": "会中状态栏"
+    },
+    "start": {
+      "actualAttendees": "实际参会人数",
+      "actualAttendeesHelp": "这会成为整场会议唯一的人数快照；结束前仍可修正。",
+      "conflictDescription": "同一浏览器只允许一场会议进行中，Convergene 不会静默结束上一场。",
+      "conflictTitle": "已有会议正在进行",
+      "description": "确认真正到场的人数。开始后会记录实际开始时间，并聚焦第一个议题。",
+      "expectedAttendees": "预计参会人数",
+      "schedule": "计划时间",
+      "scheduleValue": "{start} – {end}",
+      "title": "开始这场会议？"
+    }
+  },
+  "outcome": {
+    "actionHelp": "负责人和截止日期均可留空，Convergene 不会代填。",
+    "actions": {
+      "cancel": "取消",
+      "confirmUnmark": "取消标记",
+      "editMetadata": "编辑行动信息",
+      "mark": "收进会议产出",
+      "saveMetadata": "保存行动信息",
+      "unmark": "移出会议产出"
+    },
+    "feedback": {
+      "marked": "已将节点收进会议产出。",
+      "unmarked": "已取消产出标记，并重新计算形成成本。",
+      "updated": "行动信息已保存。"
+    },
+    "fields": {
+      "dueDate": "截止日期（可选）",
+      "kind": "产出类型",
+      "owner": "负责人（可选）",
+      "ownerPlaceholder": "姓名或角色"
+    },
+    "kinds": {
+      "ACTION": "行动项",
+      "CANDIDATE_IDEA": "候选创意",
+      "DECISION": "决策",
+      "INSIGHT": "洞察"
+    },
+    "markHelp": "只有用户明确确认才会创建产出；AI 建议始终只是建议。",
+    "savedDescription": "这个节点已成为正式会议产出。",
+    "title": "会议产出",
+    "unmark": {
+      "content": "取消会中产出会影响后续产出的形成成本，Convergene 会用确定性规则重新计算。",
+      "title": "取消这项会议产出？"
+    },
+    "values": {
+      "notSet": "未填写"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",

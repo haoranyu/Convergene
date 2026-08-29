@@ -616,6 +616,107 @@
     },
     "workspaceLabel": "會議討論畫布"
   },
+  "meeting": {
+    "actions": {
+      "backToCheck": "返回散會檢查",
+      "cancel": "取消",
+      "confirmEnd": "確認並結束會議",
+      "continueToConfirm": "繼續確認",
+      "end": "結束會議",
+      "returnToLive": "返回進行中的會議",
+      "returnToMeeting": "返回整理",
+      "start": "開始會議"
+    },
+    "end": {
+      "actionGaps": "行動項目缺少負責人：{ownerCount} 項；缺少截止日期：{dueDateCount} 項。",
+      "actualAttendees": "實際與會人數",
+      "attendeeHelp": "結束前可修正這份人數快照；總人時和產出形成成本會一併重算。",
+      "confirmDescription": "結束後將固定實際結束時間，這場會議不能再回到進行中。",
+      "confirmTitle": "確認結束會議",
+      "confirmZeroOutcomes": "這場會還沒有正式產出，但仍可結束；全部人時會保留為未歸屬人時。",
+      "description": "先核對會議事實。完成最後一次確認前，不會寫入結束時間。",
+      "elapsed": "實際時長",
+      "outcomeBreakdown": "會議產出分類",
+      "outcomeCount": "正式產出",
+      "overtime": "超時",
+      "parkingLot": "停車場問題",
+      "personHours": "累計人時",
+      "title": "準備散會？",
+      "unresolved": "Brief 未決項",
+      "zeroOutcomeWarning": "這場會還沒有留下正式產出。"
+    },
+    "errors": {
+      "activeMeetingExists": "已有另一場會議正在進行。請返回或明確結束上一場，再開始這場會議。",
+      "generic": "本機會議更新失敗。請重新載入會議後再試。",
+      "invalidAttendeeCount": "實際與會人數必須是至少 1 的整數。",
+      "invalidMeetingState": "目前會議狀態已不允許執行這個操作。",
+      "invalidTimeRange": "會議時間無效。請重新載入最新會議狀態後再試。",
+      "outcomeAlreadyExists": "這個節點已經是會議產出。請先編輯或取消現有標記。",
+      "staleWrite": "會議已在另一個分頁更新。請重新載入最新版本後繼續。"
+    },
+    "live": {
+      "attendeeValue": "{count} 人",
+      "attendees": "實際人數",
+      "elapsed": "已進行",
+      "inProgress": "進行中",
+      "minuteValue": "{value} 分鐘",
+      "overtime": "已超時",
+      "overrun": "進行中 · 已超時",
+      "personHours": "累計人時",
+      "personHourValue": "{value} 人時",
+      "status": "會議狀態",
+      "summaryLabel": "會中狀態列"
+    },
+    "start": {
+      "actualAttendees": "實際與會人數",
+      "actualAttendeesHelp": "這會成為整場會議唯一的人數快照；結束前仍可修正。",
+      "conflictDescription": "同一瀏覽器只允許一場會議進行中，Convergene 不會靜默結束上一場。",
+      "conflictTitle": "已有會議正在進行",
+      "description": "確認真正到場的人數。開始後會記錄實際開始時間，並聚焦第一個議題。",
+      "expectedAttendees": "預計與會人數",
+      "schedule": "計畫時間",
+      "scheduleValue": "{start} – {end}",
+      "title": "開始這場會議？"
+    }
+  },
+  "outcome": {
+    "actionHelp": "負責人和截止日期都可留空，Convergene 不會代填。",
+    "actions": {
+      "cancel": "取消",
+      "confirmUnmark": "取消標記",
+      "editMetadata": "編輯行動資訊",
+      "mark": "收進會議產出",
+      "saveMetadata": "儲存行動資訊",
+      "unmark": "移出會議產出"
+    },
+    "feedback": {
+      "marked": "已將節點收進會議產出。",
+      "unmarked": "已取消產出標記，並重新計算形成成本。",
+      "updated": "行動資訊已儲存。"
+    },
+    "fields": {
+      "dueDate": "截止日期（可選）",
+      "kind": "產出類型",
+      "owner": "負責人（可選）",
+      "ownerPlaceholder": "姓名或角色"
+    },
+    "kinds": {
+      "ACTION": "行動項目",
+      "CANDIDATE_IDEA": "候選點子",
+      "DECISION": "決策",
+      "INSIGHT": "洞察"
+    },
+    "markHelp": "只有使用者明確確認才會建立產出；AI 建議始終只是建議。",
+    "savedDescription": "這個節點已成為正式會議產出。",
+    "title": "會議產出",
+    "unmark": {
+      "content": "取消會中產出會影響後續產出的形成成本，Convergene 會用確定性規則重新計算。",
+      "title": "取消這項會議產出？"
+    },
+    "values": {
+      "notSet": "未填寫"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",

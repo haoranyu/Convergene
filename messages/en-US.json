@@ -616,6 +616,107 @@
     },
     "workspaceLabel": "Meeting discussion canvas"
   },
+  "meeting": {
+    "actions": {
+      "backToCheck": "Back to end check",
+      "cancel": "Cancel",
+      "confirmEnd": "Confirm and end meeting",
+      "continueToConfirm": "Continue to confirmation",
+      "end": "End meeting",
+      "returnToLive": "Return to live meeting",
+      "returnToMeeting": "Return to meeting",
+      "start": "Start meeting"
+    },
+    "end": {
+      "actionGaps": "Action items missing an owner: {ownerCount}; missing a due date: {dueDateCount}.",
+      "actualAttendees": "Actual attendees",
+      "attendeeHelp": "Correct this snapshot before ending. All person-time and formation effort will be recalculated.",
+      "confirmDescription": "Ending freezes the actual end time. This meeting cannot return to LIVE.",
+      "confirmTitle": "Confirm meeting end",
+      "confirmZeroOutcomes": "This meeting has no formal outcomes. You can still end it; all person-time will remain unallocated.",
+      "description": "Review the meeting facts. Nothing is written until the final confirmation.",
+      "elapsed": "Actual duration",
+      "outcomeBreakdown": "Outcome breakdown",
+      "outcomeCount": "Formal outcomes",
+      "overtime": "Overtime",
+      "parkingLot": "Parking lot items",
+      "personHours": "Total person-hours",
+      "title": "Ready to end the meeting?",
+      "unresolved": "Unresolved brief items",
+      "zeroOutcomeWarning": "This meeting has not left any formal outcomes yet."
+    },
+    "errors": {
+      "activeMeetingExists": "Another meeting is already LIVE. Return to it or end it explicitly before starting this one.",
+      "generic": "The local meeting update failed. Reload the meeting and try again.",
+      "invalidAttendeeCount": "Enter a whole number of at least 1 for actual attendees.",
+      "invalidMeetingState": "This action is no longer available for the meeting's current state.",
+      "invalidTimeRange": "The meeting time is invalid. Reload the latest meeting state and try again.",
+      "outcomeAlreadyExists": "This node is already a meeting outcome. Edit or remove the existing outcome first.",
+      "staleWrite": "The meeting changed in another tab. Reload the latest version before continuing."
+    },
+    "live": {
+      "attendeeValue": "{count, plural, one {# attendee} other {# attendees}}",
+      "attendees": "Actual attendees",
+      "elapsed": "Elapsed",
+      "inProgress": "In progress",
+      "minuteValue": "{value} min",
+      "overtime": "Overtime",
+      "overrun": "In progress · overtime",
+      "personHours": "Cumulative person-hours",
+      "personHourValue": "{value, plural, one {# person-hour} other {# person-hours}}",
+      "status": "Meeting status",
+      "summaryLabel": "Live meeting status"
+    },
+    "start": {
+      "actualAttendees": "Actual attendees",
+      "actualAttendeesHelp": "This becomes the single attendee snapshot used for the entire meeting. You can correct it before ending.",
+      "conflictDescription": "Convergene allows only one LIVE meeting in this browser and will never end it silently.",
+      "conflictTitle": "Another meeting is already LIVE",
+      "description": "Confirm who is actually here. Starting records the real start time and the first active topic.",
+      "expectedAttendees": "Expected attendees",
+      "schedule": "Planned time",
+      "scheduleValue": "{start} – {end}",
+      "title": "Start this meeting?"
+    }
+  },
+  "outcome": {
+    "actionHelp": "Owner and due date are optional. Convergene will not invent them.",
+    "actions": {
+      "cancel": "Cancel",
+      "confirmUnmark": "Remove outcome",
+      "editMetadata": "Edit action details",
+      "mark": "Add to meeting outcomes",
+      "saveMetadata": "Save action details",
+      "unmark": "Remove from outcomes"
+    },
+    "feedback": {
+      "marked": "The node was added to the meeting outcomes.",
+      "unmarked": "The outcome was removed. Formation effort has been recalculated.",
+      "updated": "Action details saved."
+    },
+    "fields": {
+      "dueDate": "Due date (optional)",
+      "kind": "Outcome type",
+      "owner": "Owner (optional)",
+      "ownerPlaceholder": "Name or role"
+    },
+    "kinds": {
+      "ACTION": "Action item",
+      "CANDIDATE_IDEA": "Candidate idea",
+      "DECISION": "Decision",
+      "INSIGHT": "Insight"
+    },
+    "markHelp": "Only this explicit action creates an outcome; AI suggestions remain suggestions.",
+    "savedDescription": "This node is a formal meeting outcome.",
+    "title": "Meeting outcome",
+    "unmark": {
+      "content": "Removing a LIVE outcome changes the formation effort of later outcomes. Convergene will recalculate it deterministically.",
+      "title": "Remove this meeting outcome?"
+    },
+    "values": {
+      "notSet": "Not set"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "Cancel",

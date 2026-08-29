@@ -1,0 +1,220 @@
+.toolbar {
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+}
+
+.toolbarMetrics {
+  align-items: stretch;
+  display: flex;
+  flex: 1 1 620px;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.metric {
+  border-left: 1px solid var(--color-border);
+  display: grid;
+  gap: 2px;
+  min-width: 116px;
+  padding: 0 var(--space-3);
+}
+
+.metric:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.metricLabel {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.metricValue {
+  color: var(--color-foreground);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  line-height: 22px;
+}
+
+.overrunValue {
+  color: var(--color-accent);
+}
+
+.toolbar :global(.arco-btn),
+.dialogActions :global(.arco-btn),
+.panelActions :global(.arco-btn) {
+  min-height: 44px;
+}
+
+.dialog {
+  max-width: calc(100vw - 32px);
+  width: 640px;
+}
+
+.dialog :global(.arco-input-number),
+.dialog :global(.arco-input),
+.panel :global(.arco-input),
+.panel :global(.arco-select-view) {
+  min-height: 44px;
+}
+
+.dialogIntro,
+.helperText,
+.mutedText {
+  color: var(--color-muted-foreground) !important;
+  line-height: 1.6 !important;
+}
+
+.dialogIntro {
+  margin-top: 0 !important;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-6);
+}
+
+.dialogActions > :first-child {
+  margin-right: auto;
+}
+
+.summaryGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: var(--space-4) 0;
+}
+
+.summaryCard {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.summaryValue {
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.outcomeKinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.panelHeader {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.panelTitle {
+  margin: 0 !important;
+}
+
+.panelActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.noticeRegion {
+  min-height: 0;
+}
+
+.metadataGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metadataGrid :global(.arco-form-item) {
+  margin-bottom: 0;
+}
+
+.outcomeTag {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-2);
+}
+
+.fullWidthField {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 767px) {
+  .toolbar,
+  .toolbarMetrics,
+  .panelHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbarMetrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric,
+  .metric:first-child {
+    border-left: 0;
+    border-top: 1px solid var(--color-border);
+    min-width: 0;
+    padding: var(--space-2) 0 0;
+  }
+
+  .toolbar > :global(.arco-btn),
+  .panelActions :global(.arco-btn) {
+    width: 100%;
+  }
+
+  .summaryGrid,
+  .metadataGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dialogActions {
+    align-items: stretch;
+    display: grid;
+  }
+
+  .dialogActions > :first-child {
+    margin-right: 0;
+  }
+
+  .dialogActions :global(.arco-btn) {
+    width: 100%;
+  }
+}
