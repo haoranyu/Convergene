@@ -1,0 +1,115 @@
+import { z } from 'zod';
+
+export const providerIds = ['STEPFUN', 'SILICONFLOW'] as const;
+export const providerIdSchema = z.enum(providerIds);
+
+export type ProviderId = z.infer<typeof providerIdSchema>;
+
+export const providerConfigInputSchema = z
+  .object({
+    apiKey: z.string().trim().min(1).max(512).regex(/^\S+$/u),
+    provider: providerIdSchema,
+  })
+  .strict();
+
+export type ProviderConfigInput = z.infer<typeof providerConfigInputSchema>;
+
+export const providerModelMappingSchema = z
+  .object({
+    fast: z.string().min(1).max(128),
+    grill: z.string().min(1).max(128),
+    report: z.string().min(1).max(128),
+  })
+  .strict();
+
+export type ProviderModelMapping = z.infer<typeof providerModelMappingSchema>;
+
+export const providerModelPresets = {
+  SILICONFLOW: {
+    fast: 'deepseek-ai/DeepSeek-V4-Flash',
+    grill: 'deepseek-ai/DeepSeek-V4-Flash',
+    report: 'deepseek-ai/DeepSeek-V4-Flash',
+  },
+  STEPFUN: {
+    fast: 'step-3.7-flash',
+    grill: 'step-3.7-flash',
+    report: 'step-3.7-flash',
+  },
+} as const satisfies Record<ProviderId, ProviderModelMapping>;
+
+export type ProviderConfigSummary =
+  | {
+      configured: false;
+      state: 'NOT_CONFIGURED';
+    }
+  | {
+      configured: true;
+      keyHint?: string;
+      lastUsedAt: string;
+      models: ProviderModelMapping;
+      provider: ProviderId;
+      state: 'AVAILABLE' | 'NEEDS_RECONFIGURATION';
+    };
+
+export type ProviderConfigErrorCode =
+  | 'INPUT_INVALID'
+  | 'ORIGIN_INVALID'
+  | 'PROVIDER_AUTH_FAILED'
+  | 'PROVIDER_CONFIG_INVALID'
+  | 'PROVIDER_CONFIG_UNAVAILABLE'
+  | 'PROVIDER_MODEL_NOT_FOUND'
+  | 'PROVIDER_RATE_LIMITED'
+  | 'PROVIDER_UNAVAILABLE'
+  | 'RATE_LIMITED';
+
+export const providerConfigErrorCodeSchema = z.enum([
+  'INPUT_INVALID',
+  'ORIGIN_INVALID',
+  'PROVIDER_AUTH_FAILED',
+  'PROVIDER_CONFIG_INVALID',
+  'PROVIDER_CONFIG_UNAVAILABLE',
+  'PROVIDER_MODEL_NOT_FOUND',
+  'PROVIDER_RATE_LIMITED',
+  'PROVIDER_UNAVAILABLE',
+  'RATE_LIMITED',
+] satisfies ProviderConfigErrorCode[]);
+
+export const providerConfigSummarySchema = z.discriminatedUnion('configured', [
+  z.object({ configured: z.literal(false), state: z.literal('NOT_CONFIGURED') }).strict(),
+  z
+    .object({
+      configured: z.literal(true),
+      keyHint: z.literal('••••••••').optional(),
+      lastUsedAt: z.iso.datetime(),
+      models: providerModelMappingSchema,
+      provider: providerIdSchema,
+      state: z.enum(['AVAILABLE', 'NEEDS_RECONFIGURATION']),
+    })
+    .strict(),
+]);
+
+export const providerConnectionResultSchema = z
+  .object({ models: providerModelMappingSchema, provider: providerIdSchema })
+  .strict();
+
+export function providerConfigApiResponseSchema<ValueSchema extends z.ZodType>(
+  valueSchema: ValueSchema,
+) {
+  return z.discriminatedUnion('ok', [
+    z.object({ ok: z.literal(true), value: valueSchema }).strict(),
+    z
+      .object({
+        error: z.object({ code: providerConfigErrorCodeSchema }).strict(),
+        ok: z.literal(false),
+      })
+      .strict(),
+  ]);
+}
+
+export type ProviderConfigApiResponse<Value> =
+  { ok: true; value: Value } | { error: { code: ProviderConfigErrorCode }; ok: false };
+
+export interface ProviderConnectionResult {
+  models: ProviderModelMapping;
+  provider: ProviderId;
+}

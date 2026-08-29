@@ -405,6 +405,9 @@ interface ReportOutput {
 type AIErrorCode =
   | 'PROVIDER_NOT_CONFIGURED'
   | 'PROVIDER_AUTH_FAILED'
+  | 'PROVIDER_CONFIG_INVALID'
+  | 'PROVIDER_CONFIG_UNAVAILABLE'
+  | 'PROVIDER_MODEL_NOT_FOUND'
   | 'PROVIDER_RATE_LIMITED'
   | 'PROVIDER_UNAVAILABLE'
   | 'INPUT_INVALID'
@@ -415,6 +418,8 @@ type AIErrorCode =
 ```
 
 - 401/403 映射为配置失效，引导重新配置，不自动清除 Redis record；
+- 解密或 envelope 校验失败映射为 `PROVIDER_CONFIG_INVALID`；Redis、加密密钥或配置存储不可用映射为 `PROVIDER_CONFIG_UNAVAILABLE`；
+- 固定 preset model 被供应商拒绝为不存在时映射为 `PROVIDER_MODEL_NOT_FOUND`，不得退回调用任意 model；
 - 429 显示供应商限流，不自动切换另一个 Provider；
 - 5xx 可由用户重试；
 - schema 失败只对初始图自动修复一次；

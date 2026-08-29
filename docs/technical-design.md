@@ -298,9 +298,10 @@ db.version(1).stores({
 - Cookie 名称：`convergene_session`；
 - 值：至少 256 bit 的加密随机 id；
 - 属性：`HttpOnly; Secure; SameSite=Strict; Path=/`；
+- 重复同名 Cookie 直接拒绝；只有 Cookie 对应的 Redis record 存在时才能复用 session，否则保存时由服务端重新生成随机 id；
 - 服务端只在用户保存模型配置时创建；浏览导览不创建会话；
 - Redis key 使用 `provider-config:${sha256(sessionId)}`，不直接使用 Cookie 值；
-- 每次成功读取配置后同步续期 Cookie 与 Redis TTL，最长空闲 30 天。
+- 每次成功读取配置后原子更新 Redis `lastUsedAt` 与 30 天 TTL，并同步续期 Cookie；状态读取只校验加密 envelope 结构，不能为展示状态而解密 Key。
 
 ### 6.2 加密记录
 
@@ -324,6 +325,7 @@ interface EncryptedProviderConfig {
 ```
 
 - `APP_ENCRYPTION_SECRET` 必须是独立的 32-byte base64 secret；
+- runtime 初始化时必须先校验它是 canonical base64 且恰好解码为 32 bytes；格式错误统一视为配置存储不可用；
 - 每次写入使用新的 96-bit IV；
 - Provider 和模型 id 可以明文保存，API Key 必须在 `ciphertext` 中；
 - 解密只发生在调用模型前的服务端内存；
@@ -363,7 +365,7 @@ DELETE /api/provider-config
 ```
 
 - `test` 使用用户提交的 Key 做一次最小调用，不提前持久化；
-- `status` 只返回是否已配置、Provider、掩码提示和模型覆盖，不返回 Key；
+- `status` 只做加密 envelope 的结构校验，并返回是否已配置、Provider、固定掩码提示和模型覆盖；不解密也不返回 Key；
 - `PUT` 测试成功后创建/更新匿名会话和加密记录；
 - `DELETE` 幂等删除 Redis 记录并清除 Cookie。
 
@@ -451,6 +453,15 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 封装 session、Redis、AES-GCM、Provider 白名单和模型解析。业务模块只拿到一次请求内有效的 `ResolvedProviderConfig`，不能接触 Redis record。
 
+生产实现位于 `src/modules/provider-config/`：Cookie 使用 32-byte base64url 随机 id，Redis key
+只含其 SHA-256；Key 由 AES-256-GCM envelope 保存，状态接口只返回固定掩码。PUT 在每次写入前
+重新执行最小结构化 Provider 调用，失败不覆盖旧 record；成功读取会原子更新 `lastUsedAt` 和
+Redis 的 30 天 TTL，并续期 Cookie。只有真正调用模型的 `resolve` 路径会在服务端内存解密 Key，
+状态读取不会解密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
+使用 IP bucket；Redis/Lua 故障返回配置不可用，不能伪装为用户触发限流。
+`src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
+Schema、超时/取消及错误归一化的唯一共享边界。
+
 ## 9. 画布与布局
 
 - Dagre rank direction 固定 `LR`；
@@ -517,7 +528,8 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 - 模型 id 只作为白名单 Provider 的路径参数值，不允许换行、URL 或 header 注入；
 - Redis 连接和 `APP_ENCRYPTION_SECRET` 只在服务端环境变量；
 - 生产日志不记录 Key、Cookie、Prompt、Brief、节点或模型完整响应；
-- CSP 至少限制 `script-src` 和 `connect-src` 到自身及必要资源；
+- CSP 为每个页面请求生成 nonce，生产 `script-src` 使用 `strict-dynamic` 且禁止 `unsafe-inline`，`connect-src` 只允许同源；因此页面和全局 404 采用动态渲染；matcher 只排除 API、Next/Vercel 内部路径和明确的 metadata 资源，不按“路径含点”跳过未知 HTML；
+- API Key 表单关闭浏览器自动完成，并标记为不应由常见密码管理器捕获；
 - Markdown 不渲染原始 HTML，Mermaid 使用 strict。
 
 ### 数据说明
@@ -532,6 +544,9 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 ### 免费层保护
 
 - Redis 按匿名 session 做基础限流，例如 AI route 每分钟 30 次；
+- 配置接口在 session 创建前按代理提供的客户端地址做单向 SHA-256 scope，创建后按 session 做
+  scope；原始地址和 Cookie 都不进入 Redis key 或日志。计数与首次过期时间由同一 Lua script
+  原子设置，第 31 次请求返回稳定 `RATE_LIMITED`；
 - 用户 Key 的供应商错误不能无限自动重试；
 - Vercel Hobby 超额后停止服务而不是产生按量账单；
 - 不配置公共模型 Key，因此公开页面不会消耗项目方模型额度。

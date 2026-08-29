@@ -19,5 +19,108 @@
       "ui": "Arco Design application shell"
     },
     "title": "The meeting cheat tool for getting work done"
+  },
+  "providerConfig": {
+    "actions": {
+      "cancel": "Cancel",
+      "confirmDelete": "Clear configuration",
+      "delete": "Clear model configuration",
+      "manage": "Model settings",
+      "open": "Configure a model",
+      "reconfigure": "Replace configuration",
+      "retryStatus": "Try loading again",
+      "save": "Save configuration",
+      "test": "Test connection"
+    },
+    "delete": {
+      "content": "This removes the encrypted model configuration and anonymous session. Meetings saved in this browser stay untouched.",
+      "title": "Clear the model configuration?"
+    },
+    "dialog": {
+      "description": "Add your own provider key to continue. Convergene never supplies a shared model key.",
+      "title": "Connect a model provider"
+    },
+    "errors": {
+      "INPUT_INVALID": "Check the provider and API key fields, then try again.",
+      "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
+      "PROVIDER_AUTH_FAILED": "Authentication failed. Check the API key and try again.",
+      "PROVIDER_CONFIG_INVALID": "The saved configuration can no longer be used. Enter the key again.",
+      "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your local meetings are still safe.",
+      "PROVIDER_MODEL_NOT_FOUND": "The approved model is unavailable for this account. Check the provider account or try the other provider.",
+      "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment, then test again.",
+      "PROVIDER_UNAVAILABLE": "The provider could not be reached. Check the connection and try again.",
+      "RATE_LIMITED": "Too many configuration attempts. Wait a minute, then try again."
+    },
+    "feedback": {
+      "deleteSuccess": "Model configuration cleared. Local meetings were not changed.",
+      "saveSuccess": "Model configuration saved. The API key is hidden from now on.",
+      "testSuccess": "Connection verified. You can save this configuration."
+    },
+    "fields": {
+      "apiKey": "API key",
+      "apiKeyPlaceholder": "Paste the provider API key",
+      "provider": "Provider"
+    },
+    "form": {
+      "description": "Test the key first. A successful test unlocks saving without showing the key again.",
+      "keyHelp": "The field clears after every test or save attempt. A verified key stays only in temporary page memory until you save or change it.",
+      "reconfigureTitle": "Enter a replacement key",
+      "title": "Add your model configuration"
+    },
+    "models": {
+      "fast": "Fast tasks",
+      "fixed": "Fixed preset",
+      "grill": "Grill",
+      "presetTitle": "Approved model preset",
+      "report": "Reports",
+      "title": "Active models"
+    },
+    "page": {
+      "back": "Back to meetings",
+      "backLabel": "Model settings navigation",
+      "description": "Connect one approved provider, verify the key, and keep model access separate from meeting data.",
+      "eyebrow": "Your key, your quota",
+      "metadataDescription": "Securely configure a StepFun or SiliconFlow model key for Convergene.",
+      "title": "Model connection"
+    },
+    "privacy": {
+      "encrypted": "The server stores the API key encrypted and never shows it again.",
+      "expiry": "The configuration expires after 30 inactive days.",
+      "meetings": "Meeting content stays in this browser and is not stored by the Convergene backend.",
+      "provider": "An AI action sends only the necessary context to the provider you choose.",
+      "title": "Data boundary"
+    },
+    "providers": {
+      "siliconflow": {
+        "name": "SiliconFlow"
+      },
+      "stepfun": {
+        "name": "StepFun",
+        "recommended": "Recommended"
+      }
+    },
+    "route": {
+      "browserDescription": "Meeting content remains local",
+      "browserTitle": "This browser",
+      "providerDescription": "Receives only requested AI context",
+      "providerTitle": "Your provider",
+      "title": "Where the data goes",
+      "vaultDescription": "Only the encrypted API key",
+      "vaultTitle": "Credential vault"
+    },
+    "status": {
+      "actionRequired": "Action required",
+      "available": "Model connection ready",
+      "connected": "Connected",
+      "lastUsed": "Last used",
+      "loading": "Checking model configuration",
+      "needsReconfiguration": "Model needs a new key",
+      "providerReady": "{provider} is selected for AI actions"
+    },
+    "validation": {
+      "keyRequired": "Enter an API key.",
+      "keyTooLong": "The API key is too long.",
+      "keyWhitespace": "The API key cannot contain spaces or line breaks."
+    }
   }
 }

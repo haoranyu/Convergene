@@ -40,6 +40,35 @@ body {
   min-width: 320px;
 }
 
+.global-message {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 auto;
+  max-width: 44rem;
+  min-height: 100vh;
+  padding: clamp(3rem, 12vh, 8rem) var(--space-6);
+  place-content: center;
+  text-align: center;
+}
+
+.global-message > * {
+  margin: 0;
+}
+
+.global-message h1 {
+  font-size: clamp(2rem, 8vw, 4rem);
+  line-height: 1;
+}
+
+.global-message p {
+  color: var(--color-muted-foreground);
+}
+
+.global-message a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;

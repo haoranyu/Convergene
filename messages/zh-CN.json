@@ -19,5 +19,108 @@
       "ui": "Arco Design 应用外壳"
     },
     "title": "打工人会议作弊器"
+  },
+  "providerConfig": {
+    "actions": {
+      "cancel": "取消",
+      "confirmDelete": "清除配置",
+      "delete": "清除模型配置",
+      "manage": "模型设置",
+      "open": "配置模型",
+      "reconfigure": "更换配置",
+      "retryStatus": "重新加载",
+      "save": "保存配置",
+      "test": "测试连接"
+    },
+    "delete": {
+      "content": "这会删除加密的模型配置和匿名会话。本浏览器里的会议不会受到影响。",
+      "title": "清除模型配置？"
+    },
+    "dialog": {
+      "description": "填入你自己的供应商 Key 后继续。Convergene 不提供共享模型 Key。",
+      "title": "连接模型供应商"
+    },
+    "errors": {
+      "INPUT_INVALID": "请检查供应商和 API Key 后重试。",
+      "ORIGIN_INVALID": "无法验证这次请求。请刷新 Convergene 后重试。",
+      "PROVIDER_AUTH_FAILED": "认证失败。请检查 API Key 后重试。",
+      "PROVIDER_CONFIG_INVALID": "已保存的配置无法继续使用，请重新输入 Key。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型配置存储暂时不可用。本机会议仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "当前账号无法使用预设模型。请检查供应商账号，或尝试另一家供应商。",
+      "PROVIDER_RATE_LIMITED": "供应商正在限流。请稍等片刻后再测试。",
+      "PROVIDER_UNAVAILABLE": "暂时无法连接供应商。请检查网络后重试。",
+      "RATE_LIMITED": "配置尝试过于频繁。请等待一分钟后重试。"
+    },
+    "feedback": {
+      "deleteSuccess": "模型配置已清除，本机会议没有改变。",
+      "saveSuccess": "模型配置已保存，此后不会再显示 API Key。",
+      "testSuccess": "连接测试通过，现在可以保存配置。"
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "粘贴供应商 API Key",
+      "provider": "供应商"
+    },
+    "form": {
+      "description": "先测试 Key，测试成功后才可保存，且不会再次显示原始 Key。",
+      "keyHelp": "每次测试或保存后输入框都会清空；测试通过的 Key 只在当前页面内存中短暂保留，直到保存或更改。",
+      "reconfigureTitle": "输入新的 Key",
+      "title": "添加模型配置"
+    },
+    "models": {
+      "fast": "快速任务",
+      "fixed": "固定预设",
+      "grill": "会前拷问",
+      "presetTitle": "已验证的模型预设",
+      "report": "报告",
+      "title": "当前模型"
+    },
+    "page": {
+      "back": "返回会议",
+      "backLabel": "模型设置导航",
+      "description": "连接一家已验证的供应商，确认 Key 可用，同时把模型访问和会议数据的边界说清楚。",
+      "eyebrow": "自己的 Key，自己的额度",
+      "metadataDescription": "为 Convergene 安全配置 StepFun 或硅基流动模型 Key。",
+      "title": "模型连接"
+    },
+    "privacy": {
+      "encrypted": "API Key 在服务端加密保存，之后不会再次显示。",
+      "expiry": "配置连续 30 天未使用后会自动删除。",
+      "meetings": "会议内容只保存在本浏览器，不会存入 Convergene 后端。",
+      "provider": "触发 AI 时，只把必要上下文发送给你选择的供应商。",
+      "title": "数据边界"
+    },
+    "providers": {
+      "siliconflow": {
+        "name": "硅基流动"
+      },
+      "stepfun": {
+        "name": "StepFun",
+        "recommended": "推荐"
+      }
+    },
+    "route": {
+      "browserDescription": "会议内容留在本机",
+      "browserTitle": "当前浏览器",
+      "providerDescription": "只接收本次 AI 所需上下文",
+      "providerTitle": "你的供应商",
+      "title": "数据会去哪里",
+      "vaultDescription": "只保存加密后的 API Key",
+      "vaultTitle": "凭证保险箱"
+    },
+    "status": {
+      "actionRequired": "需要处理",
+      "available": "模型连接可用",
+      "connected": "已连接",
+      "lastUsed": "最近使用",
+      "loading": "正在检查模型配置",
+      "needsReconfiguration": "模型需要重新配置",
+      "providerReady": "AI 操作将使用 {provider}"
+    },
+    "validation": {
+      "keyRequired": "请输入 API Key。",
+      "keyTooLong": "API Key 过长。",
+      "keyWhitespace": "API Key 不能包含空格或换行。"
+    }
   }
 }

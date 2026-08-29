@@ -1,0 +1,203 @@
+.shell {
+  margin: 0 auto;
+  max-width: 1180px;
+  min-height: 100vh;
+  padding: var(--space-6);
+}
+
+.topNav {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: clamp(40px, 7vw, 80px);
+}
+
+.backLink {
+  align-items: center;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  display: inline-flex;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  background: var(--color-primary-subtle);
+}
+
+.brand {
+  color: var(--color-primary);
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.layout {
+  align-items: start;
+  display: grid;
+  gap: clamp(32px, 6vw, 80px);
+  grid-template-columns: minmax(280px, 0.8fr) minmax(420px, 1.2fr);
+}
+
+.contextPanel {
+  min-width: 0;
+  position: sticky;
+  top: var(--space-6);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pageTitle {
+  font-size: clamp(36px, 5vw, 56px) !important;
+  letter-spacing: -0.05em !important;
+  line-height: 1 !important;
+  margin: var(--space-3) 0 var(--space-4) !important;
+}
+
+.lede {
+  color: var(--color-muted-foreground) !important;
+  font-size: 16px !important;
+  line-height: 1.7 !important;
+  max-width: 520px;
+}
+
+.routeCard {
+  background: var(--color-foreground) !important;
+  border-radius: var(--radius-lg) !important;
+  color: var(--color-surface);
+  margin-top: var(--space-8);
+}
+
+.routeCard :global(.arco-typography) {
+  color: var(--color-surface);
+}
+
+.routeDiagram {
+  display: grid;
+  gap: 0;
+  margin-top: var(--space-4);
+}
+
+.routeStop {
+  align-items: center;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 40px 1fr;
+}
+
+.routeStop strong,
+.routeStop span {
+  display: block;
+}
+
+.routeStop strong {
+  color: var(--color-background);
+}
+
+.routeStop span:not(.routeIcon) {
+  color: var(--color-border);
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.routeIcon {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-primary-subtle) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-subtle) 28%, transparent);
+  border-radius: var(--radius-md);
+  color: var(--color-primary-subtle);
+  display: flex !important;
+  font-size: 18px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.routeLine {
+  background: color-mix(in srgb, var(--color-primary-subtle) 35%, transparent);
+  height: 20px;
+  margin-left: 19px;
+  width: 1px;
+}
+
+.boundaryNote {
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-muted-foreground);
+  margin-top: var(--space-6);
+  padding-left: var(--space-4);
+}
+
+.configColumn {
+  min-width: 0;
+}
+
+.dialog {
+  max-width: calc(100vw - 32px);
+  width: 620px;
+}
+
+.dialogIntro {
+  color: var(--color-muted-foreground) !important;
+  line-height: 1.6 !important;
+  margin: 0 0 var(--space-4) !important;
+}
+
+.visuallyHidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 840px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .contextPanel {
+    position: static;
+  }
+
+  .routeDiagram {
+    gap: var(--space-3);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .routeStop {
+    align-items: start;
+    grid-template-columns: 1fr;
+  }
+
+  .routeLine {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .shell {
+    padding: var(--space-4);
+  }
+
+  .topNav {
+    margin-bottom: var(--space-8);
+  }
+
+  .routeDiagram {
+    grid-template-columns: 1fr;
+  }
+
+  .pageTitle {
+    font-size: 40px !important;
+  }
+}

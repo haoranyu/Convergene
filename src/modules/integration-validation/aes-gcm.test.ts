@@ -46,4 +46,15 @@ describe('AES-256-GCM credential validation', () => {
       expect(() => encryptCredential(syntheticCredential, invalidSecret)).toThrow();
     },
   );
+
+  it.each([
+    { field: 'iv', value: Buffer.alloc(11).toString('base64') },
+    { field: 'iv', value: 'not-base64' },
+    { field: 'authTag', value: Buffer.alloc(15).toString('base64') },
+    { field: 'ciphertext', value: 'not-base64' },
+  ] as const)('rejects malformed envelope field $field', ({ field, value }) => {
+    const envelope = encryptCredential(syntheticCredential, encryptionSecret);
+
+    expect(() => decryptCredential({ ...envelope, [field]: value }, encryptionSecret)).toThrow();
+  });
 });
