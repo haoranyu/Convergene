@@ -10,6 +10,7 @@ import { providerPresets } from '../provider-config/server';
 
 const defaultTimeoutMs = 15_000;
 const maximumTimeoutMs = 30_000;
+const defaultMaxOutputTokens = 2_048;
 const minimumMaxOutputTokens = 512;
 
 export type ProviderTaskRole = keyof ProviderModelMapping;
@@ -187,7 +188,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
   abortSignal,
   config,
   fetch,
-  maxOutputTokens = minimumMaxOutputTokens,
+  maxOutputTokens = defaultMaxOutputTokens,
   prompt,
   role,
   schema,

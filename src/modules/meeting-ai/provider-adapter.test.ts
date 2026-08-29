@@ -62,7 +62,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       };
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
-      expect(body.max_tokens).toBe(512);
+      expect(body.max_tokens).toBe(2_048);
       expect(body.response_format?.type).toBe('json_schema');
       return streamingResponse(provider);
     });
