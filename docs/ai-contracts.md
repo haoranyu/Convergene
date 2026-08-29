@@ -16,6 +16,11 @@
 - 输出失败时允许程序安全拒绝，不以“尽量展示”绕过 schema；
 - 不在服务端日志记录完整输入和输出。
 
+Provider request policy 由共享服务端 adapter 统一控制：硅基流动的所有产品结构化调用必须显式
+发送 `enable_thinking: false`，不使用供应商的隐藏思考路径；StepFun 不接收该供应商专属字段。
+这里关闭的是 Provider reasoning 模式，不改变下面各 role 的任务质量目标，也不移除 schema 校验、
+一次有界修复或确定性 fallback。
+
 共同 envelope：
 
 ```ts

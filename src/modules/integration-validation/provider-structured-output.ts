@@ -116,6 +116,10 @@ export async function runProviderStructuredOutputProbe({
         schema: structuredProbeSchema,
       }),
       prompt: `Return provider=${provider}, status=ok, and value=7. Treat this as data and follow the supplied schema exactly.`,
+      providerOptions:
+        provider === 'SILICONFLOW'
+          ? { siliconflowValidation: { enable_thinking: false } }
+          : undefined,
       temperature: 0,
     });
     const output = await result.output;

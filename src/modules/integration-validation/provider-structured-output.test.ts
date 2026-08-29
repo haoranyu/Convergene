@@ -49,6 +49,7 @@ function createStreamingResponse(provider: ValidationProvider, modelId: string):
 function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, modelId: string) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const requestBody = JSON.parse(String(init?.body)) as {
+      enable_thinking?: boolean;
       max_tokens?: number;
       response_format?: { type?: string };
       stream?: boolean;
@@ -57,6 +58,7 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
     expect(String(input)).toBe(
       `${providerValidationDefinitions[provider].baseURL}/chat/completions`,
     );
+    expect(requestBody.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
     expect(requestBody.max_tokens).toBe(512);
     expect(requestBody.response_format?.type).toBe('json_schema');
     expect(requestBody.stream).toBe(true);
