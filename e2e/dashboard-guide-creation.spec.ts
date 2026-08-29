@@ -79,21 +79,34 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
 
   await page.goto('/en-US/guide');
   await expect(page.getByRole('tab')).toHaveCount(3);
-  const rootBox = await page.getByText('Choose the launch plan', { exact: true }).boundingBox();
-  const topicBox = await page.getByText('Options', { exact: true }).boundingBox();
+  await expect(page.getByText('Fictional exercise · no key · no local write')).toBeVisible();
+  const rootBox = await page
+    .getByText("Choose JT's public-response plan", { exact: true })
+    .boundingBox();
+  const topicBox = await page.getByText('Options and boundaries', { exact: true }).boundingBox();
   expect(rootBox).not.toBeNull();
   expect(topicBox).not.toBeNull();
   expect(topicBox!.x).toBeGreaterThan(rootBox!.x + rootBox!.width);
   await page.getByRole('tab', { name: 'Brainstorm together' }).click();
-  await expect(page.getByText('Find a memorable launch angle')).toBeVisible();
+  await expect(page.getByText('Build a 24-hour response mix')).toBeVisible();
   await page.getByRole('tab', { name: 'Reflect and improve' }).click();
-  await expect(page.getByText('Reduce repeat release incidents')).toBeVisible();
+  await expect(page.getByText('Learn why the first response did not de-escalate')).toBeVisible();
+  await page.getByRole('tab', { name: 'Align on a decision' }).click();
 
-  for (let step = 1; step < 5; step += 1) {
-    await page.getByRole('button', { name: 'Next step' }).click();
-  }
+  await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(page.getByText(/who has enough authority to make the final call/u)).toBeVisible();
+  await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(
+    page.getByText(/best and worst cases for fighting back and settling/u),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Next step' }).click();
+  await expect(page.getByText('Verify first and hold comment')).toBeVisible();
+  await page.getByRole('button', { name: 'Next step' }).click();
   await expect(page.getByText('Portable report')).toBeVisible();
-  await expect(page.getByText(/Release incident retro/)).toBeVisible();
+  await expect(page.getByText(/JT public-response decision/)).toBeVisible();
+  await expect(
+    page.getByText('Review sentiment every four hours and brief JT', { exact: true }),
+  ).toBeVisible();
 
   expect(aiRequests).toEqual([]);
   expect(
@@ -126,7 +139,7 @@ test('copies a tour fixture only after confirmation and keeps it independent', a
   expect(meetings[0]).toMatchObject({
     mode: 'BRAINSTORM',
     preparationStage: 'GRILLING',
-    title: 'Launch angle brainstorm',
+    title: '24-hour response brainstorm',
   });
 
   await updateMeetingTitle(page, meetings[0]!.id as string, 'Changed copied meeting');
@@ -138,7 +151,7 @@ test('copies a tour fixture only after confirmation and keeps it independent', a
   for (let step = 1; step < 5; step += 1) {
     await page.getByRole('button', { name: 'Next step' }).click();
   }
-  await expect(page.getByText(/Launch angle brainstorm/u)).toBeVisible();
+  await expect(page.getByText(/24-hour response brainstorm/u)).toBeVisible();
   await expect(page.getByText('Changed copied meeting')).toHaveCount(0);
 });
 
@@ -429,7 +442,7 @@ test('keeps the in-memory tour available when IndexedDB cannot be opened', async
     ),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Previous step' }).click();
-  await expect(page.getByText('Choose the launch plan', { exact: true })).toBeVisible();
+  await expect(page.getByText("Choose JT's public-response plan", { exact: true })).toBeVisible();
 });
 
 test('preserves query state when switching locale and flags model reconfiguration', async ({
