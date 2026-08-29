@@ -24,7 +24,7 @@ export function ProviderConfigDialog({
   onConfigured,
   open,
 }: ProviderConfigDialogProps) {
-  const t = useTranslations('ProviderConfig');
+  const t = useTranslations('providerConfig');
 
   return (
     <Modal

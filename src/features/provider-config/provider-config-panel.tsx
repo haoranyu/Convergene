@@ -24,31 +24,19 @@ import {
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import type {
-  ProviderConfigErrorCode,
-  ProviderConfigInput,
-  ProviderConfigSummary,
-  ProviderId,
-  ProviderModelMapping,
+import {
+  providerPresets,
+  type ProviderConfigErrorCode,
+  type ProviderConfigInput,
+  type ProviderConfigSummary,
+  type ProviderId,
+  type ProviderModelMapping,
 } from '@/modules/provider-config';
 
 import { providerConfigClient, type ProviderConfigClient } from './api-client';
 import styles from './provider-config.module.css';
 
 const maskedApiKey = '••••••••';
-
-const providerDisplayModels: Record<ProviderId, ProviderModelMapping> = {
-  SILICONFLOW: {
-    fast: 'deepseek-ai/DeepSeek-V4-Flash',
-    grill: 'deepseek-ai/DeepSeek-V4-Flash',
-    report: 'deepseek-ai/DeepSeek-V4-Flash',
-  },
-  STEPFUN: {
-    fast: 'step-3.7-flash',
-    grill: 'step-3.7-flash',
-    report: 'step-3.7-flash',
-  },
-};
 
 const errorMessageKeys: Record<ProviderConfigErrorCode, string> = {
   INPUT_INVALID: 'errors.INPUT_INVALID',
@@ -80,7 +68,7 @@ function providerLabel(provider: ProviderId, t: ReturnType<typeof useTranslation
 }
 
 function ModelMapping({ models }: { models: ProviderModelMapping }) {
-  const t = useTranslations('ProviderConfig');
+  const t = useTranslations('providerConfig');
 
   return (
     <dl className={styles.modelList}>
@@ -99,7 +87,7 @@ export function ProviderConfigPanel({
   compact = false,
   onConfigured,
 }: ProviderConfigPanelProps) {
-  const t = useTranslations('ProviderConfig');
+  const t = useTranslations('providerConfig');
   const format = useFormatter();
   const [form] = Form.useForm<ProviderConfigInput>();
   const [editing, setEditing] = useState(false);
@@ -113,24 +101,30 @@ export function ProviderConfigPanel({
   const showForm = status?.configured !== true || editing;
   const busy = operation !== null;
 
+  const applyStatusResult = useCallback(
+    (result: Awaited<ReturnType<ProviderConfigClient['getStatus']>>) => {
+      if (result.ok) {
+        setStatus(result.value);
+        setEditing(result.value.configured && result.value.state === 'NEEDS_RECONFIGURATION');
+        if (result.value.configured) {
+          form.setFieldValue('provider', result.value.provider);
+        }
+        return;
+      }
+
+      setStatus(null);
+      setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
+    },
+    [form, t],
+  );
+
   const loadStatus = useCallback(async () => {
     setLoadingStatus(true);
     setNotice(null);
     const result = await api.getStatus();
-
-    if (result.ok) {
-      setStatus(result.value);
-      setEditing(result.value.configured && result.value.state === 'NEEDS_RECONFIGURATION');
-      if (result.value.configured) {
-        form.setFieldValue('provider', result.value.provider);
-      }
-    } else {
-      setStatus(null);
-      setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
-    }
-
+    applyStatusResult(result);
     setLoadingStatus(false);
-  }, [api, form, t]);
+  }, [api, applyStatusResult]);
 
   useEffect(() => {
     let active = true;
@@ -140,24 +134,14 @@ export function ProviderConfigPanel({
         return;
       }
 
-      if (result.ok) {
-        setStatus(result.value);
-        setEditing(result.value.configured && result.value.state === 'NEEDS_RECONFIGURATION');
-        if (result.value.configured) {
-          form.setFieldValue('provider', result.value.provider);
-        }
-      } else {
-        setStatus(null);
-        setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
-      }
-
+      applyStatusResult(result);
       setLoadingStatus(false);
     });
 
     return () => {
       active = false;
     };
-  }, [api, form, t]);
+  }, [api, applyStatusResult]);
 
   const providerOptions = useMemo(
     () => [
@@ -400,7 +384,7 @@ export function ProviderConfigPanel({
                 <Typography.Text bold>{t('models.presetTitle')}</Typography.Text>
                 <Tag>{t('models.fixed')}</Tag>
               </div>
-              <ModelMapping models={providerDisplayModels[selectedProvider]} />
+              <ModelMapping models={providerPresets[selectedProvider].models} />
             </div>
 
             <Form.Item
@@ -416,7 +400,7 @@ export function ProviderConfigPanel({
               <Input.Password
                 aria-label={t('fields.apiKey')}
                 aria-describedby="provider-key-help"
-                autoComplete="off"
+                autoComplete="new-password"
                 disabled={busy}
                 id="apiKey_input"
                 onChange={() => resetTestedInput()}

@@ -10,7 +10,7 @@ import { ProviderConfigPanel } from './provider-config-panel';
 import styles from './provider-config-settings.module.css';
 
 export function ProviderConfigSettings() {
-  const t = useTranslations('ProviderConfig');
+  const t = useTranslations('providerConfig');
 
   return (
     <main className={styles.shell}>

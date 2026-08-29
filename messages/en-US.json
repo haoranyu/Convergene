@@ -20,7 +20,7 @@
     },
     "title": "The meeting cheat tool for getting work done"
   },
-  "ProviderConfig": {
+  "providerConfig": {
     "actions": {
       "cancel": "Cancel",
       "confirmDelete": "Clear configuration",

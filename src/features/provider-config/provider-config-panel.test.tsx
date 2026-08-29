@@ -78,6 +78,7 @@ describe('ProviderConfigPanel', () => {
     renderPanel(api);
 
     const apiKey = await screen.findByLabelText('API key');
+    expect(apiKey).toHaveAttribute('autocomplete', 'new-password');
     await user.type(apiKey, 'sk-test-secret');
     await user.click(screen.getByRole('button', { name: 'Test connection' }));
 

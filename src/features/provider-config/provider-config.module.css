@@ -34,7 +34,7 @@
 .formCard {
   border-color: var(--color-border) !important;
   border-radius: var(--radius-lg) !important;
-  box-shadow: 0 8px 24px rgb(15 23 42 / 6%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-foreground) 6%, transparent);
 }
 
 .panelCompact .formCard {
@@ -62,15 +62,15 @@
 
 .statusCaption {
   display: block;
-  margin-top: var(--space-1, 4px);
+  margin-top: calc(var(--space-2) / 2);
 }
 
 .successIcon {
-  color: #15803d;
+  color: var(--color-primary);
 }
 
 .warningIcon {
-  color: var(--color-warning, #b45309);
+  color: var(--color-accent);
 }
 
 .descriptions,
@@ -136,7 +136,7 @@
 
 .formDescription {
   line-height: 1.6 !important;
-  margin: var(--space-1, 4px) 0 0 !important;
+  margin: calc(var(--space-2) / 2) 0 0 !important;
 }
 
 .presetBox {

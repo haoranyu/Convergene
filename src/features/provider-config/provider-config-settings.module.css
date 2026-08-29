@@ -14,7 +14,7 @@
 
 .backLink {
   align-items: center;
-  border-radius: var(--radius-sm, 6px);
+  border-radius: var(--radius-md);
   color: var(--color-primary);
   display: inline-flex;
   gap: var(--space-2);
@@ -69,14 +69,14 @@
 }
 
 .routeCard {
-  background: #0f172a !important;
+  background: var(--color-foreground) !important;
   border-radius: var(--radius-lg) !important;
-  color: #fff;
+  color: var(--color-surface);
   margin-top: var(--space-8);
 }
 
 .routeCard :global(.arco-typography) {
-  color: #fff;
+  color: var(--color-surface);
 }
 
 .routeDiagram {
@@ -98,11 +98,11 @@
 }
 
 .routeStop strong {
-  color: #f8fafc;
+  color: var(--color-background);
 }
 
 .routeStop span:not(.routeIcon) {
-  color: #cbd5e1;
+  color: var(--color-border);
   font-size: 12px;
   line-height: 1.5;
   margin-top: 2px;
@@ -110,10 +110,10 @@
 
 .routeIcon {
   align-items: center;
-  background: rgb(219 234 254 / 12%);
-  border: 1px solid rgb(219 234 254 / 28%);
+  background: color-mix(in srgb, var(--color-primary-subtle) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-primary-subtle) 28%, transparent);
   border-radius: var(--radius-md);
-  color: #93c5fd;
+  color: var(--color-primary-subtle);
   display: flex !important;
   font-size: 18px;
   height: 40px;
@@ -122,7 +122,7 @@
 }
 
 .routeLine {
-  background: rgb(147 197 253 / 35%);
+  background: color-mix(in srgb, var(--color-primary-subtle) 35%, transparent);
   height: 20px;
   margin-left: 19px;
   width: 1px;

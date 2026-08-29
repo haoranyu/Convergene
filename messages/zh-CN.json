@@ -20,7 +20,7 @@
     },
     "title": "打工人会议作弊器"
   },
-  "ProviderConfig": {
+  "providerConfig": {
     "actions": {
       "cancel": "取消",
       "confirmDelete": "清除配置",
