@@ -17,10 +17,15 @@ export interface ReportOutcomeFact {
 }
 
 export const reportModeFactKeys = {
-  BRAINSTORM: ['brainstorm_candidates', 'brainstorm_ideas', 'brainstorm_groups'],
-  DECISION: ['decision_outcomes', 'decision_options', 'decision_risks'],
-  GENERAL: ['general_outcomes'],
-  RETRO: ['retro_insights', 'retro_actions', 'retro_causes'],
+  BRAINSTORM: ['brainstorm_groups', 'brainstorm_candidates', 'brainstorm_assumptions'],
+  DECISION: [
+    'decision_outcomes',
+    'decision_rationale',
+    'decision_rejected_options',
+    'decision_risks',
+  ],
+  GENERAL: [],
+  RETRO: ['retro_differences', 'retro_causes', 'retro_insights', 'retro_actions'],
 } as const satisfies Record<MeetingMode, readonly string[]>;
 
 export type ReportModeFactKey = (typeof reportModeFactKeys)[MeetingMode][number];
@@ -96,6 +101,7 @@ export interface ReportDocumentCopy {
     kind: string;
     mode: string;
     note: string;
+    objective: string;
     origin: string;
     overtime: string;
     owner: string;
@@ -108,7 +114,10 @@ export interface ReportDocumentCopy {
   };
   modeFacts: Record<ReportModeFactKey, string>;
   modes: Record<MeetingMode, string>;
-  factDraftSummary: string;
+  factDraftSummary: {
+    one: string;
+    other: string;
+  };
   noFormalOutcomesSummary: string;
   notSet: string;
   origin: {

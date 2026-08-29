@@ -38,11 +38,24 @@ function outcomesOfKind(
   );
 }
 
+function outcomeNotesOfKind(
+  outcomes: readonly MeetingOutcome[],
+  nodes: ReadonlyMap<string, { note?: string }>,
+  kind: MeetingOutcome['kind'],
+): string[] {
+  return stableUnique(
+    outcomes
+      .filter((outcome) => outcome.kind === kind)
+      .map((outcome) => outcome.note ?? nodes.get(outcome.nodeId)?.note ?? ''),
+  );
+}
+
 function buildModeFacts(
   aggregate: MeetingAggregate,
   mode: MeetingMode,
   nodeTitles: ReadonlyMap<string, string>,
 ): Record<ReportModeFactKey, string[]> {
+  const nodeNotes = new Map(aggregate.nodes.map((node) => [node.id, { note: node.note }] as const));
   const byKind = (kind: (typeof aggregate.nodes)[number]['kind']) =>
     stableUnique(
       aggregate.nodes
@@ -53,26 +66,24 @@ function buildModeFacts(
         )
         .map((node) => node.title),
     );
-  const allOutcomes = stableUnique(
-    aggregate.outcomes.map((outcome) => nodeTitles.get(outcome.nodeId) ?? ''),
-  );
   const facts: Record<ReportModeFactKey, string[]> = {
+    brainstorm_assumptions: [],
     brainstorm_candidates: [],
     brainstorm_groups: [],
-    brainstorm_ideas: [],
-    decision_options: [],
     decision_outcomes: [],
+    decision_rationale: [],
+    decision_rejected_options: [],
     decision_risks: [],
-    general_outcomes: [],
     retro_actions: [],
     retro_causes: [],
+    retro_differences: [],
     retro_insights: [],
   };
 
   switch (mode) {
     case 'DECISION':
       facts.decision_outcomes = outcomesOfKind(aggregate.outcomes, nodeTitles, 'DECISION');
-      facts.decision_options = byKind('OPTION');
+      facts.decision_rationale = outcomeNotesOfKind(aggregate.outcomes, nodeNotes, 'DECISION');
       facts.decision_risks = byKind('RISK');
       break;
     case 'BRAINSTORM':
@@ -81,16 +92,16 @@ function buildModeFacts(
         nodeTitles,
         'CANDIDATE_IDEA',
       );
-      facts.brainstorm_ideas = byKind('IDEA');
       facts.brainstorm_groups = byKind('TOPIC');
+      facts.brainstorm_assumptions = stableUnique(aggregate.meeting.brief?.assumptions ?? []);
       break;
     case 'RETRO':
+      facts.retro_differences = byKind('NOTE');
       facts.retro_insights = outcomesOfKind(aggregate.outcomes, nodeTitles, 'INSIGHT');
       facts.retro_actions = outcomesOfKind(aggregate.outcomes, nodeTitles, 'ACTION');
       facts.retro_causes = byKind('TOPIC');
       break;
     case 'GENERAL':
-      facts.general_outcomes = allOutcomes;
       break;
   }
 

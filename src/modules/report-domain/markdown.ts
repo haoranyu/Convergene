@@ -27,6 +27,12 @@ function formatHours(personMinutes: number, locale: SupportedLocale): string {
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(personMinutes / 60);
 }
 
+function formatDate(value: string, locale: SupportedLocale): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(
+    new Date(`${value}T00:00:00.000Z`),
+  );
+}
+
 function outcomeTable(
   facts: ReportFacts,
   copy: ReportDocumentCopy,
@@ -50,7 +56,7 @@ function outcomeTable(
         ? copy.notSet
         : formatHours(outcome.formationPersonMinutes, locale),
       outcome.owner?.trim() || copy.notSet,
-      outcome.dueDate?.trim() || copy.notSet,
+      outcome.dueDate?.trim() ? formatDate(outcome.dueDate, locale) : copy.notSet,
       outcome.note?.trim() || copy.notSet,
     ]),
   );
@@ -76,14 +82,22 @@ export function assembleReportMarkdown(
       polish?.executiveSummary ||
         (facts.outcomes.length === 0
           ? copy.noFormalOutcomesSummary
-          : formatTemplate(copy.factDraftSummary, {
-              count: facts.outcomes.length,
-              mode: copy.modes[facts.mode],
-            })),
+          : formatTemplate(
+              copy.factDraftSummary[
+                new Intl.PluralRules(locale).select(facts.outcomes.length) === 'one'
+                  ? 'one'
+                  : 'other'
+              ],
+              {
+                count: facts.outcomes.length,
+                mode: copy.modes[facts.mode],
+              },
+            )),
     ),
     '',
     `## ${escapeMarkdown(copy.headings.meetingFacts)}`,
     '',
+    `- **${escapeMarkdown(copy.labels.objective)}:** ${escapeMarkdown(facts.objective)}`,
     `- **${escapeMarkdown(copy.labels.mode)}:** ${escapeMarkdown(copy.modes[facts.mode])}`,
     `- **${escapeMarkdown(copy.labels.plannedTime)}:** ${escapeMarkdown(
       formatRange(facts.schedule.planned, locale, facts.schedule.timezone),
@@ -92,7 +106,9 @@ export function assembleReportMarkdown(
       formatRange(facts.schedule.actual, locale, facts.schedule.timezone),
     )}`,
     `- **${escapeMarkdown(copy.labels.timezone)}:** ${escapeMarkdown(facts.schedule.timezone)}`,
-    `- **${escapeMarkdown(copy.labels.attendees)}:** ${facts.attendeeCount}`,
+    `- **${escapeMarkdown(copy.labels.attendees)}:** ${new Intl.NumberFormat(locale).format(
+      facts.attendeeCount,
+    )}`,
     `- **${escapeMarkdown(copy.labels.totalPersonHours)}:** ${formatHours(
       facts.totalPersonMinutes,
       locale,
@@ -106,12 +122,14 @@ export function assembleReportMarkdown(
     }).format(facts.overtimeMinutes)}`,
     `- **${escapeMarkdown(copy.labels.reportLocale)}:** ${locale}`,
     '',
-    `## ${escapeMarkdown(copy.headings.modeDetails)}`,
-    '',
   ];
 
   const polishedSections = polishByHeading(polish);
-  for (const key of reportModeFactKeys[facts.mode]) {
+  const modeKeys = reportModeFactKeys[facts.mode];
+  if (modeKeys.length > 0) {
+    lines.push(`## ${escapeMarkdown(copy.headings.modeDetails)}`, '');
+  }
+  for (const key of modeKeys) {
     const section = polishedSections.get(key);
     lines.push(`### ${escapeMarkdown(copy.modeFacts[key])}`, '');
     if (section !== undefined) {

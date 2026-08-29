@@ -3,6 +3,7 @@ export { generateReportDraft } from './generation';
 export type {
   GenerateReportDraftInput,
   ReportPolishRequest,
+  ReportPolishResponse,
   ReportPolishTransport,
 } from './generation';
 export { assembleReportMarkdown } from './markdown';

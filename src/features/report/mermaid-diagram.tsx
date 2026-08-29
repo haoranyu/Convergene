@@ -1,5 +1,3 @@
-'use client';
-
 import { Alert, Spin } from '@arco-design/web-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useId, useState } from 'react';

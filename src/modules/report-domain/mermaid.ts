@@ -56,7 +56,11 @@ function narrativeChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidCh
   };
 }
 
-function timelineChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidChart | undefined {
+function timelineChart(
+  facts: ReportFacts,
+  locale: SupportedLocale,
+  copy: ReportDocumentCopy,
+): MermaidChart | undefined {
   const start = Date.parse(facts.schedule.actual.startAt);
   const outcomes = facts.outcomes
     .filter((outcome) => outcome.origin === 'LIVE' && outcome.markedAt !== undefined)
@@ -84,9 +88,11 @@ function timelineChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidCha
     fallbackMarkdown: markdownTable(
       [copy.charts.minute, copy.charts.outcome, copy.estimatedFormationEffort],
       rows.map(({ minute, outcome }) => [
-        String(minute),
+        new Intl.NumberFormat(locale).format(minute),
         outcome.title,
-        String(outcome.formationPersonMinutes ?? 0),
+        new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(
+          (outcome.formationPersonMinutes ?? 0) / 60,
+        ),
       ]),
     ),
     id: 'outcome-timeline',
@@ -95,7 +101,11 @@ function timelineChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidCha
   };
 }
 
-function allocationChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidChart | undefined {
+function allocationChart(
+  facts: ReportFacts,
+  locale: SupportedLocale,
+  copy: ReportDocumentCopy,
+): MermaidChart | undefined {
   if (facts.totalPersonMinutes <= 0) return undefined;
   const formation = Math.max(0, facts.totalPersonMinutes - facts.unallocatedPersonMinutes);
   const slices = [
@@ -114,7 +124,7 @@ function allocationChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidC
     ].join('\n'),
     fallbackMarkdown: markdownTable(
       [copy.charts.allocation, copy.charts.personMinutes],
-      slices.map((slice) => [slice.label, String(slice.value)]),
+      slices.map((slice) => [slice.label, new Intl.NumberFormat(locale).format(slice.value)]),
     ),
     id: 'person-time-allocation',
     title: copy.charts.allocation,
@@ -125,10 +135,14 @@ function allocationChart(facts: ReportFacts, copy: ReportDocumentCopy): MermaidC
 /** Generates at most three charts from structured facts; no model text is accepted here. */
 export function buildMermaidCharts(
   facts: ReportFacts,
-  _locale: SupportedLocale,
+  locale: SupportedLocale,
   copy: ReportDocumentCopy,
 ): MermaidChart[] {
-  return [narrativeChart(facts, copy), timelineChart(facts, copy), allocationChart(facts, copy)]
+  return [
+    narrativeChart(facts, copy),
+    timelineChart(facts, locale, copy),
+    allocationChart(facts, locale, copy),
+  ]
     .filter((chart): chart is MermaidChart => chart !== undefined)
     .slice(0, 3);
 }

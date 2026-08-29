@@ -23,6 +23,9 @@ describe('deterministic report diagrams', () => {
       'OUTCOME_TIMELINE',
       'ALLOCATION',
     ]);
+    expect(first.find((chart) => chart.type === 'OUTCOME_TIMELINE')?.fallbackMarkdown).toContain(
+      '| 15 | Compare options | 1 |',
+    );
   });
 
   it('escapes user text before it reaches Mermaid syntax', () => {

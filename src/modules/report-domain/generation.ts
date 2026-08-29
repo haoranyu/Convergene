@@ -17,8 +17,14 @@ export interface ReportPolishRequest {
   task: 'report';
 }
 
+export interface ReportPolishResponse {
+  output: unknown;
+  requestId: string;
+  task: 'report';
+}
+
 export interface ReportPolishTransport {
-  (request: ReportPolishRequest, signal?: AbortSignal): Promise<unknown>;
+  (request: ReportPolishRequest, signal?: AbortSignal): Promise<ReportPolishResponse>;
 }
 
 export interface GenerateReportDraftInput {
@@ -42,7 +48,7 @@ export async function generateReportDraft({
   let polishFailure: ReportGenerationDraft['polishFailure'];
   if (polish !== undefined) {
     try {
-      const candidate = await polish(
+      const response = await polish(
         {
           input: structuredClone(facts),
           outputLocale: locale,
@@ -51,7 +57,10 @@ export async function generateReportDraft({
         },
         signal,
       );
-      polished = validateReportPolish(facts, candidate);
+      polished =
+        response.requestId === requestId && response.task === 'report'
+          ? validateReportPolish(facts, response.output)
+          : undefined;
       if (polished === undefined) polishFailure = 'OUTPUT_INVALID';
     } catch {
       polishFailure = 'TRANSPORT_FAILED';

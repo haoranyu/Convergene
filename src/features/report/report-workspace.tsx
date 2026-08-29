@@ -1,5 +1,3 @@
-'use client';
-
 import { Alert, Button, Empty, Radio, Select, Tag, Typography } from '@arco-design/web-react';
 import {
   IconCopy,
@@ -49,7 +47,7 @@ function newerReport(
   };
   if (persisted === undefined) return local;
   if (local === undefined) return persisted;
-  return Date.parse(local.report.generatedAt) >= Date.parse(persisted.report.generatedAt)
+  return Date.parse(local.report.generatedAt) > Date.parse(persisted.report.generatedAt)
     ? local
     : persisted;
 }
@@ -72,7 +70,9 @@ export function ReportWorkspace({
   const [view, setView] = useState<'preview' | 'source'>('preview');
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<'copied' | 'factDraft' | 'saved'>();
-  const [error, setError] = useState<'copyFailed' | 'downloadFailed' | 'generationFailed'>();
+  const [error, setError] = useState<
+    'copyFailed' | 'downloadFailed' | 'generationFailed' | 'generationFailedEmpty'
+  >();
   const facts = useMemo(() => buildReportFacts(aggregate, timezone), [aggregate, timezone]);
   const persisted = aggregate.meeting.report && {
     meetingUpdatedAt: aggregate.meeting.updatedAt,
@@ -95,13 +95,13 @@ export function ReportWorkspace({
     try {
       const result = await onGenerate(locale);
       if (!result.ok) {
-        setError('generationFailed');
+        setError(current ? 'generationFailed' : 'generationFailedEmpty');
         return;
       }
       setGenerated(result.value);
       setNotice(result.value.draft.usedFactDraft ? 'factDraft' : 'saved');
     } catch {
-      setError('generationFailed');
+      setError(current ? 'generationFailed' : 'generationFailedEmpty');
     } finally {
       setPending(false);
     }

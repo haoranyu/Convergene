@@ -53,15 +53,31 @@ function isGrounded(facts: ReportFacts, output: ReportPolishOutput): boolean {
     seenHeadings.add(section.headingKey);
   }
 
-  const knownOwners = facts.outcomes.flatMap((outcome) =>
-    outcome.owner?.trim() ? [outcome.owner] : [],
-  );
   const knownDates = facts.outcomes.flatMap((outcome) =>
     outcome.dueDate?.trim() ? [outcome.dueDate] : [],
   );
   const decisionTitles = facts.outcomes
     .filter((outcome) => outcome.kind === 'DECISION')
     .map((outcome) => outcome.title);
+  const knownOptions = facts.modeFacts.decision_rejected_options;
+  const knownReasons = [
+    ...facts.modeFacts.decision_rationale,
+    ...facts.modeFacts.retro_causes,
+    ...facts.outcomes.flatMap((outcome) => (outcome.note?.trim() ? [outcome.note] : [])),
+  ];
+  const knownText = [
+    facts.title,
+    facts.objective,
+    facts.mode,
+    ...facts.unknowns,
+    ...facts.parkingLot,
+    ...Object.values(facts.modeFacts).flat(),
+    ...facts.outcomes.flatMap((outcome) =>
+      [outcome.title, outcome.note, outcome.owner, outcome.dueDate].filter(
+        (value): value is string => typeof value === 'string' && value.trim() !== '',
+      ),
+    ),
+  ];
   const knownNumbers = new Set(
     [
       JSON.stringify(facts),
@@ -74,13 +90,21 @@ function isGrounded(facts: ReportFacts, output: ReportPolishOutput): boolean {
   const dueDateClaim = /\b(?:due|deadline)\b|截止(?:日期|時間)?/i;
   const decisionClaim =
     /\b(?:decided|decision|approved|chose|chosen)\b|决定|決定|决策|決策|拍板|選擇/i;
+  const optionClaim = /\b(?:option|alternative|proposal)\b|方案|选项|選項|备选|備選/i;
+  const reasonClaim =
+    /\b(?:because|cause[ds]?|reason|delayed?|due to)\b|因为|因為|原因|导致|導致|造成|延误|延誤/i;
+  const speechClaim = /\b(?:said|stated|mentioned|told)\b|表示|提到|说|說|发言|發言/i;
   const isoDate = /\b\d{4}-\d{2}-\d{2}\b/g;
   const number = /\b\d+(?:\.\d+)?\b/g;
 
   return allOutputText(output).every((text) => {
-    if (ownerClaim.test(text) && !containsKnownValue(text, knownOwners)) return false;
-    if (dueDateClaim.test(text) && !containsKnownValue(text, knownDates)) return false;
+    if (text.trim() === '') return true;
+    if (!containsKnownValue(text, knownText)) return false;
+    // Ownership, deadlines, and attributed speech stay in deterministic tables only.
+    if (ownerClaim.test(text) || dueDateClaim.test(text) || speechClaim.test(text)) return false;
     if (decisionClaim.test(text) && !containsKnownValue(text, decisionTitles)) return false;
+    if (optionClaim.test(text) && !containsKnownValue(text, knownOptions)) return false;
+    if (reasonClaim.test(text) && !containsKnownValue(text, knownReasons)) return false;
     if ((text.match(isoDate) ?? []).some((date) => !knownDates.includes(date))) return false;
     return (text.match(number) ?? []).every((value) => knownNumbers.has(value));
   });

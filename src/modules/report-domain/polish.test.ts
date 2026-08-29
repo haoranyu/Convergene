@@ -38,6 +38,26 @@ describe('report polish validation', () => {
     },
     {
       closingSummary: '',
+      executiveSummary: 'Casey and Avery are responsible for Compare options.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
+      executiveSummary: 'Redis caused a delay in Compare options.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
+      executiveSummary: 'Enterprise rollout is another option for Compare options.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
+      executiveSummary: 'Casey said Compare options was approved.',
+      modeSections: [],
+    },
+    {
+      closingSummary: '',
       executiveSummary: 'The meeting cost 9 person-hours.',
       modeSections: [],
     },

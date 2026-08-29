@@ -81,6 +81,28 @@ function generatedReport(
 }
 
 describe('report workspace', () => {
+  it('gives an honest retry path when first generation fails', async () => {
+    const user = userEvent.setup();
+    renderEnglish(
+      <ReportWorkspace
+        aggregate={createReportFixture()}
+        onGenerate={vi.fn().mockResolvedValue({
+          error: { code: 'STALE_WRITE' },
+          ok: false,
+        })}
+        timezone="UTC"
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Generate report' }));
+
+    expect(
+      await screen.findByText(
+        'The report could not be saved. Meeting facts are unchanged; try generating it again.',
+      ),
+    ).toBeVisible();
+  });
+
   it('keeps the previous report visible while regeneration fails', async () => {
     const aggregate = withReport(createReportFixture());
     let finish: ((value: { error: { code: 'STALE_WRITE' }; ok: false }) => void) | undefined;
@@ -120,6 +142,35 @@ describe('report workspace', () => {
     expect(await screen.findByRole('heading', { name: 'Current report' })).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Previous report' })).not.toBeInTheDocument();
     expect(screen.getByText('The new report was saved locally.')).toBeVisible();
+  });
+
+  it('uses the observed aggregate revision to flag a locally generated report as stale', async () => {
+    const aggregate = withReport(createReportFixture());
+    const complete = generatedReport(aggregate, '# Current report');
+    const onGenerate = vi.fn().mockResolvedValue({ ok: true, value: complete });
+    const user = userEvent.setup();
+    const view = renderEnglish(
+      <ReportWorkspace aggregate={aggregate} onGenerate={onGenerate} timezone="UTC" />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Regenerate' }));
+    await screen.findByRole('heading', { name: 'Current report' });
+
+    const changedAggregate = {
+      ...aggregate,
+      meeting: {
+        ...complete.meeting,
+        updatedAt: '2026-08-29T11:31:00.000Z',
+      },
+    };
+    view.rerender(
+      <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
+        <ReportWorkspace aggregate={changedAggregate} onGenerate={onGenerate} timezone="UTC" />
+      </NextIntlClientProvider>,
+    );
+
+    expect(
+      screen.getByText('Meeting facts changed after this report. Regenerate to update it.'),
+    ).toBeVisible();
   });
 
   it('explains deterministic fallback and exports the exact stored Markdown', async () => {

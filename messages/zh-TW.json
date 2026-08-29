@@ -854,7 +854,10 @@
         "unknowns": "沒有記錄 Brief 未決項目。"
       },
       "estimatedFormationEffort": "產出形成成本估算（人時）",
-      "factDraftSummary": "這場{mode}會議記錄了 {count} 項正式產出。",
+      "factDraftSummary": {
+        "one": "這場{mode}會議記錄了 {count} 項正式產出。",
+        "other": "這場{mode}會議記錄了 {count} 項正式產出。"
+      },
       "headings": {
         "diagrams": "圖表",
         "executiveSummary": "摘要",
@@ -872,6 +875,7 @@
         "kind": "類型",
         "mode": "會議劇本",
         "note": "備註",
+        "objective": "會議目標",
         "origin": "來源",
         "overtime": "超時（分鐘）",
         "owner": "負責人",
@@ -883,15 +887,16 @@
         "unallocatedPersonHours": "未歸屬人時"
       },
       "modeFacts": {
+        "brainstorm_assumptions": "待驗證假設",
         "brainstorm_candidates": "入選候選",
         "brainstorm_groups": "點子分組",
-        "brainstorm_ideas": "探索過的點子",
-        "decision_options": "考慮過的方案",
         "decision_outcomes": "已記錄決策",
+        "decision_rationale": "選擇依據",
+        "decision_rejected_options": "放棄方案",
         "decision_risks": "風險",
-        "general_outcomes": "已記錄產出",
         "retro_actions": "改進行動",
-        "retro_causes": "原因方向",
+        "retro_causes": "原因鏈",
+        "retro_differences": "預期與實際差異",
         "retro_insights": "經驗與洞察"
       },
       "modes": {
@@ -922,6 +927,7 @@
       "copyFailed": "無法複製 Markdown。請開啟原始碼後手動複製。",
       "downloadFailed": "無法下載 Markdown 檔案。請開啟原始碼後手動儲存。",
       "generationFailed": "新報告未能儲存，上一版報告仍可使用。",
+      "generationFailedEmpty": "報告未能儲存，會議事實沒有變更；請再次產生。",
       "invalidMeeting": "會議結束後才能產生報告。",
       "mermaidFailed": "這張圖未能渲染；原始碼和同一資料表仍可使用。"
     },

@@ -343,11 +343,17 @@ interface ClassifyNoteOutput {
 
 ```ts
 interface ReportFacts {
+  title: string
   mode: MeetingMode
   objective: string
-  schedule: { planned: TimeRange; actual: TimeRange; timezone: string }
+  schedule: {
+    planned: { startAt: string; endAt: string }
+    actual: { startAt: string; endAt: string }
+    timezone: string
+  }
   attendeeCount: number
   totalPersonMinutes: number
+  unallocatedPersonMinutes: number
   overtimeMinutes: number
   outcomes: Array<{
     kind: OutcomeKind
@@ -356,6 +362,7 @@ interface ReportFacts {
     owner?: string
     dueDate?: string
     origin: 'LIVE' | 'POST_MEETING'
+    markedAt?: string
     formationPersonMinutes?: number
   }>
   parkingLot: string[]

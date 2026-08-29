@@ -854,7 +854,10 @@
         "unknowns": "没有记录 Brief 未决项。"
       },
       "estimatedFormationEffort": "产出形成成本估算（人时）",
-      "factDraftSummary": "这场{mode}会议记录了 {count} 项正式产出。",
+      "factDraftSummary": {
+        "one": "这场{mode}会议记录了 {count} 项正式产出。",
+        "other": "这场{mode}会议记录了 {count} 项正式产出。"
+      },
       "headings": {
         "diagrams": "图表",
         "executiveSummary": "摘要",
@@ -872,6 +875,7 @@
         "kind": "类型",
         "mode": "会议剧本",
         "note": "备注",
+        "objective": "会议目标",
         "origin": "来源",
         "overtime": "超时（分钟）",
         "owner": "负责人",
@@ -883,15 +887,16 @@
         "unallocatedPersonHours": "未归属人时"
       },
       "modeFacts": {
+        "brainstorm_assumptions": "待验证假设",
         "brainstorm_candidates": "入选候选",
         "brainstorm_groups": "创意分组",
-        "brainstorm_ideas": "探索过的创意",
-        "decision_options": "考虑过的方案",
         "decision_outcomes": "已记录决策",
+        "decision_rationale": "选择依据",
+        "decision_rejected_options": "放弃方案",
         "decision_risks": "风险",
-        "general_outcomes": "已记录产出",
         "retro_actions": "改进行动",
-        "retro_causes": "原因方向",
+        "retro_causes": "原因链",
+        "retro_differences": "预期与实际差异",
         "retro_insights": "经验与洞察"
       },
       "modes": {
@@ -922,6 +927,7 @@
       "copyFailed": "无法复制 Markdown。请打开源码后手动复制。",
       "downloadFailed": "无法下载 Markdown 文件。请打开源码后手动保存。",
       "generationFailed": "新报告未能保存，上一版报告仍可使用。",
+      "generationFailedEmpty": "报告未能保存，会议事实没有变化；请再次生成。",
       "invalidMeeting": "会议结束后才能生成报告。",
       "mermaidFailed": "这张图未能渲染；源码和同一数据表仍可使用。"
     },

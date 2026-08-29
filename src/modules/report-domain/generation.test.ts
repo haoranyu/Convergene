@@ -13,9 +13,13 @@ describe('report generation', () => {
     expect(facts.ok).toBe(true);
     if (!facts.ok) return;
     const polish = vi.fn().mockResolvedValue({
-      closingSummary: 'Agree on criteria is the recorded next step.',
-      executiveSummary: 'Compare options is the recorded decision.',
-      modeSections: [],
+      output: {
+        closingSummary: 'Agree on criteria is the recorded next step.',
+        executiveSummary: 'Compare options is the recorded decision.',
+        modeSections: [],
+      },
+      requestId: 'request-1',
+      task: 'report',
     });
 
     const result = await generateReportDraft({
@@ -38,6 +42,32 @@ describe('report generation', () => {
     expect(JSON.stringify(polish.mock.calls[0])).not.toContain(aggregate.meeting.id);
     expect(result.usedFactDraft).toBe(false);
     expect(result.markdown).toContain('Compare options is the recorded decision.');
+  });
+
+  it('rejects a stale response whose request id does not match the pending report', async () => {
+    const facts = buildReportFacts(createReportFixture(), 'UTC');
+    expect(facts.ok).toBe(true);
+    if (!facts.ok) return;
+
+    const result = await generateReportDraft({
+      copy: englishReportDocumentCopy,
+      facts: facts.value,
+      locale: 'en-US',
+      polish: () =>
+        Promise.resolve({
+          output: {
+            closingSummary: '',
+            executiveSummary: 'Compare options is the recorded decision.',
+            modeSections: [],
+          },
+          requestId: 'older-request',
+          task: 'report',
+        }),
+      requestId: 'pending-request',
+    });
+
+    expect(result).toMatchObject({ polishFailure: 'OUTPUT_INVALID', usedFactDraft: true });
+    expect(result.markdown).not.toContain('Compare options is the recorded decision.');
   });
 
   it('keeps a complete deterministic Markdown report when polishing fails', async () => {

@@ -87,4 +87,24 @@ describe('meeting report command', () => {
     });
     expect(saveMeetingReport).toHaveBeenCalledOnce();
   });
+
+  it('regenerates in English without changing Chinese meeting content', async () => {
+    const aggregate = createReportFixture({ locale: 'zh-CN' });
+    const before = structuredClone(aggregate);
+    const saveMeetingReport = vi.fn<ReportRepositoryPort['saveMeetingReport']>(
+      async (_meetingId, report) => ({ ok: true, value: { ...aggregate.meeting, report } }),
+    );
+    const command = createMeetingReportCommand({ saveMeetingReport }, aggregate, {
+      loadCopy: async () => englishReportDocumentCopy,
+      now: () => new Date('2026-08-29T11:20:00.000Z'),
+      timezone: 'UTC',
+    });
+
+    const result = await command('en-US');
+
+    expect(result).toMatchObject({ ok: true, value: { report: { locale: 'en-US' } } });
+    expect(aggregate).toEqual(before);
+    expect(aggregate.meeting.contentLocale).toBe('zh-CN');
+    expect(aggregate.nodes).toEqual(before.nodes);
+  });
 });

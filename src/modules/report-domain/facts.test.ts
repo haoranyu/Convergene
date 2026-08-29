@@ -27,9 +27,25 @@ describe('report fact draft', () => {
     expect(result.value.outcomes.map((outcome) => outcome.formationPersonMinutes)).toEqual([
       60, 40,
     ]);
-    expect(reportModeFactKeys[mode].some((key) => result.value.modeFacts[key].length > 0)).toBe(
-      true,
-    );
+    expect(
+      mode === 'GENERAL'
+        ? reportModeFactKeys[mode]
+        : reportModeFactKeys[mode].some((key) => result.value.modeFacts[key].length > 0),
+    ).toEqual(mode === 'GENERAL' ? [] : true);
+  });
+
+  it('uses only the product-defined mode sections and no dedicated GENERAL section', () => {
+    expect(reportModeFactKeys).toEqual({
+      BRAINSTORM: ['brainstorm_groups', 'brainstorm_candidates', 'brainstorm_assumptions'],
+      DECISION: [
+        'decision_outcomes',
+        'decision_rationale',
+        'decision_rejected_options',
+        'decision_risks',
+      ],
+      GENERAL: [],
+      RETRO: ['retro_differences', 'retro_causes', 'retro_insights', 'retro_actions'],
+    });
   });
 
   it('assigns all effort to unallocated time when no outcome was marked', () => {
