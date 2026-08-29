@@ -65,6 +65,23 @@ async function seedPendingGrill(page: Page) {
   );
 }
 
+test('rejects malformed preparation AI envelopes before provider execution', async ({
+  request,
+}) => {
+  const response = await request.post('/api/ai/grill', {
+    data: {
+      input: { rawRequest: 'missing bounded Grill fields' },
+      outputLocale: 'en-US',
+      requestId: '00000000-0000-4000-8000-000000000007',
+      task: 'grill',
+    },
+    headers: { Origin: 'http://127.0.0.1:3100' },
+  });
+
+  expect(response.status()).toBe(400);
+  await expect(response.json()).resolves.toEqual({ error: { code: 'INPUT_INVALID' }, ok: false });
+});
+
 test('restores one Grill question with responsive, branded, keyboard-ready controls', async ({
   page,
 }) => {

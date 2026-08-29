@@ -7,6 +7,7 @@ export {
   classifyMeetingOutputMatchesLocale,
   classifyMeetingOutputSchema,
   classifyMeetingRequestSchema,
+  generatedTextMatchesLocale,
   MeetingAIContractError,
 } from './classify-meeting';
 export { meetingAIErrorResponse, meetingAIJson } from './http';

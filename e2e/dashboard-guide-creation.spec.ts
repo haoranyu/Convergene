@@ -105,13 +105,21 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
 
 test('copies a tour fixture only after confirmation and keeps it independent', async ({ page }) => {
   await mockStatus(page);
+  await page.route('**/api/ai/grill', async (route) => {
+    await route.fulfill({
+      json: { error: { code: 'PROVIDER_NOT_CONFIGURED' }, ok: false },
+      status: 503,
+    });
+  });
   await page.goto('/en-US/guide');
   await page.getByRole('tab', { name: 'Brainstorm together' }).click();
   await page.getByRole('button', { name: 'Start from this example' }).click();
   await page.locator('.arco-popconfirm').getByRole('button', { name: 'OK' }).click();
 
   await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
-  await expect(page.getByText('Script confirmed')).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Connect a model provider' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Ready for the next question' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Configure a model' })).toBeVisible();
   const meetings = await readMeetings(page);
   expect(meetings).toHaveLength(1);
@@ -334,7 +342,7 @@ test('exports and clears meetings without deleting provider configuration', asyn
   await page.goto('/en-US/guide');
   await page.getByRole('button', { name: 'Start from this example' }).click();
   await page.locator('.arco-popconfirm').getByRole('button', { name: 'OK' }).click();
-  await page.getByRole('link', { name: 'Back to meetings' }).click();
+  await page.getByRole('link', { name: 'Convergene' }).first().click();
 
   await expect(page.getByRole('heading', { name: 'Preparing' })).toBeVisible();
   await page.getByRole('button', { name: 'Saved locally' }).click();

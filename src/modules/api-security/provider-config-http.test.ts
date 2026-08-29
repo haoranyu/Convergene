@@ -24,6 +24,13 @@ describe('provider configuration HTTP security', () => {
       ),
     ).not.toThrow();
     expect(() =>
+      assertSameOrigin(
+        new Request('http://localhost:3100/api/provider-config', {
+          headers: { host: '127.0.0.1:3100', origin: 'http://127.0.0.1:3100' },
+        }),
+      ),
+    ).not.toThrow();
+    expect(() =>
       assertSameOrigin(new Request('https://convergene.example/api/provider-config')),
     ).toThrowError(new ApiSecurityError('ORIGIN_INVALID'));
     expect(() =>
