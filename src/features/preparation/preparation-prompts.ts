@@ -1,6 +1,10 @@
 import 'server-only';
 
-import type { SupportedLocale } from '@/modules/meeting-domain';
+import {
+  modeReadinessDimensionKeys,
+  sharedReadinessDimensionKeys,
+  type SupportedLocale,
+} from '@/modules/meeting-domain';
 
 import type { GrillInput, GrillOutput, InitialMapInput, InitialMapOutput } from './ai-contract';
 
@@ -17,10 +21,20 @@ const sharedRules = [
 ];
 
 export function buildGrillPrompt(input: GrillInput, outputLocale: SupportedLocale): string {
+  const readinessKeys = [
+    ...sharedReadinessDimensionKeys,
+    ...modeReadinessDimensionKeys[input.mode],
+  ];
+  const readinessKeyRule =
+    input.mode === 'GENERAL'
+      ? `Readiness dimensions must include these exact keys: ${readinessKeys.join(', ')}. You may add at most two unique snake_case custom keys.`
+      : `Readiness dimensions must contain exactly these keys, once each: ${readinessKeys.join(', ')}.`;
+
   return [
     'You prepare one meeting by asking at most one direct, respectful question at a time.',
     'Use the supplied mode, phase, turn index, history, known state, and requested dimension exactly.',
     'Readiness uses only MISSING, PARTIAL, or READY for the required dimensions; never return a numeric score.',
+    readinessKeyRule,
     'When finishRequested is true, return shouldAsk=false and a complete suggestedBrief now.',
     'When shouldAsk is true, include question and reason but no suggestedBrief.',
     'When shouldAsk is false, include suggestedBrief but no question or reason.',
