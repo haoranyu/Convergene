@@ -873,7 +873,10 @@ function CanvasContent({
                   <Button
                     aria-pressed={topic.id === aggregate.meeting.activeTopicNodeId}
                     long
-                    onClick={() => void activateTopic(topic.id)}
+                    onClick={() => {
+                      selectNode(topic.id);
+                      void activateTopic(topic.id);
+                    }}
                     type={topic.id === aggregate.meeting.activeTopicNodeId ? 'primary' : 'outline'}
                   >
                     {topic.title}

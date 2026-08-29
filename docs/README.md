@@ -1,6 +1,6 @@
 # Convergene 文档入口
 
-> 状态：产品共识与工程脚手架已完成，进入 P0 功能实现
+> 状态：P0 主路径已集成，进入发布收口与部署验证
 > 目标交付：2026-08-29 Vibe Hacks #05 的 24 小时可演示版本  
 > 产品定位：帮助会议新手的个人会议作弊器，而不是企业会议管理系统
 
@@ -21,7 +21,7 @@
 11. [设计系统](./design-system/MASTER.md)：视觉 token、组件约束和交付检查表。
 12. [ADR](./adr/)：已经决定且不应在实现时被随意推翻的架构选择。
 
-补充资料：[品牌资产使用指南](./brand-usage.md) 记录获批标志、应用图标和静态锁定组合的使用边界。
+补充资料：[品牌资产使用指南](./brand-usage.md) 记录获批标志、应用图标和静态锁定组合的使用边界；[P0 发布检查记录](./release-readiness.md) 记录部署证据、冒烟矩阵和已知限制。
 
 ## 文档事实源
 
@@ -42,11 +42,13 @@
 
 ## 当前仓库基线
 
-工程骨架已经落地，但尚未实现真实会议闭环：
+P0 真实会议闭环已经落地：
 
 - Node.js 24.x、pnpm 10、Next.js 16 App Router、React 19 与 TypeScript strict；
 - Arco Design 应用外壳和 `zh-CN`、`zh-TW`、`en-US` locale 路由；
-- `features/`、`modules/`、`ui/` 的模块接缝，以及首个确定性时间状态领域函数；
+- Dashboard、无 Key 导览、BYOK、创建、Grill、Brief、受控初始图和 LR Canvas；
+- 节点出招、主持人小抄、随手记、唯一 LIVE、产出、散会检查和 Markdown/Mermaid 报告；
+- 会议内容只进 IndexedDB，模型凭证只以匿名会话关联的加密记录进入 Upstash；
 - Vitest、React Testing Library 与 Playwright 测试入口；
 - ESLint 10 flat config、Prettier、EditorConfig、Husky、lint-staged 与 Commitlint；
 - 根目录 `AGENTS.md`／`CLAUDE.md` 作为 coding agent 的特殊入口，产品文档仍统一保存在 `docs/`；
@@ -107,10 +109,9 @@ pnpm test:e2e
 
 ## 仍需工程验证、无需产品再决策
 
-- StepFun 与硅基流动当前可用且结构化输出最稳定的具体模型 ID；
-- Redis 免费层实际创建、Vercel 环境变量注入与部署区域；
-- React Flow＋Dagre 在真实英文长节点下的布局参数；
-- Mermaid timeline 在目标版本中的渲染兼容性；不稳定时按验收规范降级为 flowchart 或表格。
+- StepFun 与硅基流动的供应商延迟和账户额度仍是运行时外部变量；失败会保留本机状态并提供重试或更换配置入口；
+- Vercel/Upstash 的免费层配额与区域延迟需要在每次正式演示前确认；
+- Mermaid 渲染器升级后仍需保留 Markdown 源码与表格降级，不能把图表作为唯一事实载体。
 
 验证结果若改变用户行为或 P0 范围，必须回到文档更新；若只是替换等价实现，可在技术文档记录后继续。
 
