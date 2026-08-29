@@ -13,10 +13,11 @@ import {
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 import {
-  grillOutputSchema,
   grillMaximumRequestBodyBytes,
   grillRequestSchema,
   parseGrillOutput,
+  parseProviderGrillOutput,
+  providerGrillOutputSchema,
 } from '@/features/preparation/ai-contract';
 import {
   buildGrillPrompt,
@@ -35,16 +36,16 @@ export async function POST(request: Request): Promise<Response> {
     const rawOutput = await runStructuredProviderCall({
       abortSignal: request.signal,
       config,
-      maxOutputTokens: 3_072,
+      maxOutputTokens: 4_096,
       prompt: buildGrillPrompt(envelope.input, envelope.outputLocale),
       role: 'grill',
-      schema: grillOutputSchema,
+      schema: providerGrillOutputSchema,
       schemaName: 'GrillOutput',
-      timeoutMs: 30_000,
+      timeoutMs: 45_000,
     });
     let output;
     try {
-      output = parseGrillOutput(envelope.input, rawOutput);
+      output = parseGrillOutput(envelope.input, parseProviderGrillOutput(rawOutput));
     } catch {
       throw new ProviderGatewayError('OUTPUT_INVALID');
     }

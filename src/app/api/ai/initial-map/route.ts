@@ -12,9 +12,10 @@ import {
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 import {
-  initialMapOutputSchema,
   initialMapMaximumRequestBodyBytes,
   initialMapRequestSchema,
+  parseProviderInitialMapOutput,
+  providerInitialMapOutputSchema,
 } from '@/features/preparation/ai-contract';
 import {
   buildInitialMapPrompt,
@@ -34,16 +35,17 @@ export async function POST(request: Request): Promise<Response> {
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 12, 60, 'initial-map');
     const config = await service.resolve();
-    const output = await runStructuredProviderCall({
+    const rawOutput = await runStructuredProviderCall({
       abortSignal: request.signal,
       config,
-      maxOutputTokens: 3_072,
+      maxOutputTokens: 8_192,
       prompt: buildInitialMapPrompt(envelope.input, envelope.outputLocale),
       role: 'grill',
-      schema: initialMapOutputSchema,
+      schema: providerInitialMapOutputSchema,
       schemaName: 'InitialMapOutput',
-      timeoutMs: 30_000,
+      timeoutMs: 60_000,
     });
+    const output = parseProviderInitialMapOutput(rawOutput);
     if (!generatedTextMatchesLocale(initialMapOutputGeneratedText(output), envelope.outputLocale)) {
       throw new MeetingAIContractError();
     }

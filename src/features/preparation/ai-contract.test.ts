@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   grillOutputFixtures,
+  initialMapOutputFixtures,
   preparationBriefFixtures,
   primaryPreparationModes,
   readinessDimensions,
@@ -11,6 +12,8 @@ import {
   createEmptyKnownState,
   grillInputSchema,
   parseGrillOutput,
+  parseProviderGrillOutput,
+  parseProviderInitialMapOutput,
   validReadinessForMode,
   type GrillInput,
 } from './ai-contract';
@@ -28,6 +31,39 @@ function input(mode: GrillInput['mode'], overrides: Partial<GrillInput> = {}): G
 }
 
 describe('preparation AI contracts', () => {
+  it('normalizes provider nulls before enforcing the browser/domain contract', () => {
+    const grillFixture = grillOutputFixtures.DECISION;
+    expect(
+      parseProviderGrillOutput({
+        ...grillFixture,
+        criticalExtraReason: null,
+        readiness: {
+          ...grillFixture.readiness,
+          dimensions: grillFixture.readiness.dimensions.map((dimension) => ({
+            ...dimension,
+            summary: dimension.summary ?? null,
+          })),
+        },
+        suggestedBrief: null,
+      }),
+    ).toEqual(grillFixture);
+
+    const mapFixture = initialMapOutputFixtures.DECISION;
+    expect(
+      parseProviderInitialMapOutput({
+        ...mapFixture,
+        nodes: mapFixture.nodes.map((node) => ({
+          ...node,
+          note: 'note' in node ? node.note : null,
+          order: 'order' in node ? node.order : null,
+          parentKey: 'parentKey' in node ? node.parentKey : null,
+          topicPrompt: 'topicPrompt' in node ? node.topicPrompt : null,
+          transitionHint: 'transitionHint' in node ? node.transitionHint : null,
+        })),
+      }),
+    ).toEqual(mapFixture);
+  });
+
   it.each(primaryPreparationModes)('accepts the complete %s readiness fixture', (mode) => {
     expect(parseGrillOutput(input(mode), grillOutputFixtures[mode])).toEqual(
       grillOutputFixtures[mode],

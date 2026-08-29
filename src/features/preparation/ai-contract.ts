@@ -161,6 +161,55 @@ export const grillOutputSchema = z
     }
   });
 
+const providerReadinessDimensionSchema = z
+  .object({
+    key: boundedText(80),
+    status: z.enum(['MISSING', 'PARTIAL', 'READY']),
+    summary: z.string().trim().max(500).nullish(),
+  })
+  .strict();
+
+const providerReadinessSchema = z
+  .object({
+    dimensions: z.array(providerReadinessDimensionSchema).min(6).max(10),
+    level: z.enum(readinessLevels),
+  })
+  .strict();
+
+export const providerGrillOutputSchema = z
+  .object({
+    criticalExtraReason: z.string().trim().min(1).max(600).nullish(),
+    question: z.string().trim().min(1).max(600).nullish(),
+    readiness: providerReadinessSchema,
+    reason: z.string().trim().min(1).max(600).nullish(),
+    shouldAsk: z.boolean(),
+    suggestedBrief: suggestedBriefSchema.nullish(),
+    updatedState: grillKnownStateSchema,
+  })
+  .strict();
+
+export function parseProviderGrillOutput(value: unknown): GrillOutput {
+  const output = providerGrillOutputSchema.parse(value);
+  return grillOutputSchema.parse({
+    ...(output.criticalExtraReason == null
+      ? {}
+      : { criticalExtraReason: output.criticalExtraReason }),
+    ...(output.question == null ? {} : { question: output.question }),
+    readiness: {
+      dimensions: output.readiness.dimensions.map(({ key, status, summary }) => ({
+        key,
+        status,
+        ...(summary == null ? {} : { summary }),
+      })),
+      level: output.readiness.level,
+    },
+    ...(output.reason == null ? {} : { reason: output.reason }),
+    shouldAsk: output.shouldAsk,
+    ...(output.suggestedBrief == null ? {} : { suggestedBrief: output.suggestedBrief }),
+    updatedState: output.updatedState,
+  });
+}
+
 export type GrillInput = z.infer<typeof grillInputSchema>;
 export type GrillOutput = z.infer<typeof grillOutputSchema>;
 
@@ -250,6 +299,45 @@ export const initialMapOutputSchema = z
     templateCoverage: boundedList(12, 120).min(1),
   })
   .strict();
+
+const providerInitialMapNodeDraftSchema = z
+  .object({
+    key: boundedText(80),
+    kind: z.enum(nodeKinds),
+    note: z.string().trim().max(2_000).nullish(),
+    order: z.number().int().min(0).max(4).nullish(),
+    parentKey: boundedText(80).nullish(),
+    title: boundedText(200),
+    topicPrompt: z.string().trim().min(1).max(600).nullish(),
+    transitionHint: z.string().trim().min(1).max(600).nullish(),
+  })
+  .strict();
+
+export const providerInitialMapOutputSchema = z
+  .object({
+    nodes: z.array(providerInitialMapNodeDraftSchema).min(4).max(12),
+    templateCoverage: boundedList(12, 120).min(1),
+  })
+  .strict();
+
+export function parseProviderInitialMapOutput(value: unknown): InitialMapOutput {
+  const output = providerInitialMapOutputSchema.parse(value);
+  return initialMapOutputSchema.parse({
+    nodes: output.nodes.map(
+      ({ key, kind, note, order, parentKey, title, topicPrompt, transitionHint }) => ({
+        key,
+        kind,
+        ...(note == null ? {} : { note }),
+        ...(order == null ? {} : { order }),
+        ...(parentKey == null ? {} : { parentKey }),
+        title,
+        ...(topicPrompt == null ? {} : { topicPrompt }),
+        ...(transitionHint == null ? {} : { transitionHint }),
+      }),
+    ),
+    templateCoverage: output.templateCoverage,
+  });
+}
 
 export const initialMapInputSchema = z
   .object({
