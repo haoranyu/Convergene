@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
 import {
   createProviderSessionId,
@@ -9,6 +10,7 @@ import {
   ApiSecurityError,
   assertSameOrigin,
   enforceProviderConfigRateLimit,
+  readJsonInput,
   readProviderConfigInput,
 } from './provider-config-http';
 
@@ -75,6 +77,30 @@ describe('provider configuration HTTP security', () => {
     await expect(readProviderConfigInput(request)).rejects.toMatchObject({
       code: 'INPUT_INVALID',
     });
+  });
+
+  it('reuses the bounded parser for a larger strict AI contract without weakening it', async () => {
+    const schema = z.object({ rawRequest: z.string().min(1).max(4_000) }).strict();
+    const request = new Request('https://convergene.example/api/ai/classify-meeting', {
+      body: JSON.stringify({ rawRequest: 'x'.repeat(4_000) }),
+      headers: { 'content-type': 'application/json' },
+      method: 'POST',
+    });
+
+    await expect(readJsonInput(request, schema, 8_192)).resolves.toEqual({
+      rawRequest: 'x'.repeat(4_000),
+    });
+    await expect(
+      readJsonInput(
+        new Request('https://convergene.example/api/ai/classify-meeting', {
+          body: JSON.stringify({ meetingId: 'server-index', rawRequest: 'valid' }),
+          headers: { 'content-type': 'application/json' },
+          method: 'POST',
+        }),
+        schema,
+        8_192,
+      ),
+    ).rejects.toMatchObject({ code: 'INPUT_INVALID' });
   });
 
   it('allows the limit and rejects the next request using a hashed scope', async () => {

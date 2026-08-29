@@ -291,6 +291,42 @@ afterEach(async () => {
 });
 
 describe('MeetingRepository', () => {
+  it('atomically creates a classified meeting in Grill without persisting a draft first', async () => {
+    const database = openDatabase();
+    const repository = new MeetingRepository(database);
+    const draft = meeting('meeting-classified');
+
+    await expect(
+      repository.createMeetingForPreparation(
+        draft,
+        'BRAINSTORM',
+        'The request needs a broader set of options.',
+        new Date('2026-08-29T09:31:00.000Z'),
+      ),
+    ).resolves.toMatchObject({
+      ok: true,
+      value: {
+        mode: 'BRAINSTORM',
+        modeReason: 'The request needs a broader set of options.',
+        preparationStage: 'GRILLING',
+      },
+    });
+    expect(await database.meetings.get('meeting-classified')).toMatchObject({
+      mode: 'BRAINSTORM',
+      preparationStage: 'GRILLING',
+    });
+
+    await expect(
+      repository.createMeetingForPreparation(
+        draft,
+        'DECISION',
+        undefined,
+        new Date('2026-08-29T09:32:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'MEETING_ALREADY_EXISTS' }, ok: false });
+    expect(await database.meetings.count()).toBe(1);
+  });
+
   it('recovers a complete aggregate after the database is closed and reopened', async () => {
     const firstDatabase = openDatabase();
     const firstRepository = new MeetingRepository(firstDatabase);

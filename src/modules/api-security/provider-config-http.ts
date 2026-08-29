@@ -1,5 +1,7 @@
 import 'server-only';
 
+import type { z } from 'zod';
+
 import type { ProviderConfigInput } from '../provider-config';
 import { providerConfigInputSchema } from '../provider-config';
 import {
@@ -40,13 +42,21 @@ export function assertSameOrigin(request: Request): void {
   }
 }
 
-export async function readProviderConfigInput(request: Request): Promise<ProviderConfigInput> {
+export async function readJsonInput<Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+  maximumBytes = maximumRequestBodyBytes,
+): Promise<z.infer<Schema>> {
   if (request.headers.get('content-type')?.split(';', 1)[0]?.trim() !== 'application/json') {
     throw new ApiSecurityError('INPUT_INVALID');
   }
 
   const declaredLength = Number(request.headers.get('content-length'));
-  if (Number.isFinite(declaredLength) && declaredLength > maximumRequestBodyBytes) {
+  if (
+    !Number.isInteger(maximumBytes) ||
+    maximumBytes < 1 ||
+    (Number.isFinite(declaredLength) && declaredLength > maximumBytes)
+  ) {
     throw new ApiSecurityError('INPUT_INVALID');
   }
 
@@ -65,7 +75,7 @@ export async function readProviderConfigInput(request: Request): Promise<Provide
       }
 
       byteLength += value.byteLength;
-      if (byteLength > maximumRequestBodyBytes) {
+      if (byteLength > maximumBytes) {
         await reader.cancel();
         throw new ApiSecurityError('INPUT_INVALID');
       }
@@ -85,10 +95,14 @@ export async function readProviderConfigInput(request: Request): Promise<Provide
       body.set(chunk, offset);
       offset += chunk.byteLength;
     }
-    return providerConfigInputSchema.parse(JSON.parse(new TextDecoder().decode(body)));
+    return schema.parse(JSON.parse(new TextDecoder().decode(body)));
   } catch {
     throw new ApiSecurityError('INPUT_INVALID');
   }
+}
+
+export function readProviderConfigInput(request: Request): Promise<ProviderConfigInput> {
+  return readJsonInput(request, providerConfigInputSchema);
 }
 
 function getCookie(request: Request, name: string): string | undefined {
