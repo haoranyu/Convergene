@@ -410,6 +410,141 @@
     },
     "summaryTitle": "Confirmed meeting setup"
   },
+  "preparation": {
+    "actions": {
+      "back": "Back to meetings",
+      "confirmGenerate": "Confirm, lock, and generate map",
+      "continueGrill": "Keep grilling me · {current} / {limit}",
+      "finish": "Finish Grill",
+      "generateBrief": "Generate Brief",
+      "restart": "Prepare again",
+      "retry": "Try again",
+      "retryMap": "Retry map generation",
+      "returnGrill": "Ask more questions",
+      "saveDraft": "Save edits",
+      "skip": "Skip",
+      "submit": "Submit answer",
+      "unknown": "I don't know"
+    },
+    "brief": {
+      "editDescription": "Edit the structured Brief before locking it.",
+      "editable": "Editable draft",
+      "eyebrow": "Preparation snapshot",
+      "fields": {
+        "assumptions": "Reasonable assumptions · one per line",
+        "confirmed": "Confirmed · one per line",
+        "desiredOutcome": "Desired outcome",
+        "objective": "Meeting objective",
+        "openingLine": "Suggested opening",
+        "unknowns": "Still unknown · one per line"
+      },
+      "lockWarning": "Confirming locks this exact Brief immediately. If map generation fails, it stays locked and retry uses the same snapshot.",
+      "locked": "Locked snapshot",
+      "lockedDescription": "This Brief is locked. It remains visible while the map is generated or retried.",
+      "title": "Meeting Brief"
+    },
+    "dimensions": {
+      "challenge": "Challenge",
+      "constraints": "Constraints",
+      "creative_constraints": "Creative constraints",
+      "criteria": "Decision criteria",
+      "decision_deadline": "Decision deadline",
+      "decision_owner": "Decision owner",
+      "desired_improvement": "Desired improvement",
+      "desired_outcome": "Desired outcome",
+      "expected_vs_actual": "Expected versus actual",
+      "facts": "Shared facts",
+      "inputs": "Required inputs",
+      "minimum_outcome": "Minimum acceptable outcome",
+      "objective": "Meeting objective",
+      "options": "Viable options",
+      "participants_and_authority": "Participants and authority",
+      "scope": "Review scope",
+      "selection_method": "Selection method",
+      "target_audience": "Target audience"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "This Brief is already locked.",
+      "INPUT_INVALID": "Some meeting context is invalid. Review it and try again.",
+      "INVALID_BRIEF": "Complete the objective, desired outcome, and opening before continuing.",
+      "INVALID_GRILL_TURN": "The saved Grill sequence is inconsistent. Reload and try again.",
+      "INVALID_MEETING_STATE": "The meeting changed in another action. Reload and try again.",
+      "INVALID_STORED_DATA": "This meeting could not be restored safely from local storage.",
+      "OUTPUT_INVALID": "The model response did not pass validation. Your saved work is unchanged.",
+      "OUTPUT_LANGUAGE_MISMATCH": "The model answered in the wrong language. Try again.",
+      "PROVIDER_AUTH_FAILED": "The model key was rejected. Reconnect the provider to continue.",
+      "PROVIDER_CONFIG_INVALID": "The saved model configuration needs to be replaced.",
+      "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration is temporarily unavailable. Local meeting data is safe.",
+      "PROVIDER_MODEL_NOT_FOUND": "The configured model is unavailable for this account.",
+      "PROVIDER_NOT_CONFIGURED": "Connect a model provider to continue.",
+      "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment and retry.",
+      "PROVIDER_UNAVAILABLE": "The provider could not be reached. Your saved work is unchanged.",
+      "REQUEST_CANCELLED": "The request was cancelled. Your saved work is unchanged.",
+      "STALE_WRITE": "This meeting changed in another tab. The latest local version is still safe.",
+      "UNKNOWN": "Something went wrong. Your saved work is unchanged.",
+      "title": "Preparation paused"
+    },
+    "grill": {
+      "answerLabel": "Your answer",
+      "answerPlaceholder": "Be specific, or use the options below.",
+      "critical": "Final critical question",
+      "defaultComplete": "The default Grill is complete",
+      "defaultCompleteDescription": "Create the Brief now, or ask for one more user-directed round. The total can never exceed 10.",
+      "dispositions": {
+        "ANSWERED": "Answered",
+        "SKIPPED": "Skipped",
+        "UNKNOWN": "Unknown"
+      },
+      "history": "Previous answers ({count})",
+      "nextQuestion": "Preparing the next question…",
+      "resumeDescription": "Your saved answers are intact. Continue when the model connection is ready.",
+      "resumeTitle": "Ready for the next question",
+      "round": "Question {current} of at most 10",
+      "why": "Why this matters: {reason}"
+    },
+    "loading": "Restoring local preparation…",
+    "localOnly": "Saved on this device",
+    "map": {
+      "description": "A valid initial map with {count} nodes is saved locally and ready for the meeting.",
+      "ready": "Map ready",
+      "title": "Preparation is ready"
+    },
+    "metadata": {
+      "description": "Clarify the meeting, lock its Brief, and generate a controlled initial map.",
+      "title": "Prepare meeting · Convergene"
+    },
+    "modeSelection": {
+      "action": "Return to meeting setup",
+      "description": "Confirm a recommended or manually selected meeting script before the Grill begins.",
+      "title": "Choose the meeting script first"
+    },
+    "modes": {
+      "BRAINSTORM": "Brainstorm together",
+      "DECISION": "Align on a decision",
+      "GENERAL": "General discussion",
+      "RETRO": "Reflect and improve"
+    },
+    "notFound": "This local meeting was not found.",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "Barely ready",
+        "INSUFFICIENT": "Not enough information",
+        "READY": "Ready to meet"
+      },
+      "prioritySelected": "The next request will prioritize this gap.",
+      "statuses": {
+        "MISSING": "Missing",
+        "PARTIAL": "Partial",
+        "READY": "Ready"
+      },
+      "title": "Meeting readiness"
+    },
+    "rollback": {
+      "continueConfirm": "Ask more questions? The script and answers stay, while the Brief and map are cleared.",
+      "restartConfirm": "Prepare again from script selection? Only the original request stays; the script, Grill, Brief, and map are cleared."
+    },
+    "working": "Saving preparation…"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "Cancel",

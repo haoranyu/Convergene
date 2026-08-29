@@ -410,6 +410,141 @@
     },
     "summaryTitle": "已确认的会议设置"
   },
+  "preparation": {
+    "actions": {
+      "back": "返回会议列表",
+      "confirmGenerate": "确认、锁定并生成脑图",
+      "continueGrill": "继续拷问我 · {current} / {limit}",
+      "finish": "结束拷问",
+      "generateBrief": "生成 Brief",
+      "restart": "重新准备",
+      "retry": "重试",
+      "retryMap": "重试生成脑图",
+      "returnGrill": "继续补问",
+      "saveDraft": "保存修改",
+      "skip": "跳过",
+      "submit": "提交回答",
+      "unknown": "不知道"
+    },
+    "brief": {
+      "editDescription": "锁定前可以修改这份结构化 Brief。",
+      "editable": "可编辑草稿",
+      "eyebrow": "会前准备快照",
+      "fields": {
+        "assumptions": "合理假设 · 每行一项",
+        "confirmed": "已确认 · 每行一项",
+        "desiredOutcome": "期望产出",
+        "objective": "会议目标",
+        "openingLine": "建议开场白",
+        "unknowns": "仍待确认 · 每行一项"
+      },
+      "lockWarning": "点击确认会立即锁定当前 Brief。即使脑图生成失败，它也不会解锁；重试仍使用同一份快照。",
+      "locked": "已锁定快照",
+      "lockedDescription": "这份 Brief 已锁定；生成或重试脑图时会一直保留在页面上。",
+      "title": "会议 Brief"
+    },
+    "dimensions": {
+      "challenge": "核心挑战",
+      "constraints": "限制条件",
+      "creative_constraints": "创意边界",
+      "criteria": "判断标准",
+      "decision_deadline": "决策期限",
+      "decision_owner": "拍板人",
+      "desired_improvement": "期望改进",
+      "desired_outcome": "期望产出",
+      "expected_vs_actual": "预期与实际",
+      "facts": "共同事实",
+      "inputs": "所需材料",
+      "minimum_outcome": "最低可接受结果",
+      "objective": "会议目标",
+      "options": "可行选项",
+      "participants_and_authority": "参与角色与权限",
+      "scope": "复盘范围",
+      "selection_method": "筛选方式",
+      "target_audience": "目标人群"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "这份 Brief 已经锁定。",
+      "INPUT_INVALID": "部分会议信息无效，请检查后重试。",
+      "INVALID_BRIEF": "请补全会议目标、期望产出和开场白。",
+      "INVALID_GRILL_TURN": "已保存的拷问轮次不连续，请刷新后重试。",
+      "INVALID_MEETING_STATE": "会议状态已被其他操作改变，请刷新后重试。",
+      "INVALID_STORED_DATA": "无法从本机存储安全恢复这场会议。",
+      "OUTPUT_INVALID": "模型返回未通过校验；已保存内容没有变化。",
+      "OUTPUT_LANGUAGE_MISMATCH": "模型使用了错误语言，请重试。",
+      "PROVIDER_AUTH_FAILED": "模型 Key 被拒绝，请重新连接供应商。",
+      "PROVIDER_CONFIG_INVALID": "已保存的模型配置需要重新填写。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型配置暂时不可用，本机会议数据仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "当前账号无法使用已配置模型。",
+      "PROVIDER_NOT_CONFIGURED": "请先连接模型供应商。",
+      "PROVIDER_RATE_LIMITED": "供应商正在限流，请稍后重试。",
+      "PROVIDER_UNAVAILABLE": "暂时无法连接供应商；已保存内容没有变化。",
+      "REQUEST_CANCELLED": "请求已取消；已保存内容没有变化。",
+      "STALE_WRITE": "另一标签页更新了会议，本机最新版本仍然安全。",
+      "UNKNOWN": "发生错误；已保存内容没有变化。",
+      "title": "准备流程已暂停"
+    },
+    "grill": {
+      "answerLabel": "你的回答",
+      "answerPlaceholder": "尽量具体，也可以使用下面的快捷操作。",
+      "critical": "临门一问",
+      "defaultComplete": "默认拷问已完成",
+      "defaultCompleteDescription": "现在可以生成 Brief，也可以再主动增加一轮；总轮次不会超过 10。",
+      "dispositions": {
+        "ANSWERED": "已回答",
+        "SKIPPED": "已跳过",
+        "UNKNOWN": "不知道"
+      },
+      "history": "过往回答（{count}）",
+      "nextQuestion": "正在准备下一问…",
+      "resumeDescription": "已有回答都已保存；模型连接可用后即可继续。",
+      "resumeTitle": "可以继续下一问",
+      "round": "第 {current} 轮 · 最多 10 轮",
+      "why": "为什么问：{reason}"
+    },
+    "loading": "正在恢复本机会前准备…",
+    "localOnly": "本机保存",
+    "map": {
+      "description": "包含 {count} 个节点的合法初始图已保存在本机，可以开始会议。",
+      "ready": "脑图已就绪",
+      "title": "会前准备完成"
+    },
+    "metadata": {
+      "description": "把会议问清楚、锁定 Brief，并生成受控初始脑图。",
+      "title": "准备会议 · Convergene"
+    },
+    "modeSelection": {
+      "action": "返回会议创建",
+      "description": "开始拷问前，请先确认 AI 推荐或手动选择的会议剧本。",
+      "title": "请先选择会议剧本"
+    },
+    "modes": {
+      "BRAINSTORM": "脑暴共创",
+      "DECISION": "决策对齐",
+      "GENERAL": "通用讨论",
+      "RETRO": "复盘改进"
+    },
+    "notFound": "未找到这场本机会议。",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "勉强能开",
+        "INSUFFICIENT": "信息不足",
+        "READY": "可以开了"
+      },
+      "prioritySelected": "下一次请求会优先追问这个缺口。",
+      "statuses": {
+        "MISSING": "缺失",
+        "PARTIAL": "部分具备",
+        "READY": "已具备"
+      },
+      "title": "开会准备度"
+    },
+    "rollback": {
+      "continueConfirm": "继续补问？会议剧本和已有回答会保留，Brief 和脑图会清空。",
+      "restartConfirm": "回到剧本选择重新准备？只保留老板原话，剧本、拷问、Brief 和脑图都会清空。"
+    },
+    "working": "正在保存准备内容…"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",
