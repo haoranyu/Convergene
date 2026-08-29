@@ -143,13 +143,13 @@ Then 仍能生成 Brief，未知信息明确保留。
 
 Given 用户点击“确认并生成脑图”
 When 初始图仍在生成、生成失败或已经成功
-Then 同一 Brief 快照立即带 `confirmedAt` 并不可普通编辑，不因失败而解锁。
+Then 生成期间当前 Brief 只在内存中作为不可变候选；失败时数据库不写 `confirmedAt` 且恢复可编辑；完整图成功后 Brief 与图在同一事务中锁定和保存。
 
 ### AT-037 Brief 失败重试
 
-Given 已确认 Brief 的初始图生成失败
-When 用户重试生成
-Then 请求继续使用同一份不可变快照，数据库中没有部分 Node/Edge；界面另提供“继续补问”和“重新准备”。
+Given Brief 的初始图生成失败
+When 用户修改或保留草稿后再次确认生成
+Then 新请求使用当次点击时的不可变候选快照，数据库中没有旧 `confirmedAt` 或部分 Node/Edge；界面另提供“继续补问”和“重新准备”。
 
 ### AT-038 准备回退
 

@@ -106,6 +106,19 @@ describe('preparation AI contracts', () => {
         templateCoverage: ['coverage'],
       }).success,
     ).toBe(false);
+
+    const emojiTitle = '😀'.repeat(30);
+    expect(
+      providerInitialMapOutputSchema.safeParse({
+        objective: { title: emojiTitle },
+        templateCoverage: ['coverage'],
+        topics: Array.from({ length: 3 }, (_, index) => ({
+          title: `Topic ${index}`,
+          topicPrompt: 'Discuss the topic',
+          transitionHint: 'Move to the next topic',
+        })),
+      }).success,
+    ).toBe(true);
   });
 
   it.each(primaryPreparationModes)('accepts the complete %s readiness fixture', (mode) => {

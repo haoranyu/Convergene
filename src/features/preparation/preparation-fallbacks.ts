@@ -333,13 +333,58 @@ function truncate(value: string, maximum: number): string {
 }
 
 function truncateTitle(value: string): string {
-  const codePoints = [...value.trim()].slice(0, maximumNodeTitleGraphemes);
-  while (codePoints.join('').length > maximumNodeTitleGraphemes) codePoints.pop();
-  const title = codePoints.join('').trim();
+  const title = [
+    ...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(value.trim()),
+  ]
+    .slice(0, maximumNodeTitleGraphemes)
+    .map(({ segment }) => segment)
+    .join('')
+    .trim();
   if (title === '' || graphemeCount(title) > maximumNodeTitleGraphemes) {
     throw new Error('Unable to derive a valid map title');
   }
   return title;
+}
+
+function addUnique(values: string[], value: string): void {
+  if (values.length < 30 && !values.includes(value)) values.push(value);
+}
+
+function fallbackKnownState(input: GrillInput): GrillInput['knownState'] {
+  const state = structuredClone(input.knownState);
+  for (const item of input.history) {
+    if (item.disposition === 'ANSWERED' && item.answer !== undefined) {
+      addUnique(state.confirmed, truncate(item.answer, 500));
+    } else {
+      addUnique(state.unknowns, truncate(item.question, 500));
+    }
+  }
+  return state;
+}
+
+function fallbackQuestion(input: GrillInput, outputLocale: SupportedLocale): string {
+  const copy = grillCopy[outputLocale];
+  if (input.turnIndex === 0 && input.requestedDimension === undefined) {
+    return copy.question[input.mode];
+  }
+  const round = input.turnIndex + 1;
+  if (input.requestedDimension !== undefined) {
+    const dimension = input.requestedDimension.replaceAll('_', ' ');
+    if (outputLocale === 'en-US') {
+      return `What should we confirm next about ${dimension}? (round ${round})`;
+    }
+    if (outputLocale === 'zh-CN') {
+      return `关于“${dimension}”，下一步最需要确认什么？（第 ${round} 轮）`;
+    }
+    return `關於「${dimension}」，下一步最需要確認什麼？（第 ${round} 輪）`;
+  }
+  if (outputLocale === 'en-US') {
+    return `What is the most important remaining detail to confirm? (round ${round})`;
+  }
+  if (outputLocale === 'zh-CN') {
+    return `下一步最需要确认的细节是什么？（第 ${round} 轮）`;
+  }
+  return `下一步最需要確認的細節是什麼？（第 ${round} 輪）`;
 }
 
 export function createDeterministicGrillFallback(
@@ -352,11 +397,11 @@ export function createDeterministicGrillFallback(
     dimensions: readinessForMode(input.mode, complete),
     level: complete ? ('BARELY_READY' as const) : ('INSUFFICIENT' as const),
   };
-  const updatedState = structuredClone(input.knownState);
+  const updatedState = fallbackKnownState(input);
   if (!complete) {
     return parseGrillOutput(input, {
       ...(input.phase === 'CRITICAL_EXTRA' ? { criticalExtraReason: copy.criticalReason } : {}),
-      question: copy.question[input.mode],
+      question: fallbackQuestion(input, outputLocale),
       readiness,
       reason: copy.reason,
       shouldAsk: true,
@@ -366,16 +411,13 @@ export function createDeterministicGrillFallback(
 
   const objective = truncate(input.rawRequest, 2_000);
   const confirmed =
-    input.knownState.confirmed.length > 0
-      ? input.knownState.confirmed
-      : [truncate(input.rawRequest, 500)];
-  const unknowns =
-    input.knownState.unknowns.length > 0 ? input.knownState.unknowns : [copy.unknown];
+    updatedState.confirmed.length > 0 ? updatedState.confirmed : [truncate(input.rawRequest, 500)];
+  const unknowns = updatedState.unknowns.length > 0 ? updatedState.unknowns : [copy.unknown];
   return parseGrillOutput(input, {
     readiness,
     shouldAsk: false,
     suggestedBrief: {
-      assumptions: input.knownState.assumptions,
+      assumptions: updatedState.assumptions,
       confirmed,
       desiredOutcome: copy.desiredOutcome[input.mode],
       facilitation: {

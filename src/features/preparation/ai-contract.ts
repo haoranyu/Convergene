@@ -27,7 +27,6 @@ const nodeTitleText = z
   .string()
   .trim()
   .min(1)
-  .max(maximumNodeTitleGraphemes)
   .refine((value) => graphemeCount(value) <= maximumNodeTitleGraphemes, {
     message: `title must contain at most ${maximumNodeTitleGraphemes} graphemes`,
   });

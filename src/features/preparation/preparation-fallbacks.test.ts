@@ -13,6 +13,8 @@ import {
 } from './ai-contract';
 import { materializeInitialMap } from './initial-map';
 import {
+  createDeterministicGrillFallback,
+  createDeterministicInitialMapFallback,
   createGrillFewShotFixture,
   createInitialMapFewShotFixture,
   grillOutputBranches,
@@ -50,4 +52,38 @@ describe('Preparation prompt fixtures', () => {
       });
     }
   }
+
+  it('preserves answered history and does not repeat the first fallback question', () => {
+    const first = createGrillFewShotFixture('DECISION', 'en-US', 'ASK');
+    const nextInput = {
+      ...first.input,
+      history: [
+        {
+          answer: 'The product sponsor owns the decision.',
+          disposition: 'ANSWERED' as const,
+          question: first.output.question!,
+        },
+      ],
+      turnIndex: 1,
+    };
+    const next = createDeterministicGrillFallback(nextInput, 'en-US');
+    expect(next.question).not.toBe(first.output.question);
+    expect(next.updatedState.confirmed).toContain('The product sponsor owns the decision.');
+
+    const completed = createDeterministicGrillFallback(
+      { ...nextInput, finishRequested: true },
+      'en-US',
+    );
+    expect(completed.suggestedBrief?.confirmed).toContain('The product sponsor owns the decision.');
+  });
+
+  it('keeps valid multi-code-unit titles up to the grapheme limit', () => {
+    const fixture = createInitialMapFewShotFixture('GENERAL', 'en-US');
+    const objective = '😀'.repeat(30);
+    const output = createDeterministicInitialMapFallback(
+      { ...fixture.input, brief: { ...fixture.input.brief, objective } },
+      'en-US',
+    );
+    expect(output.nodes[0]?.title).toBe(objective);
+  });
 });
