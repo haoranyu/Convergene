@@ -52,7 +52,13 @@ export interface OutcomePanelProps {
 export function OutcomePanel({ ...props }: OutcomePanelProps) {
   return (
     <OutcomePanelState
-      key={`${props.node.id}:${props.existingOutcome?.id ?? 'unmarked'}`}
+      key={[
+        props.node.id,
+        props.existingOutcome?.id ?? 'unmarked',
+        props.existingOutcome?.kind,
+        props.existingOutcome?.owner,
+        props.existingOutcome?.dueDate,
+      ].join(':')}
       {...props}
     />
   );

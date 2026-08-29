@@ -9,7 +9,7 @@ import {
   Modal,
   Typography,
 } from '@arco-design/web-react';
-import { IconArrowRight, IconPlayArrow } from '@arco-design/web-react/icon';
+import { IconArrowRight, IconPlayArrow, IconPoweroff } from '@arco-design/web-react/icon';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useState } from 'react';
 
@@ -23,7 +23,8 @@ export interface StartMeetingDialogProps {
   activeMeetingId?: string;
   meeting: Meeting;
   onCancel: () => void;
-  onOpenActiveMeeting?: (meetingId: string) => void;
+  onOpenActiveMeeting: (meetingId: string) => void;
+  onRequestEndActiveMeeting: (meetingId: string) => void;
   onStarted?: (meeting: Meeting) => void;
   onStart: StartMeetingCommand;
   open: boolean;
@@ -34,6 +35,7 @@ export function StartMeetingDialog({
   meeting,
   onCancel,
   onOpenActiveMeeting,
+  onRequestEndActiveMeeting,
   onStarted,
   onStart,
   open,
@@ -93,8 +95,16 @@ export function StartMeetingDialog({
               {t('actions.cancel')}
             </Button>
             <Button
+              icon={<IconPoweroff />}
+              onClick={() => onRequestEndActiveMeeting(activeMeetingId)}
+              status="danger"
+              type="outline"
+            >
+              {t('actions.reviewAndEndLive')}
+            </Button>
+            <Button
               icon={<IconArrowRight />}
-              onClick={() => onOpenActiveMeeting?.(activeMeetingId)}
+              onClick={() => onOpenActiveMeeting(activeMeetingId)}
               type="primary"
             >
               {t('actions.returnToLive')}

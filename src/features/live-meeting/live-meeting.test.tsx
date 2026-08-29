@@ -58,6 +58,9 @@ describe('live meeting controls', () => {
     expect(screen.getByText('In progress · overtime')).toBeVisible();
     expect(screen.getByText('4 attendees')).toBeVisible();
     expect(screen.getByText('5 person-hours')).toBeVisible();
+    const brand = screen.getByText('Convergene').closest('strong');
+    expect(brand?.querySelector('img')).toHaveAttribute('src', '/brand/convergene-mark.svg');
+    expect(brand?.querySelector('img')).toHaveAttribute('alt', '');
     await userEvent.click(screen.getByRole('button', { name: 'End meeting' }));
     expect(onEndRequest).toHaveBeenCalledOnce();
   });
@@ -77,6 +80,8 @@ describe('live meeting controls', () => {
       <StartMeetingDialog
         meeting={meeting}
         onCancel={vi.fn()}
+        onOpenActiveMeeting={vi.fn()}
+        onRequestEndActiveMeeting={vi.fn()}
         onStart={onStart}
         onStarted={onStarted}
         open
@@ -91,17 +96,21 @@ describe('live meeting controls', () => {
 
     view.unmount();
     const onOpenActiveMeeting = vi.fn();
+    const onRequestEndActiveMeeting = vi.fn();
     renderEnglish(
       <StartMeetingDialog
         activeMeetingId="meeting-live"
         meeting={meeting}
         onCancel={vi.fn()}
         onOpenActiveMeeting={onOpenActiveMeeting}
+        onRequestEndActiveMeeting={onRequestEndActiveMeeting}
         onStart={onStart}
         open
       />,
     );
     expect(screen.getByText('Another meeting is already LIVE')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Review and end live meeting' }));
+    expect(onRequestEndActiveMeeting).toHaveBeenCalledWith('meeting-live');
     await user.click(screen.getByRole('button', { name: 'Return to live meeting' }));
     expect(onOpenActiveMeeting).toHaveBeenCalledWith('meeting-live');
   });
@@ -135,15 +144,18 @@ describe('live meeting controls', () => {
     );
 
     expect(onMark).not.toHaveBeenCalled();
-    expect(screen.getByRole('combobox', { name: 'Outcome type' })).toHaveTextContent(
-      'Candidate idea',
-    );
+    const kindSelect = screen.getByRole('combobox', { name: 'Outcome type' });
+    expect(kindSelect).toHaveTextContent('Candidate idea');
+    await user.click(kindSelect);
+    fireEvent.click(await screen.findByRole('option', { name: 'Action item' }));
+    expect(screen.getByRole('textbox', { name: 'Owner (optional)' })).toHaveValue('');
+    expect(screen.getByLabelText('Due date (optional)')).toHaveValue('');
     await user.click(screen.getByRole('button', { name: 'Add to meeting outcomes' }));
     await waitFor(() =>
       expect(onMark).toHaveBeenCalledWith({
         dueDate: undefined,
         id: 'outcome-new',
-        kind: 'CANDIDATE_IDEA',
+        kind: 'ACTION',
         nodeId: 'topic-options',
         owner: undefined,
       }),

@@ -625,6 +625,7 @@
       "end": "結束會議",
       "returnToLive": "返回進行中的會議",
       "returnToMeeting": "返回整理",
+      "reviewAndEndLive": "檢查並結束進行中的會議",
       "start": "開始會議"
     },
     "end": {

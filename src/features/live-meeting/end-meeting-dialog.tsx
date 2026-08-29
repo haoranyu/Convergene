@@ -60,6 +60,25 @@ export function EndMeetingDialog({
     [meeting.id, nodes],
   );
   const check = buildMeetingEndCheck(meeting, outcomes, { parkingLotCount }, attendeeCount, now);
+  const attendeeField = (
+    <Form layout="vertical">
+      <Form.Item help={t('end.attendeeHelp')} label={t('end.actualAttendees')} required>
+        <InputNumber
+          aria-label={t('end.actualAttendees')}
+          error={!check.ok && check.error.code === 'INVALID_ATTENDEE_COUNT'}
+          max={999}
+          min={1}
+          mode="button"
+          onChange={(value) => {
+            setAttendeeCount(value ?? 0);
+            setErrorKey(null);
+          }}
+          precision={0}
+          value={attendeeCount}
+        />
+      </Form.Item>
+    </Form>
+  );
 
   async function end() {
     if (!check.ok) {
@@ -97,7 +116,10 @@ export function EndMeetingDialog({
       visible={open}
     >
       {!check.ok ? (
-        <Alert content={t(meetingCommandErrorKey(check.error.code))} showIcon type="error" />
+        <>
+          <Alert content={t(meetingCommandErrorKey(check.error.code))} showIcon type="error" />
+          {check.error.code === 'INVALID_ATTENDEE_COUNT' ? attendeeField : null}
+        </>
       ) : phase === 'review' ? (
         <>
           <Typography.Paragraph className={styles.dialogIntro}>
@@ -170,22 +192,7 @@ export function EndMeetingDialog({
             />
           ) : null}
 
-          <Form layout="vertical">
-            <Form.Item help={t('end.attendeeHelp')} label={t('end.actualAttendees')} required>
-              <InputNumber
-                aria-label={t('end.actualAttendees')}
-                max={999}
-                min={1}
-                mode="button"
-                onChange={(value) => {
-                  setAttendeeCount(value ?? 0);
-                  setErrorKey(null);
-                }}
-                precision={0}
-                value={attendeeCount}
-              />
-            </Form.Item>
-          </Form>
+          {attendeeField}
         </>
       ) : (
         <Alert
