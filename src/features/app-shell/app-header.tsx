@@ -13,11 +13,7 @@ import styles from './app-shell.module.css';
 import { LocalDataDrawer } from './local-data-drawer';
 import { ModelStatusControl } from './model-status-control';
 
-const localeLabels: Record<AppLocale, string> = {
-  'en-US': 'English',
-  'zh-CN': '简体中文',
-  'zh-TW': '繁體中文',
-};
+const appLocales: AppLocale[] = ['en-US', 'zh-CN', 'zh-TW'];
 
 interface AppHeaderProps {
   showModelStatus?: boolean;
@@ -29,9 +25,9 @@ function LocaleLinkList({ href }: { href: string }) {
 
   return (
     <div aria-label={t('languageLabel')} className={styles.locales} role="group">
-      {(Object.entries(localeLabels) as [AppLocale, string][]).map(([locale, label]) => (
+      {appLocales.map((locale) => (
         <Link className={styles.localeLink} href={href} key={locale} locale={locale}>
-          {label}
+          {t(`languages.${locale}`)}
         </Link>
       ))}
     </div>

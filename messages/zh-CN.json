@@ -58,6 +58,11 @@
       "trigger": "本机保存"
     },
     "languageLabel": "界面语言",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
     "model": {
       "configure": "配置模型",
       "loading": "正在检查模型连接",
@@ -124,9 +129,13 @@
       "brief_ready": "Brief 已就绪",
       "draft": "需求已保存",
       "ended": "查看会议",
+      "ended_on_time": "已结束 · 准时",
+      "ended_overrun": "已结束 · 超时",
       "grilling": "继续会前拷问",
       "live": "回到进行中会议",
-      "map_ready": "可以开始"
+      "live_overrun": "进行中 · 已超时",
+      "map_ready": "可以开始",
+      "waiting_to_start": "待开始"
     },
     "staleLive": {
       "description": "{count, plural, one {有一场进行中会议已经超过计划结束时间，请先打开处理，再开始下一场。} other {有 # 场进行中会议已经超过计划结束时间，请先处理，再开始下一场。}}",

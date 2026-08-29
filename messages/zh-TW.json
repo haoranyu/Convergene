@@ -58,6 +58,11 @@
       "trigger": "本機儲存"
     },
     "languageLabel": "介面語言",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
     "model": {
       "configure": "設定模型",
       "loading": "正在檢查模型連線",
@@ -124,9 +129,13 @@
       "brief_ready": "Brief 已就緒",
       "draft": "需求已儲存",
       "ended": "查看會議",
+      "ended_on_time": "已結束 · 準時",
+      "ended_overrun": "已結束 · 超時",
       "grilling": "繼續會前追問",
       "live": "返回進行中會議",
-      "map_ready": "可以開始"
+      "live_overrun": "進行中 · 已超時",
+      "map_ready": "可以開始",
+      "waiting_to_start": "待開始"
     },
     "staleLive": {
       "description": "{count, plural, one {有一場進行中會議已超過計畫結束時間，請先開啟處理，再開始下一場。} other {有 # 場進行中會議已超過計畫結束時間，請先處理，再開始下一場。}}",

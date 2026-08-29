@@ -58,6 +58,11 @@
       "trigger": "Saved locally"
     },
     "languageLabel": "Interface language",
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
     "model": {
       "configure": "Configure model",
       "loading": "Checking model connection",
@@ -124,9 +129,13 @@
       "brief_ready": "Brief ready",
       "draft": "Request saved",
       "ended": "View meeting",
+      "ended_on_time": "Ended · on time",
+      "ended_overrun": "Ended · overrun",
       "grilling": "Continue preparation",
       "live": "Return to live meeting",
-      "map_ready": "Ready to start"
+      "live_overrun": "In progress · overrun",
+      "map_ready": "Ready to start",
+      "waiting_to_start": "Waiting to start"
     },
     "staleLive": {
       "description": "{count, plural, one {A live meeting is past its scheduled end. Open it before starting another meeting.} other {# live meetings are past their scheduled end. Resolve them before starting another meeting.}}",

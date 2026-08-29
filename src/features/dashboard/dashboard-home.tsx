@@ -39,7 +39,7 @@ import {
 } from '@/modules/meeting-db/client';
 
 import styles from './dashboard-home.module.css';
-import { groupMeetings, staleLiveMeetings } from './meeting-groups';
+import { groupMeetings, meetingCardStateKey, staleLiveMeetings } from './meeting-groups';
 
 const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = {
   BRAINSTORM: 'purple',
@@ -50,12 +50,6 @@ const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = 
 
 function modeKey(mode: MeetingMode | undefined) {
   return mode?.toLowerCase() ?? 'unselected';
-}
-
-function stageKey(meeting: Meeting): string {
-  if (meeting.status === 'LIVE') return 'live';
-  if (meeting.status === 'ENDED') return 'ended';
-  return meeting.preparationStage.toLowerCase();
 }
 
 interface MeetingCardProps {
@@ -150,7 +144,7 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
           </span>
         </div>
         <div className={styles.cardFooter}>
-          <span>{t(`stages.${stageKey(meeting)}`)}</span>
+          <span>{t(`stages.${meetingCardStateKey(meeting, now)}`)}</span>
           <span aria-hidden="true">→</span>
         </div>
       </Link>

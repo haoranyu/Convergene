@@ -7,6 +7,13 @@ export interface MeetingGroup {
   meetings: Meeting[];
 }
 
+export function meetingCardStateKey(meeting: Meeting, now: Date): string {
+  const timingState = deriveTimingState(meeting, now);
+  return timingState === 'PREPARING'
+    ? meeting.preparationStage.toLowerCase()
+    : timingState.toLowerCase();
+}
+
 const groupOrder: MeetingGroupId[] = ['active', 'waiting', 'preparing', 'ended'];
 
 export function groupMeetings(meetings: readonly Meeting[], now: Date): MeetingGroup[] {
