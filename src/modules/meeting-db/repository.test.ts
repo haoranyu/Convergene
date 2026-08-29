@@ -1451,6 +1451,86 @@ describe('MeetingRepository', () => {
     ]);
   });
 
+  it('persists a pending question, permits only its disposition update, and blocks Brief early', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const grilling = await createGrillingMeeting(repository, 'meeting-1');
+    const pending = grillTurn('meeting-1', {
+      disposition: 'PENDING',
+      id: 'turn-1',
+    });
+    const inserted = await repository.putGrillTurn(
+      pending,
+      grilling.updatedAt,
+      new Date('2026-08-29T09:36:00.000Z'),
+    );
+    expect(inserted.ok).toBe(true);
+    if (!inserted.ok) return;
+
+    const earlyBrief = completeGrill(
+      inserted.value.meeting,
+      briefDraft,
+      new Date('2026-08-29T09:37:00.000Z'),
+    );
+    if (!earlyBrief.ok) throw new Error(earlyBrief.error.code);
+    await expect(
+      repository.savePreparationTransition(earlyBrief.value, inserted.value.meeting.updatedAt),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
+
+    const answered = await repository.putGrillTurn(
+      { ...pending, answer: 'The sponsor', disposition: 'ANSWERED' },
+      inserted.value.meeting.updatedAt,
+      new Date('2026-08-29T09:38:00.000Z'),
+    );
+    expect(answered).toMatchObject({
+      ok: true,
+      value: { turn: { answer: 'The sponsor', disposition: 'ANSWERED' } },
+    });
+    if (!answered.ok) return;
+    await expect(
+      repository.putGrillTurn(
+        { ...answered.value.turn, question: 'Silently changed prompt' },
+        answered.value.meeting.updatedAt,
+        new Date('2026-08-29T09:39:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'GRILL_TURN_ALREADY_EXISTS' }, ok: false });
+  });
+
+  it('edits only an unlocked Brief draft and preserves the confirmed snapshot', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const grilling = await createGrillingMeeting(repository, 'meeting-1');
+    const completed = completeGrill(grilling, briefDraft, new Date('2026-08-29T09:36:00.000Z'));
+    if (!completed.ok) throw new Error(completed.error.code);
+    const saved = await repository.savePreparationTransition(completed.value, grilling.updatedAt);
+    if (!saved.ok) throw new Error(saved.error.code);
+
+    const editedDraft = { ...briefDraft, objective: 'Choose the final launch path' };
+    const edited = await repository.updateBriefDraft(
+      'meeting-1',
+      editedDraft,
+      saved.value.updatedAt,
+      new Date('2026-08-29T09:37:00.000Z'),
+    );
+    expect(edited).toMatchObject({
+      ok: true,
+      value: { brief: { objective: 'Choose the final launch path' } },
+    });
+    if (!edited.ok) return;
+    const confirmed = await repository.confirmBrief(
+      'meeting-1',
+      edited.value.updatedAt,
+      new Date('2026-08-29T09:38:00.000Z'),
+    );
+    if (!confirmed.ok) throw new Error(confirmed.error.code);
+    await expect(
+      repository.updateBriefDraft(
+        'meeting-1',
+        { ...editedDraft, objective: 'Changed after lock' },
+        confirmed.value.updatedAt,
+        new Date('2026-08-29T09:39:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
+  });
+
   it('exposes a live-query seam that observes writes made through another database instance', async () => {
     const observedDatabase = openDatabase();
     const writerRepository = new MeetingRepository(openDatabase());

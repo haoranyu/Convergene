@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   grillOutputFixtures,
+  preparationBriefFixtures,
   primaryPreparationModes,
   readinessDimensions,
 } from '@/fixtures/preparation';
@@ -71,6 +72,29 @@ describe('preparation AI contracts', () => {
         }),
       ).success,
     ).toBe(true);
+    const finishInput = input('DECISION', {
+      finishRequested: true,
+      history,
+      phase: 'USER_EXTENDED',
+      turnIndex: 10,
+    });
+    const snapshot = preparationBriefFixtures.DECISION;
+    const brief = {
+      assumptions: snapshot.assumptions,
+      confirmed: snapshot.confirmed,
+      desiredOutcome: snapshot.desiredOutcome,
+      facilitation: snapshot.facilitation,
+      objective: snapshot.objective,
+      unknowns: snapshot.unknowns,
+    };
+    expect(
+      parseGrillOutput(finishInput, {
+        readiness: snapshot.readiness,
+        shouldAsk: false,
+        suggestedBrief: brief,
+        updatedState: createEmptyKnownState(),
+      }),
+    ).toMatchObject({ readiness: { level: 'BARELY_READY' }, shouldAsk: false });
   });
 
   it('requires the critical reason only for an actual critical extra question', () => {

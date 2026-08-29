@@ -31,21 +31,25 @@ function failure(code: GrillPolicyErrorCode): Result<never, GrillPolicyErrorCode
   return { error: { code }, ok: false };
 }
 
-function nonEmptyString(value: string | undefined): boolean {
+function nonEmptyString(value: string | undefined): value is string {
   return typeof value === 'string' && value.trim() !== '';
 }
 
-function stringList(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+function boundedStringList(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 30 &&
+    value.every((item) => typeof item === 'string' && item.trim() !== '' && item.length <= 500)
+  );
 }
 
 function validKnownState(value: GrillKnownState): boolean {
   return (
     value !== null &&
     typeof value === 'object' &&
-    stringList(value.confirmed) &&
-    stringList(value.assumptions) &&
-    stringList(value.unknowns)
+    boundedStringList(value.confirmed) &&
+    boundedStringList(value.assumptions) &&
+    boundedStringList(value.unknowns)
   );
 }
 
@@ -59,16 +63,20 @@ function validReadinessDimensions(
   ]);
   const keys = dimensions.map(({ key }) => key);
 
-  if (new Set(keys).size !== keys.length) return false;
+  if (dimensions.length < 6 || dimensions.length > 10 || new Set(keys).size !== keys.length) {
+    return false;
+  }
   if (
     dimensions.some(
       (dimension) =>
         typeof dimension.key !== 'string' ||
         dimension.key.trim() === '' ||
+        dimension.key.length > 80 ||
         (dimension.status !== 'MISSING' &&
           dimension.status !== 'PARTIAL' &&
           dimension.status !== 'READY') ||
-        (dimension.summary !== undefined && typeof dimension.summary !== 'string'),
+        (dimension.summary !== undefined &&
+          (typeof dimension.summary !== 'string' || dimension.summary.length > 500)),
     )
   ) {
     return false;
@@ -105,8 +113,9 @@ export function validateGrillTurn(
     turn.index < bounds[0] ||
     turn.index > bounds[1] ||
     !nonEmptyString(turn.question) ||
+    turn.question.length > 600 ||
     !isCanonicalUtcTimestamp(turn.createdAt) ||
-    (turn.reason !== undefined && typeof turn.reason !== 'string') ||
+    (turn.reason !== undefined && (!nonEmptyString(turn.reason) || turn.reason.length > 600)) ||
     !validKnownState(turn.knownState) ||
     turn.readiness === null ||
     typeof turn.readiness !== 'object' ||
@@ -115,7 +124,8 @@ export function validateGrillTurn(
       turn.readiness.level !== 'READY') ||
     !Array.isArray(turn.readiness.dimensions) ||
     !validReadinessDimensions(mode, turn.readiness.dimensions) ||
-    (turn.phase === 'CRITICAL_EXTRA') !== nonEmptyString(turn.criticalExtraReason)
+    (turn.phase === 'CRITICAL_EXTRA') !== nonEmptyString(turn.criticalExtraReason) ||
+    (turn.criticalExtraReason !== undefined && turn.criticalExtraReason.length > 600)
   ) {
     return failure('INVALID_GRILL_TURN');
   }
@@ -124,7 +134,7 @@ export function validateGrillTurn(
     turn.disposition === 'PENDING'
       ? turn.answer !== undefined
       : turn.disposition === 'ANSWERED'
-        ? !nonEmptyString(turn.answer)
+        ? !nonEmptyString(turn.answer) || turn.answer.length > 4_000
         : (turn.disposition !== 'UNKNOWN' && turn.disposition !== 'SKIPPED') ||
           turn.answer !== undefined
   ) {
