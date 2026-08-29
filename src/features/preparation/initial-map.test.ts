@@ -53,30 +53,23 @@ describe('initial map materialization', () => {
     ).toThrowError(/INVALID_TOPIC_ORDER/);
   });
 
-  it('repairs once using the exact same Brief snapshot and never makes a third request', async () => {
+  it('does not repeat an invalid browser response because repair belongs to the server', async () => {
     const invalid = {
       ...initialMapOutputFixtures.DECISION,
       nodes: initialMapOutputFixtures.DECISION.nodes.slice(0, 2),
     };
-    const initialMap = vi
-      .fn<PreparationAIClient['initialMap']>()
-      .mockResolvedValueOnce(invalid)
-      .mockResolvedValueOnce(initialMapOutputFixtures.DECISION);
+    const initialMap = vi.fn<PreparationAIClient['initialMap']>().mockResolvedValue(invalid);
     const client: PreparationAIClient = {
       grill: vi.fn(),
       initialMap,
     };
     const input = { brief: preparationBriefFixtures.DECISION, mode: 'DECISION' as const };
-    const graph = await requestValidInitialMap(client, input, 'meeting-1', 'en-US', {
-      createId: (() => {
-        let sequence = 0;
-        return () => `generated-${sequence++}`;
-      })(),
-      now: new Date('2026-08-29T09:40:00.000Z'),
-    });
-    expect(validateInitialMap(graph).ok).toBe(true);
-    expect(initialMap).toHaveBeenCalledTimes(2);
-    expect(initialMap.mock.calls[0]?.[0]).toEqual(initialMap.mock.calls[1]?.[0]);
+    await expect(
+      requestValidInitialMap(client, input, 'meeting-1', 'en-US', {
+        now: new Date('2026-08-29T09:40:00.000Z'),
+      }),
+    ).rejects.toBeInstanceOf(InitialMapValidationError);
+    expect(initialMap).toHaveBeenCalledTimes(1);
     expect(initialMap.mock.calls[0]?.[0]).not.toBe(input);
   });
 });

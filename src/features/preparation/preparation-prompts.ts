@@ -7,6 +7,11 @@ import {
 } from '@/modules/meeting-domain';
 
 import type { GrillInput, GrillOutput, InitialMapInput, InitialMapOutput } from './ai-contract';
+import {
+  createGrillFewShotFixture,
+  createInitialMapFewShotFixture,
+  grillOutputBranches,
+} from './preparation-fallbacks';
 
 const localeInstructions: Record<SupportedLocale, string> = {
   'en-US': 'Write every generated user-facing field in natural English.',
@@ -30,6 +35,14 @@ export function buildGrillPrompt(input: GrillInput, outputLocale: SupportedLocal
       ? `Readiness dimensions must include these exact keys: ${readinessKeys.join(', ')}. You may add at most two unique snake_case custom keys.`
       : `Readiness dimensions must contain exactly these keys, once each: ${readinessKeys.join(', ')}.`;
 
+  const examples = grillOutputBranches.flatMap((branch) => {
+    const fixture = createGrillFewShotFixture(input.mode, outputLocale, branch);
+    return [
+      `EXAMPLE ${branch} INPUT: ${JSON.stringify(fixture.input)}`,
+      `EXAMPLE ${branch} OUTPUT: ${JSON.stringify(fixture.output)}`,
+    ];
+  });
+
   return [
     'You prepare one meeting by asking at most one direct, respectful question at a time.',
     'Use the supplied mode, phase, turn index, history, known state, and requested dimension exactly.',
@@ -41,7 +54,33 @@ export function buildGrillPrompt(input: GrillInput, outputLocale: SupportedLocal
     'CRITICAL_EXTRA requires criticalExtraReason; other phases must omit it.',
     localeInstructions[outputLocale],
     ...sharedRules,
-    JSON.stringify(input),
+    ...examples,
+    `USER INPUT: ${JSON.stringify(input)}`,
+  ].join('\n');
+}
+
+function serializeCandidate(value: unknown): string {
+  try {
+    const serialized = JSON.stringify(value) ?? 'null';
+    return serialized.length <= 160_000
+      ? serialized
+      : JSON.stringify({ omitted: 'candidate exceeded repair prompt limit' });
+  } catch {
+    return JSON.stringify({ omitted: 'candidate was not serializable' });
+  }
+}
+
+export function buildGrillRepairPrompt(
+  input: GrillInput,
+  outputLocale: SupportedLocale,
+  previousCandidate: unknown,
+  validationErrors: readonly string[],
+): string {
+  return [
+    buildGrillPrompt(input, outputLocale),
+    'REPAIR: Return one corrected output. Do not explain the corrections.',
+    `PREVIOUS CANDIDATE: ${serializeCandidate(previousCandidate)}`,
+    `VALIDATION ERRORS: ${JSON.stringify(validationErrors)}`,
   ].join('\n');
 }
 
@@ -49,15 +88,32 @@ export function buildInitialMapPrompt(
   input: InitialMapInput,
   outputLocale: SupportedLocale,
 ): string {
+  const example = createInitialMapFewShotFixture(input.mode, outputLocale);
   return [
     'Create a controlled initial left-to-right meeting map from the locked Brief.',
-    'Return exactly one root OBJECTIVE without parentKey and 3 to 5 direct TOPIC children.',
-    'Return 4 to 12 nodes total, at most two levels below the root, with unique temporary keys and existing parents.',
-    'Direct TOPIC children need unique continuous order values beginning at 0, plus a short topicPrompt and transitionHint.',
-    'Use only the allowed node kinds and do not generate UUIDs, edge ids, coordinates, outcomes, owners, or deadlines.',
+    'Return semantic content for one objective and 3 to 5 direct topics.',
+    'Each title must contain at most 48 Unicode graphemes.',
+    'Every topic needs a short topicPrompt and transitionHint.',
+    'Do not generate keys, parent keys, node kinds, order values, UUIDs, edge ids, coordinates, outcomes, owners, or deadlines; the application creates all graph structure deterministically.',
     localeInstructions[outputLocale],
     ...sharedRules,
-    JSON.stringify(input),
+    `EXAMPLE INPUT: ${JSON.stringify(example.input)}`,
+    `EXAMPLE OUTPUT: ${JSON.stringify(example.output)}`,
+    `USER INPUT: ${JSON.stringify(input)}`,
+  ].join('\n');
+}
+
+export function buildInitialMapRepairPrompt(
+  input: InitialMapInput,
+  outputLocale: SupportedLocale,
+  previousCandidate: unknown,
+  validationErrors: readonly string[],
+): string {
+  return [
+    buildInitialMapPrompt(input, outputLocale),
+    'REPAIR: Return one corrected output. Do not explain the corrections.',
+    `PREVIOUS CANDIDATE: ${serializeCandidate(previousCandidate)}`,
+    `VALIDATION ERRORS: ${JSON.stringify(validationErrors)}`,
   ].join('\n');
 }
 

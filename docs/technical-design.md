@@ -268,7 +268,7 @@ interface MeetingReport {
 }
 ```
 
-准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 可以保存草稿或已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认只把草稿替换为快照，初始图成功后才转入 `MAP_READY`。
+准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 保存可编辑草稿，并兼容读取旧版本留下的已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认先在内存构造候选快照，完整图通过校验后，repository 才在同一事务中写入快照、Node、Edge 并转入 `MAP_READY`。
 
 `GrillTurn` 按 `[meetingId+index]` 连续保存且总数不超过 10；只有最后一轮可以是 `PENDING`，并且该记录只能原位更新一次处置与回答，问题、阶段、已知状态和准备度快照保持不变。
 

@@ -48,7 +48,7 @@ Convergene 管理的是单个用户在一台设备上筹备、主持和整理会
 |---|---|
 | `DRAFT` | 只有原始需求，尚未确认 AI 推荐的剧本 |
 | `GRILLING` | 已锁定剧本，正在逐轮澄清 |
-| `BRIEF_READY` | Grill 已结束；Brief 可能仍可编辑，也可能已确认锁定并等待初始图成功生成 |
+| `BRIEF_READY` | Grill 已结束；Brief 可编辑，或兼容读取旧版本留下的已确认快照 |
 | `MAP_READY` | Brief 已锁定，初始会议图已成功生成 |
 
 ### Timing State（时间状态）
@@ -74,7 +74,7 @@ UI 可以使用分段进度条呈现已覆盖维度，但不能渲染成虚假�
 
 ### Meeting Brief（会议简报）
 
-Grill 的结构化结果，区分已经确认的信息、暂时采用的假设和尚未解决的问题。点击“确认并生成脑图”时，Brief 立即成为带 `confirmedAt` 的不可变准备快照；初始图失败不会解锁或替换该快照。
+Grill 的结构化结果，区分已经确认的信息、暂时采用的假设和尚未解决的问题。点击“确认并生成脑图”时，应用先在内存中创建不可变候选快照；只有完整初始图通过校验后，Brief 才与 Node/Edge 在同一 IndexedDB 事务中写入并带上 `confirmedAt`。生成、校验或传输失败不会产生 `confirmedAt` 或部分图写入，Brief 仍可编辑后重试。
 
 ### Meeting Graph（会议图）
 
@@ -140,8 +140,8 @@ stateDiagram-v2
     [*] --> PREPARING_DRAFT: 创建会议
     PREPARING_DRAFT --> PREPARING_GRILLING: 确认会议剧本
     PREPARING_GRILLING --> PREPARING_BRIEF_READY: 结束 Grill
-    PREPARING_BRIEF_READY --> PREPARING_BRIEF_READY: 确认并锁定 Brief / 生成失败或重试
-    PREPARING_BRIEF_READY --> PREPARING_MAP_READY: 已确认 Brief 的初始图生成成功
+    PREPARING_BRIEF_READY --> PREPARING_BRIEF_READY: 生成失败 / 保持可编辑且零部分写入
+    PREPARING_BRIEF_READY --> PREPARING_MAP_READY: 完整图验证后原子锁定 Brief 与写图
     PREPARING_BRIEF_READY --> PREPARING_GRILLING: 继续补问
     PREPARING_MAP_READY --> PREPARING_GRILLING: 继续补问并清空 Brief 与脑图
     PREPARING_GRILLING --> PREPARING_DRAFT: 重新准备

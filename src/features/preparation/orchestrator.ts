@@ -172,23 +172,18 @@ export async function lockBriefAndGenerateMap(
     throw new PreparationFlowError('INVALID_MEETING_STATE');
   }
   const now = (dependencies.now ?? (() => new Date()))();
-  const lockedMeeting =
+  const snapshot: MeetingBriefSnapshot =
     meeting.brief.confirmedAt === undefined
-      ? requireSuccess(
-          await dependencies.repository.confirmBrief(meeting.id, meeting.updatedAt, now),
-        )
-      : meeting;
-  const snapshot = lockedMeeting.brief as MeetingBriefSnapshot;
+      ? { ...structuredClone(meeting.brief), confirmedAt: now.toISOString() }
+      : structuredClone(meeting.brief as MeetingBriefSnapshot);
   const graph = await requestValidInitialMap(
     dependencies.client,
-    { brief: snapshot, mode: lockedMeeting.mode! },
-    lockedMeeting.id,
-    lockedMeeting.contentLocale,
+    { brief: snapshot, mode: meeting.mode },
+    meeting.id,
+    meeting.contentLocale,
     { createId: dependencies.createId, now, signal },
   );
-  requireSuccess(
-    await dependencies.repository.saveInitialGraph(graph, lockedMeeting.updatedAt, now),
-  );
+  requireSuccess(await dependencies.repository.saveInitialGraph(graph, meeting.updatedAt, now));
 }
 
 export async function returnToGrill(

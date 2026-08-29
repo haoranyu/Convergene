@@ -239,7 +239,7 @@ describe('PreparationWorkspace', () => {
     });
   });
 
-  it('keeps the exact Brief locked and visible when map generation fails', async () => {
+  it('keeps the edited Brief unlocked when map generation fails before the atomic save', async () => {
     databaseName = `preparation-ui-${crypto.randomUUID()}`;
     database = new MeetingDatabase(databaseName);
     const repository = new MeetingRepository(database);
@@ -263,10 +263,8 @@ describe('PreparationWorkspace', () => {
     await user.type(screen.getByLabelText('Meeting objective'), 'Choose the final launch path');
     await user.click(screen.getByRole('button', { name: 'Confirm, lock, and generate map' }));
 
-    expect(await screen.findByText('Locked snapshot')).toBeVisible();
+    expect(await screen.findByText('Editable draft')).toBeVisible();
     expect(screen.getByLabelText('Meeting objective')).toHaveValue('Choose the final launch path');
-    expect(screen.getByLabelText('Meeting objective')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Retry map generation' })).toBeVisible();
     await waitFor(async () => {
       const aggregate = await readMeetingAggregate(database, 'meeting-1');
       expect(aggregate).toMatchObject({
@@ -274,7 +272,6 @@ describe('PreparationWorkspace', () => {
         value: {
           meeting: {
             brief: {
-              confirmedAt: expect.any(String),
               objective: 'Choose the final launch path',
             },
             preparationStage: 'BRIEF_READY',
@@ -282,7 +279,12 @@ describe('PreparationWorkspace', () => {
           nodes: [],
         },
       });
+      if (aggregate.ok && aggregate.value !== undefined) {
+        expect(aggregate.value.meeting.brief?.confirmedAt).toBeUndefined();
+      }
     });
+    expect(screen.getByLabelText('Meeting objective')).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Confirm, lock, and generate map' })).toBeVisible();
     expect(initialMap).toHaveBeenCalledTimes(1);
   });
 });

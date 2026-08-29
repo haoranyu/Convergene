@@ -622,7 +622,13 @@ export class MeetingRepository {
         if (meeting === undefined) return failure('MEETING_NOT_FOUND');
         const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
         if (!revision.ok) return revision;
-        const mapReady = markMapReady(meeting, new Date(revision.value));
+        let preparedMeeting = meeting;
+        if (preparedMeeting.brief?.confirmedAt === undefined) {
+          const confirmed = confirmMeetingBrief(preparedMeeting, new Date(revision.value));
+          if (!confirmed.ok) return confirmed;
+          preparedMeeting = confirmed.value;
+        }
+        const mapReady = markMapReady(preparedMeeting, new Date(revision.value));
         if (!mapReady.ok) return mapReady;
         const meetingValue = validProjectedMeeting(mapReady.value);
         if (meetingValue === undefined) return failure('INVALID_MEETING');

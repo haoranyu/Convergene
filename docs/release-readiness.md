@@ -1,7 +1,7 @@
 # Convergene P0 发布检查记录
 
 > 发布目标：<https://convergene.vercel.app>  
-> 范围：P0 Issues #1–#12；Stretch #13–#16 不计入完成门槛
+> 范围：P0 Issues #1–#12 及发布可靠性修复 #26；Stretch #13–#16 不计入完成门槛
 
 ## 已验证路径
 
@@ -12,6 +12,7 @@
 - 简中真实供应商冒烟使用 StepFun 完成一轮 Grill 回答并进入下一轮；临时验证凭证随后已撤销。
 - SiliconFlow 连接测试通过；较长的结构化准备请求若超过有界超时，会显示可重试失败态且不修改本机会议。
 - Safari Production 冒烟完成英文首页和五步无 Key 导览；在 200% 缩放下最终会议产出、便携报告和主操作仍可访问，期间未创建真实会议或调用供应商。
+- Preparation 结构化输出先执行一次带候选值与紧凑错误的 repair；第二次仍无效时，Grill/Brief 和三议题 Initial Map 使用通过生产契约的本地确定性降级。自动化覆盖全部 mode × locale × output branch，以及连续两次无效输出后的创建 → Grill → Brief → Map → Canvas 路径。
 
 ## 发布与安全边界
 
@@ -41,11 +42,14 @@ pnpm test:e2e -- --workers=1
 - `e2e/dashboard-guide-creation.spec.ts`：首次使用、IndexedDB 失败、导出/清除、响应式与 locale 保持。
 - `e2e/provider-config.spec.ts`：Key 不回显、失败不保存、清除隔离、CSP 与 375px。
 - `e2e/preparation.spec.ts`：三语 Grill、桌面完整生命周期/报告和繁中手机生命周期/报告。
+- `src/features/preparation/preparation-fallbacks.test.ts`：全部 mode × locale × branch few-shot 与降级 fixture 的生产契约。
+- `src/features/preparation/preparation-reliability.test.ts`：一次 schema-aware repair、无第三次请求、两次无效后的确定性降级和供应商传输错误边界。
+- `src/features/preparation/orchestrator.test.ts`：无效中间输出零部分写入，以及两次无效输出后的创建 → Grill → Brief → Map → Canvas 闭环。
 
 ## 已知限制与降级
 
 - `< 768px` 不承诺完整可拖动画布或结构编辑；手机提供本地化议题树、计时、产出和报告，页面明确建议复杂画布使用电脑。
-- 供应商可用性、速率、模型权限和生成延迟不受 Convergene 控制；所有 AI 失败必须保持既有本机状态，并允许重试、手动选择或更换配置。
+- 供应商可用性、速率、模型权限和生成延迟不受 Convergene 控制；传输、权限和限流失败保持既有本机状态，并允许重试、手动选择或更换配置；结构化输出无效则按有界 repair/fallback 策略处理。
 - 报告 AI 润饰和 Mermaid 渲染都可以失败；确定性事实稿、Markdown 源码和表格仍可用。
 - P0 不提供登录、云同步、手机树结构编辑、会后时间修正或 stale-LIVE 恢复向导。
 - 不配置 GitHub Actions；发布证据来自仓库脚本、PR Checks、Vercel Deployment 和人工供应商冒烟。

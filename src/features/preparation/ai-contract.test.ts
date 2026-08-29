@@ -11,9 +11,11 @@ import {
 import {
   createEmptyKnownState,
   grillInputSchema,
+  initialMapOutputSchema,
   parseGrillOutput,
   parseProviderGrillOutput,
   parseProviderInitialMapOutput,
+  providerInitialMapOutputSchema,
   validReadinessForMode,
   type GrillInput,
 } from './ai-contract';
@@ -48,20 +50,75 @@ describe('preparation AI contracts', () => {
       }),
     ).toEqual(grillFixture);
 
-    const mapFixture = initialMapOutputFixtures.DECISION;
+    const [objective, ...nodes] = initialMapOutputFixtures.DECISION.nodes;
+    const topics = nodes.filter((node) => node.kind === 'TOPIC');
+    const normalized = parseProviderInitialMapOutput({
+      objective: { note: null, title: objective.title },
+      templateCoverage: initialMapOutputFixtures.DECISION.templateCoverage,
+      topics: topics.map((node) => ({
+        note: null,
+        title: node.title,
+        topicPrompt: node.topicPrompt,
+        transitionHint: node.transitionHint,
+      })),
+    });
+    expect(normalized.nodes).toHaveLength(4);
+    expect(normalized.nodes[0]).toEqual({
+      key: 'objective',
+      kind: 'OBJECTIVE',
+      title: objective.title,
+    });
+    expect(normalized.nodes[1]).toMatchObject({
+      key: 'topic-1',
+      kind: 'TOPIC',
+      order: 0,
+      parentKey: 'objective',
+    });
+  });
+
+  it('uses the graph title limit in both provider and domain schemas', () => {
+    const title = '界'.repeat(49);
     expect(
-      parseProviderInitialMapOutput({
-        ...mapFixture,
-        nodes: mapFixture.nodes.map((node) => ({
-          ...node,
-          note: 'note' in node ? node.note : null,
-          order: 'order' in node ? node.order : null,
-          parentKey: 'parentKey' in node ? node.parentKey : null,
-          topicPrompt: 'topicPrompt' in node ? node.topicPrompt : null,
-          transitionHint: 'transitionHint' in node ? node.transitionHint : null,
+      providerInitialMapOutputSchema.safeParse({
+        objective: { title },
+        templateCoverage: ['coverage'],
+        topics: Array.from({ length: 3 }, (_, index) => ({
+          title: `Topic ${index}`,
+          topicPrompt: 'Discuss the topic',
+          transitionHint: 'Move to the next topic',
         })),
-      }),
-    ).toEqual(mapFixture);
+      }).success,
+    ).toBe(false);
+    expect(
+      initialMapOutputSchema.safeParse({
+        nodes: [
+          { key: 'objective', kind: 'OBJECTIVE', title },
+          ...Array.from({ length: 3 }, (_, index) => ({
+            key: `topic-${index}`,
+            kind: 'TOPIC' as const,
+            order: index,
+            parentKey: 'objective',
+            title: `Topic ${index}`,
+            topicPrompt: 'Discuss the topic',
+            transitionHint: 'Move to the next topic',
+          })),
+        ],
+        templateCoverage: ['coverage'],
+      }).success,
+    ).toBe(false);
+
+    const emojiTitle = '😀'.repeat(30);
+    expect(
+      providerInitialMapOutputSchema.safeParse({
+        objective: { title: emojiTitle },
+        templateCoverage: ['coverage'],
+        topics: Array.from({ length: 3 }, (_, index) => ({
+          title: `Topic ${index}`,
+          topicPrompt: 'Discuss the topic',
+          transitionHint: 'Move to the next topic',
+        })),
+      }).success,
+    ).toBe(true);
   });
 
   it.each(primaryPreparationModes)('accepts the complete %s readiness fixture', (mode) => {

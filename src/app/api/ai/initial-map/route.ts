@@ -4,23 +4,17 @@ import {
   readJsonInput,
 } from '@/modules/api-security';
 import {
-  generatedTextMatchesLocale,
   meetingAIErrorResponse,
   meetingAIJson,
-  MeetingAIContractError,
   runStructuredProviderCall,
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 import {
   initialMapMaximumRequestBodyBytes,
   initialMapRequestSchema,
-  parseProviderInitialMapOutput,
   providerInitialMapOutputSchema,
 } from '@/features/preparation/ai-contract';
-import {
-  buildInitialMapPrompt,
-  initialMapOutputGeneratedText,
-} from '@/features/preparation/preparation-prompts';
+import { runReliableInitialMapCall } from '@/features/preparation/preparation-reliability';
 
 export const runtime = 'nodejs';
 
@@ -35,20 +29,21 @@ export async function POST(request: Request): Promise<Response> {
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 12, 60, 'initial-map');
     const config = await service.resolve();
-    const rawOutput = await runStructuredProviderCall({
-      abortSignal: request.signal,
-      config,
-      maxOutputTokens: 8_192,
-      prompt: buildInitialMapPrompt(envelope.input, envelope.outputLocale),
-      role: 'grill',
-      schema: providerInitialMapOutputSchema,
-      schemaName: 'InitialMapOutput',
-      timeoutMs: 60_000,
+    const output = await runReliableInitialMapCall({
+      callProvider: (prompt) =>
+        runStructuredProviderCall({
+          abortSignal: request.signal,
+          config,
+          maxOutputTokens: 8_192,
+          prompt,
+          role: 'grill',
+          schema: providerInitialMapOutputSchema,
+          schemaName: 'InitialMapContent',
+          timeoutMs: 60_000,
+        }),
+      input: envelope.input,
+      outputLocale: envelope.outputLocale,
     });
-    const output = parseProviderInitialMapOutput(rawOutput);
-    if (!generatedTextMatchesLocale(initialMapOutputGeneratedText(output), envelope.outputLocale)) {
-      throw new MeetingAIContractError();
-    }
     return meetingAIJson({ output, requestId: envelope.requestId, task: envelope.task });
   } catch (error) {
     return meetingAIErrorResponse(error);

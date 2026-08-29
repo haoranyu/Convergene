@@ -13,11 +13,23 @@ import {
   type ReadinessDimension,
   type SupportedLocale,
 } from '@/modules/meeting-domain';
-import { nodeKinds, type NodeKind } from '@/modules/mind-map-domain';
+import {
+  graphemeCount,
+  maximumNodeTitleGraphemes,
+  nodeKinds,
+  type NodeKind,
+} from '@/modules/mind-map-domain';
 
 const boundedText = (maximum: number) => z.string().trim().min(1).max(maximum);
 const boundedList = (maximumItems: number, maximumLength: number) =>
   z.array(boundedText(maximumLength)).max(maximumItems);
+const nodeTitleText = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => graphemeCount(value) <= maximumNodeTitleGraphemes, {
+    message: `title must contain at most ${maximumNodeTitleGraphemes} graphemes`,
+  });
 
 export const grillTask = 'grill' as const;
 export const initialMapTask = 'initial-map' as const;
@@ -287,7 +299,7 @@ export const initialMapNodeDraftSchema = z
     note: z.string().trim().max(2_000).optional(),
     order: z.number().int().min(0).max(4).optional(),
     parentKey: boundedText(80).optional(),
-    title: boundedText(200),
+    title: nodeTitleText,
     topicPrompt: z.string().trim().min(1).max(600).optional(),
     transitionHint: z.string().trim().min(1).max(600).optional(),
   })
@@ -300,44 +312,56 @@ export const initialMapOutputSchema = z
   })
   .strict();
 
-const providerInitialMapNodeDraftSchema = z
+const providerInitialMapObjectiveSchema = z
   .object({
-    key: boundedText(80),
-    kind: z.enum(nodeKinds),
     note: z.string().trim().max(2_000).nullish(),
-    order: z.number().int().min(0).max(4).nullish(),
-    parentKey: boundedText(80).nullish(),
-    title: boundedText(200),
-    topicPrompt: z.string().trim().min(1).max(600).nullish(),
-    transitionHint: z.string().trim().min(1).max(600).nullish(),
+    title: nodeTitleText,
+  })
+  .strict();
+
+const providerInitialMapTopicSchema = z
+  .object({
+    note: z.string().trim().max(2_000).nullish(),
+    title: nodeTitleText,
+    topicPrompt: boundedText(600),
+    transitionHint: boundedText(600),
   })
   .strict();
 
 export const providerInitialMapOutputSchema = z
   .object({
-    nodes: z.array(providerInitialMapNodeDraftSchema).min(4).max(12),
+    objective: providerInitialMapObjectiveSchema,
     templateCoverage: boundedList(12, 120).min(1),
+    topics: z.array(providerInitialMapTopicSchema).min(3).max(5),
   })
   .strict();
 
 export function parseProviderInitialMapOutput(value: unknown): InitialMapOutput {
   const output = providerInitialMapOutputSchema.parse(value);
   return initialMapOutputSchema.parse({
-    nodes: output.nodes.map(
-      ({ key, kind, note, order, parentKey, title, topicPrompt, transitionHint }) => ({
-        key,
-        kind,
+    nodes: [
+      {
+        key: 'objective',
+        kind: 'OBJECTIVE',
+        ...(output.objective.note == null ? {} : { note: output.objective.note }),
+        title: output.objective.title,
+      },
+      ...output.topics.map(({ note, title, topicPrompt, transitionHint }, order) => ({
+        key: `topic-${order + 1}`,
+        kind: 'TOPIC' as const,
         ...(note == null ? {} : { note }),
-        ...(order == null ? {} : { order }),
-        ...(parentKey == null ? {} : { parentKey }),
+        order,
+        parentKey: 'objective',
         title,
-        ...(topicPrompt == null ? {} : { topicPrompt }),
-        ...(transitionHint == null ? {} : { transitionHint }),
-      }),
-    ),
+        topicPrompt,
+        transitionHint,
+      })),
+    ],
     templateCoverage: output.templateCoverage,
   });
 }
+
+export type ProviderInitialMapOutput = z.infer<typeof providerInitialMapOutputSchema>;
 
 export const initialMapInputSchema = z
   .object({
