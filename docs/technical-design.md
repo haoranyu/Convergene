@@ -451,6 +451,12 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 封装 session、Redis、AES-GCM、Provider 白名单和模型解析。业务模块只拿到一次请求内有效的 `ResolvedProviderConfig`，不能接触 Redis record。
 
+生产实现位于 `src/modules/provider-config/`：Cookie 使用 32-byte base64url 随机 id，Redis key
+只含其 SHA-256；Key 由 AES-256-GCM envelope 保存，状态接口只返回固定掩码。PUT 在每次写入前
+重新执行最小结构化 Provider 调用，失败不覆盖旧 record；成功读取同时续期 Cookie 与 Redis 的
+30 天 TTL。`src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
+Schema、超时/取消及错误归一化的唯一共享边界。
+
 ## 9. 画布与布局
 
 - Dagre rank direction 固定 `LR`；
@@ -532,6 +538,9 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 ### 免费层保护
 
 - Redis 按匿名 session 做基础限流，例如 AI route 每分钟 30 次；
+- 配置接口在 session 创建前按代理提供的客户端地址做单向 SHA-256 scope，创建后按 session 做
+  scope；原始地址和 Cookie 都不进入 Redis key 或日志。计数与首次过期时间由同一 Lua script
+  原子设置，第 31 次请求返回稳定 `RATE_LIMITED`；
 - 用户 Key 的供应商错误不能无限自动重试；
 - Vercel Hobby 超额后停止服务而不是产生按量账单；
 - 不配置公共模型 Key，因此公开页面不会消耗项目方模型额度。

@@ -59,8 +59,15 @@ Upstash client 的共享 AbortSignal 在 30 秒取消整个 lifecycle，Vitest t
 32-byte base64 `APP_ENCRYPTION_SECRET` 仅注入测试子进程。最终真实 lifecycle 在约 4.2 秒内通过；
 测试使用随机隔离 key，并在正常路径和 `finally` 中各执行一次幂等删除。凭据和 secret 均未写入
 仓库、环境文件、测试输出或文档，Redis 中也没有会议数据。Vercel Hobby 项目
-`haoran-95db/convergene` 已 Ready，production 为 `https://convergene.vercel.app`；部署环境变量
-将在 P0-07/P0-08 实现真实配置 route 时注入，避免在没有消费方时提前扩大 secret 暴露面。
+`haoran-95db/convergene` 已 Ready，production 为 `https://convergene.vercel.app`。P0-07/P0-08
+真实配置 route 通过本地 production build 后，`APP_ENCRYPTION_SECRET` 与两个 Upstash REST
+变量已作为不可回显 Secret 注入 Vercel 的 Production 和 Preview；新部署才会读取这些变量。
+
+P0-07/P0-08 产品实现完成后，另以 production build 的本地 server 对真实 Route Handler 做了
+私密全生命周期验证：StepFun 与 SiliconFlow 的 `POST /test` 均成功；StepFun 的 `PUT` 创建了
+带完整安全属性的匿名 Cookie 和不含 Key 明文的 Redis record；随后 `GET /status` 同时把 Redis
+与 Cookie TTL 续至 30 天并只返回恒定掩码；两次 `DELETE` 均成功且 record 最终不存在。探针只
+输出状态码和布尔断言，测试 record 已删除，凭据仍只存在于注入它的子进程环境。
 
 提供三个变量后可运行同一测试；代码不会输出它们：
 
@@ -167,5 +174,6 @@ Mermaid renderer。测试环境仅补齐 jsdom 缺少、但现代浏览器提供
 - 外部集成 Spike 没有遗留 blocker：两个 Provider 与真实 Redis 的本 Issue 完成标准均已满足。
 - Vercel 当前只有 scaffold 且没有报告 route；最慢报告请求的 Hobby Function duration 必须随
   P0-26 的真实 route 和部署环境验证，不能由本 Spike 伪造。
-- P0-07/P0-08 仍需实现匿名会话、配置 API、同源检查、限流和部署环境注入；本 Spike 的临时凭据
-  只用于验证依赖能力，不是公共 Key，也不是产品配置存储实现。
+- P0-07/P0-08 已实现匿名会话、配置 API、同源检查、原子限流和共享 Provider adapter，并通过
+  上述真实 Route 生命周期；部署环境已注入，预览验证与 UI 主入口验收在对应 PR 合并前完成。
+  本 Spike 的临时凭据只用于验证依赖能力，不是公共 Key。
