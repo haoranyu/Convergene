@@ -547,6 +547,74 @@
     },
     "working": "正在儲存準備內容…"
   },
+  "mindMap": {
+    "actions": {
+      "addChild": "新增子節點",
+      "addNode": "新增節點",
+      "cancel": "取消",
+      "confirmDelete": "確認刪除",
+      "deleteBranch": "刪除這條分支",
+      "fitAll": "一覽全圖",
+      "moveNode": "移動節點",
+      "nextTopic": "下一議題",
+      "previousTopic": "上一議題",
+      "refocus": "重新聚焦目前議題",
+      "relayout": "整理版面",
+      "saveNode": "儲存節點"
+    },
+    "activeTopic": {
+      "label": "目前議題",
+      "navigationLabel": "議題導覽",
+      "none": "尚未開始議題",
+      "position": "議題 {current} / {total}"
+    },
+    "add": {
+      "kind": "節點類型",
+      "title": "新增子節點",
+      "topicPrompt": "議題開場問題",
+      "transitionHint": "轉場提示"
+    },
+    "delete": {
+      "content": "這會從目前瀏覽器永久刪除此分支的 {count} 個節點，以及掛在這些節點上的會議結果。",
+      "title": "刪除這條分支？"
+    },
+    "detail": {
+      "empty": "選取一個節點，查看並編輯詳細內容。",
+      "label": "節點詳情",
+      "note": "補充說明",
+      "title": "節點標題"
+    },
+    "errors": {
+      "invalidOperation": "此操作會破壞會議樹，因此未作任何變更。",
+      "stale": "會議已在其他分頁更新，請再試一次。",
+      "storage": "無法讀寫本機會議資料，請檢查瀏覽器儲存權限。"
+    },
+    "feedback": { "saved": "已儲存到本機" },
+    "loading": "正在載入本機會議圖",
+    "mobile": {
+      "desktopAdvice": "完整畫布和結構編輯建議在電腦上使用；你仍可在這裡查看並切換議題。",
+      "treeTitle": "依議題查看"
+    },
+    "node": { "outcome": "會議結果" },
+    "nodeKinds": {
+      "ACTION": "行動",
+      "IDEA": "點子",
+      "INSIGHT": "洞察",
+      "NOTE": "記錄",
+      "OBJECTIVE": "會議目標",
+      "OPTION": "備選方案",
+      "PARKING": "待議區",
+      "RISK": "風險",
+      "TOPIC": "一級議題"
+    },
+    "structure": {
+      "label": "結構操作",
+      "noParentOptions": "沒有可用的新父節點",
+      "parent": "新父節點",
+      "parentPlaceholder": "選擇新的父節點"
+    },
+    "workspaceLabel": "會議討論畫布"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",

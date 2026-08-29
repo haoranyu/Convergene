@@ -547,6 +547,74 @@
     },
     "working": "Saving preparation…"
   },
+  "mindMap": {
+    "actions": {
+      "addChild": "Add child node",
+      "addNode": "Add node",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete branch",
+      "deleteBranch": "Delete this branch",
+      "fitAll": "Fit all",
+      "moveNode": "Move node",
+      "nextTopic": "Next topic",
+      "previousTopic": "Previous topic",
+      "refocus": "Refocus current topic",
+      "relayout": "Arrange map",
+      "saveNode": "Save node"
+    },
+    "activeTopic": {
+      "label": "Current topic",
+      "navigationLabel": "Topic navigation",
+      "none": "No current topic",
+      "position": "Topic {current} of {total}"
+    },
+    "add": {
+      "kind": "Node type",
+      "title": "Add child node",
+      "topicPrompt": "Topic opening question",
+      "transitionHint": "Transition cue"
+    },
+    "delete": {
+      "content": "This permanently deletes {count} node(s) in this branch and any outcomes attached to them from this browser.",
+      "title": "Delete this branch?"
+    },
+    "detail": {
+      "empty": "Select a node to view and edit its details.",
+      "label": "Node details",
+      "note": "Supporting note",
+      "title": "Node title"
+    },
+    "errors": {
+      "invalidOperation": "That operation would break the meeting tree, so nothing was changed.",
+      "stale": "This meeting changed in another tab. Try again.",
+      "storage": "Convergene cannot access this browser's meeting storage. Check the browser storage permissions."
+    },
+    "feedback": { "saved": "Saved in this browser" },
+    "loading": "Loading the saved meeting map",
+    "mobile": {
+      "desktopAdvice": "Use a computer for the full canvas and structure editing. You can still review and switch topics here.",
+      "treeTitle": "Browse by topic"
+    },
+    "node": { "outcome": "Meeting outcome" },
+    "nodeKinds": {
+      "ACTION": "Action",
+      "IDEA": "Idea",
+      "INSIGHT": "Insight",
+      "NOTE": "Note",
+      "OBJECTIVE": "Meeting objective",
+      "OPTION": "Option",
+      "PARKING": "Parking lot",
+      "RISK": "Risk",
+      "TOPIC": "Topic"
+    },
+    "structure": {
+      "label": "Structure actions",
+      "noParentOptions": "No available parent node",
+      "parent": "New parent node",
+      "parentPlaceholder": "Choose a new parent"
+    },
+    "workspaceLabel": "Meeting discussion canvas"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "Cancel",

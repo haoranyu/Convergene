@@ -547,6 +547,74 @@
     },
     "working": "正在保存准备内容…"
   },
+  "mindMap": {
+    "actions": {
+      "addChild": "添加子节点",
+      "addNode": "添加节点",
+      "cancel": "取消",
+      "confirmDelete": "确认删除",
+      "deleteBranch": "删除这条分支",
+      "fitAll": "一览全图",
+      "moveNode": "移动节点",
+      "nextTopic": "下一议题",
+      "previousTopic": "上一议题",
+      "refocus": "重新聚焦当前议题",
+      "relayout": "整理布局",
+      "saveNode": "保存节点"
+    },
+    "activeTopic": {
+      "label": "当前议题",
+      "navigationLabel": "议题导航",
+      "none": "尚未开始议题",
+      "position": "议题 {current} / {total}"
+    },
+    "add": {
+      "kind": "节点类型",
+      "title": "添加子节点",
+      "topicPrompt": "议题启动问题",
+      "transitionHint": "转场提示"
+    },
+    "delete": {
+      "content": "这会从当前浏览器永久删除此分支的 {count} 个节点，以及挂在这些节点上的会议结果。",
+      "title": "删除这条分支？"
+    },
+    "detail": {
+      "empty": "选择一个节点，查看并编辑详细信息。",
+      "label": "节点详情",
+      "note": "补充说明",
+      "title": "节点标题"
+    },
+    "errors": {
+      "invalidOperation": "此操作会破坏会议树，未作任何更改。",
+      "stale": "会议已在其他标签页更新，请重试。",
+      "storage": "无法读写本机会议数据，请检查浏览器存储权限。"
+    },
+    "feedback": { "saved": "已保存到本机" },
+    "loading": "正在加载本机会议图",
+    "mobile": {
+      "desktopAdvice": "完整画布和结构编辑建议在电脑上使用；你仍可在这里查看并切换议题。",
+      "treeTitle": "按议题查看"
+    },
+    "node": { "outcome": "会议结果" },
+    "nodeKinds": {
+      "ACTION": "行动",
+      "IDEA": "创意",
+      "INSIGHT": "洞察",
+      "NOTE": "记录",
+      "OBJECTIVE": "会议目标",
+      "OPTION": "备选方案",
+      "PARKING": "停车场",
+      "RISK": "风险",
+      "TOPIC": "一级议题"
+    },
+    "structure": {
+      "label": "结构操作",
+      "noParentOptions": "没有可用的新父节点",
+      "parent": "新父节点",
+      "parentPlaceholder": "选择新的父节点"
+    },
+    "workspaceLabel": "会议讨论画布"
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",
