@@ -19,5 +19,108 @@
       "ui": "Arco Design 應用外殼"
     },
     "title": "打工人會議作弊工具"
+  },
+  "ProviderConfig": {
+    "actions": {
+      "cancel": "取消",
+      "confirmDelete": "清除設定",
+      "delete": "清除模型設定",
+      "manage": "模型設定",
+      "open": "設定模型",
+      "reconfigure": "更換設定",
+      "retryStatus": "重新載入",
+      "save": "儲存設定",
+      "test": "測試連線"
+    },
+    "delete": {
+      "content": "這會刪除加密的模型設定與匿名工作階段。本瀏覽器裡的會議不會受到影響。",
+      "title": "清除模型設定？"
+    },
+    "dialog": {
+      "description": "填入你自己的供應商 Key 後繼續。Convergene 不提供共用模型 Key。",
+      "title": "連接模型供應商"
+    },
+    "errors": {
+      "INPUT_INVALID": "請檢查供應商與 API Key 後再試一次。",
+      "ORIGIN_INVALID": "無法驗證這次請求。請重新整理 Convergene 後再試一次。",
+      "PROVIDER_AUTH_FAILED": "驗證失敗。請檢查 API Key 後再試一次。",
+      "PROVIDER_CONFIG_INVALID": "已儲存的設定無法繼續使用，請重新輸入 Key。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型設定儲存區暫時無法使用。本機會議仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "目前帳號無法使用預設模型。請檢查供應商帳號，或改用另一家供應商。",
+      "PROVIDER_RATE_LIMITED": "供應商正在限制請求。請稍候再測試。",
+      "PROVIDER_UNAVAILABLE": "暫時無法連接供應商。請檢查網路後再試一次。",
+      "RATE_LIMITED": "設定嘗試過於頻繁。請等待一分鐘後再試一次。"
+    },
+    "feedback": {
+      "deleteSuccess": "模型設定已清除，本機會議沒有變更。",
+      "saveSuccess": "模型設定已儲存，此後不會再顯示 API Key。",
+      "testSuccess": "連線測試通過，現在可以儲存設定。"
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "apiKeyPlaceholder": "貼上供應商 API Key",
+      "provider": "供應商"
+    },
+    "form": {
+      "description": "先測試 Key，測試成功後才能儲存，且不會再次顯示原始 Key。",
+      "keyHelp": "每次測試或儲存後輸入框都會清空；測試通過的 Key 只在目前頁面記憶體中短暫保留，直到儲存或變更。",
+      "reconfigureTitle": "輸入新的 Key",
+      "title": "新增模型設定"
+    },
+    "models": {
+      "fast": "快速任務",
+      "fixed": "固定預設",
+      "grill": "會前追問",
+      "presetTitle": "已驗證的模型預設",
+      "report": "報告",
+      "title": "目前模型"
+    },
+    "page": {
+      "back": "返回會議",
+      "backLabel": "模型設定導覽",
+      "description": "連接一家已驗證的供應商，確認 Key 可用，同時把模型存取與會議資料的界線說清楚。",
+      "eyebrow": "自己的 Key，自己的額度",
+      "metadataDescription": "為 Convergene 安全設定 StepFun 或矽基流動模型 Key。",
+      "title": "模型連線"
+    },
+    "privacy": {
+      "encrypted": "API Key 在伺服器加密儲存，之後不會再次顯示。",
+      "expiry": "設定連續 30 天未使用後會自動刪除。",
+      "meetings": "會議內容只儲存在本瀏覽器，不會存入 Convergene 後端。",
+      "provider": "觸發 AI 時，只把必要內容傳送給你選擇的供應商。",
+      "title": "資料界線"
+    },
+    "providers": {
+      "siliconflow": {
+        "name": "矽基流動"
+      },
+      "stepfun": {
+        "name": "StepFun",
+        "recommended": "推薦"
+      }
+    },
+    "route": {
+      "browserDescription": "會議內容留在本機",
+      "browserTitle": "目前瀏覽器",
+      "providerDescription": "只接收本次 AI 所需內容",
+      "providerTitle": "你的供應商",
+      "title": "資料會去哪裡",
+      "vaultDescription": "只儲存加密後的 API Key",
+      "vaultTitle": "憑證保險箱"
+    },
+    "status": {
+      "actionRequired": "需要處理",
+      "available": "模型連線可用",
+      "connected": "已連接",
+      "lastUsed": "最近使用",
+      "loading": "正在檢查模型設定",
+      "needsReconfiguration": "模型需要重新設定",
+      "providerReady": "AI 操作將使用 {provider}"
+    },
+    "validation": {
+      "keyRequired": "請輸入 API Key。",
+      "keyTooLong": "API Key 太長。",
+      "keyWhitespace": "API Key 不能包含空格或換行。"
+    }
   }
 }

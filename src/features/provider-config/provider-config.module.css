@@ -1,0 +1,184 @@
+.panel,
+.panelCompact {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.panel {
+  width: 100%;
+}
+
+.panelCompact {
+  margin: 0 -8px -8px;
+}
+
+.loadingState,
+.statusFailure {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  justify-content: center;
+  min-height: 220px;
+}
+
+.loadingState {
+  color: var(--color-muted-foreground);
+}
+
+.statusFailure {
+  align-items: stretch;
+}
+
+.statusCard,
+.formCard {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 8px 24px rgb(15 23 42 / 6%);
+}
+
+.panelCompact .formCard {
+  box-shadow: none;
+}
+
+.statusHeader,
+.presetHeading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+
+.statusTitle,
+.formTitle {
+  margin: 0 !important;
+}
+
+.statusCaption,
+.formDescription,
+.keyHelp {
+  color: var(--color-muted-foreground) !important;
+}
+
+.statusCaption {
+  display: block;
+  margin-top: var(--space-1, 4px);
+}
+
+.successIcon {
+  color: #15803d;
+}
+
+.warningIcon {
+  color: var(--color-warning, #b45309);
+}
+
+.descriptions,
+.currentModels {
+  margin-top: var(--space-4);
+}
+
+.modelList {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+
+.modelRow {
+  align-items: baseline;
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: minmax(72px, 0.35fr) minmax(0, 1fr);
+}
+
+.modelRow dt {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.modelRow dd {
+  color: var(--color-foreground);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.statusActions,
+.formActions {
+  margin-top: var(--space-4);
+}
+
+.statusActions :global(.arco-btn),
+.formActions :global(.arco-btn) {
+  min-height: 44px;
+}
+
+.formHeading {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.safeIcon {
+  align-items: center;
+  background: var(--color-primary-subtle);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 22px;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.formDescription {
+  line-height: 1.6 !important;
+  margin: var(--space-1, 4px) 0 0 !important;
+}
+
+.presetBox {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+  padding: var(--space-3);
+}
+
+.keyHelp {
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  margin: calc(var(--space-4) * -1) 0 var(--space-4) !important;
+}
+
+.noticeRegion {
+  min-height: 0;
+}
+
+.noticeRegion:has(.arco-alert) {
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 520px) {
+  .statusHeader,
+  .presetHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .modelRow {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .formActions {
+    align-items: stretch;
+    display: grid !important;
+  }
+
+  .formActions :global(.arco-btn) {
+    width: 100%;
+  }
+}

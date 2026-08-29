@@ -1,7 +1,10 @@
 'use client';
 
-import { Card, Progress, Space, Tag, Typography } from '@arco-design/web-react';
+import { Button, Card, Progress, Space, Tag, Typography } from '@arco-design/web-react';
+import { IconSafe, IconSettings } from '@arco-design/web-react/icon';
+import { useTranslations } from 'next-intl';
 
+import { ProviderConfigGate } from '@/features/provider-config';
 import { Link, usePathname } from '@/i18n/navigation';
 import type { AppLocale } from '@/i18n/routing';
 
@@ -35,18 +38,25 @@ interface ScaffoldHomeProps {
 
 export function ScaffoldHome({ copy }: ScaffoldHomeProps) {
   const pathname = usePathname();
+  const providerCopy = useTranslations('ProviderConfig');
 
   return (
     <main className={styles.shell}>
       <header className={styles.header}>
         <strong className={styles.brand}>Convergene</strong>
-        <Space aria-label="Language" size="mini" wrap>
-          {(Object.entries(localeLabels) as [AppLocale, string][]).map(([locale, label]) => (
-            <Link className={styles.localeLink} href={pathname} key={locale} locale={locale}>
-              {label}
-            </Link>
-          ))}
-        </Space>
+        <div className={styles.headerActions}>
+          <Link className={styles.settingsLink} href="/settings/model">
+            <IconSettings />
+            <span>{providerCopy('actions.manage')}</span>
+          </Link>
+          <Space aria-label="Language" size="mini" wrap>
+            {(Object.entries(localeLabels) as [AppLocale, string][]).map(([locale, label]) => (
+              <Link className={styles.localeLink} href={pathname} key={locale} locale={locale}>
+                {label}
+              </Link>
+            ))}
+          </Space>
+        </div>
       </header>
 
       <section className={styles.hero}>
@@ -62,6 +72,19 @@ export function ScaffoldHome({ copy }: ScaffoldHomeProps) {
             <Tag color="arcoblue">{copy.localOnly}</Tag>
             <Tag>{copy.general}</Tag>
           </Space>
+          <div className={styles.heroActions}>
+            <ProviderConfigGate>
+              {({ open }) => (
+                <Button icon={<IconSafe />} onClick={open} type="primary">
+                  {providerCopy('actions.open')}
+                </Button>
+              )}
+            </ProviderConfigGate>
+            <Link className={styles.heroSettingsLink} href="/settings/model">
+              <IconSettings />
+              <span>{providerCopy('actions.manage')}</span>
+            </Link>
+          </div>
         </div>
 
         <Card className={styles.readinessCard} title={copy.readiness}>
