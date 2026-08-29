@@ -7,6 +7,7 @@ import type {
   MeetingDomainErrorCode,
   MeetingMode,
 } from './model';
+import { validateGrillTurn } from './grill';
 
 function failure(code: MeetingDomainErrorCode): Result<never, MeetingDomainErrorCode> {
   return { error: { code }, ok: false };
@@ -18,6 +19,40 @@ function updated(meeting: Meeting, now: Date): Meeting {
 
 function validNow(now: Date): boolean {
   return Number.isFinite(now.getTime());
+}
+
+function nonEmptyStrings(values: readonly string[]): boolean {
+  return values.every((value) => typeof value === 'string' && value.trim() !== '');
+}
+
+export function validateMeetingBriefDraft(
+  brief: MeetingBriefDraft,
+  mode: MeetingMode,
+): Result<MeetingBriefDraft, MeetingDomainErrorCode> {
+  const probeTurn = {
+    createdAt: '2000-01-01T00:00:00.000Z',
+    disposition: 'PENDING' as const,
+    id: 'brief-readiness-probe',
+    index: 0,
+    knownState: { assumptions: [], confirmed: [], unknowns: [] },
+    meetingId: 'brief-readiness-probe',
+    phase: 'DEFAULT' as const,
+    question: 'Readiness validation probe',
+    readiness: brief.readiness,
+  };
+  if (
+    brief.objective.trim() === '' ||
+    brief.desiredOutcome.trim() === '' ||
+    brief.facilitation.openingLine.trim() === '' ||
+    !nonEmptyStrings(brief.confirmed) ||
+    !nonEmptyStrings(brief.assumptions) ||
+    !nonEmptyStrings(brief.unknowns) ||
+    !nonEmptyStrings(brief.facilitation.closingChecklist) ||
+    !validateGrillTurn(probeTurn, mode).ok
+  ) {
+    return failure('INVALID_BRIEF');
+  }
+  return { ok: true, value: brief };
 }
 
 export function confirmMeetingMode(
@@ -60,14 +95,32 @@ export function completeGrill(
     return failure('INVALID_MEETING_STATE');
   }
 
-  if (brief.objective.trim() === '' || brief.desiredOutcome.trim() === '') {
-    return failure('INVALID_BRIEF');
-  }
+  const validation = validateMeetingBriefDraft(brief, meeting.mode);
+  if (!validation.ok) return validation;
 
   return {
     ok: true,
     value: updated({ ...meeting, brief, preparationStage: 'BRIEF_READY' }, now),
   };
+}
+
+export function updateBriefDraft(
+  meeting: Meeting,
+  brief: MeetingBriefDraft,
+  now: Date,
+): Result<Meeting, MeetingDomainErrorCode> {
+  if (!validNow(now)) return failure('INVALID_TIME_RANGE');
+  if (
+    meeting.status !== 'PREPARING' ||
+    meeting.preparationStage !== 'BRIEF_READY' ||
+    meeting.mode === undefined ||
+    meeting.brief?.confirmedAt !== undefined
+  ) {
+    return failure('INVALID_MEETING_STATE');
+  }
+  const validation = validateMeetingBriefDraft(brief, meeting.mode);
+  if (!validation.ok) return validation;
+  return { ok: true, value: updated({ ...meeting, brief }, now) };
 }
 
 export function confirmBrief(meeting: Meeting, now: Date): Result<Meeting, MeetingDomainErrorCode> {
@@ -82,6 +135,10 @@ export function confirmBrief(meeting: Meeting, now: Date): Result<Meeting, Meeti
 
   if (meeting.brief.confirmedAt !== undefined) {
     return failure('BRIEF_ALREADY_CONFIRMED');
+  }
+
+  if (meeting.mode === undefined || !validateMeetingBriefDraft(meeting.brief, meeting.mode).ok) {
+    return failure('INVALID_BRIEF');
   }
 
   const confirmedAt = now.toISOString();

@@ -134,12 +134,23 @@ export function projectOutcome(record: MeetingOutcome): MeetingOutcome {
 export function projectGrillTurn(record: GrillTurn): GrillTurn {
   return {
     answer: record.answer,
+    criticalExtraReason: record.criticalExtraReason,
     createdAt: record.createdAt,
     disposition: record.disposition,
     id: record.id,
     index: record.index,
+    knownState: {
+      assumptions: [...record.knownState.assumptions],
+      confirmed: [...record.knownState.confirmed],
+      unknowns: [...record.knownState.unknowns],
+    },
     meetingId: record.meetingId,
+    phase: record.phase,
     question: record.question,
+    readiness: {
+      dimensions: record.readiness.dimensions.map((dimension) => ({ ...dimension })),
+      level: record.readiness.level,
+    },
     reason: record.reason,
   };
 }
