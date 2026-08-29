@@ -155,6 +155,8 @@ interface GrillInput {
   finishRequested?: true
   history: Array<{
     question: string
+    questionType?: 'SINGLE_CHOICE' | 'FREE_TEXT'
+    options?: Array<{ value: string; label: string }>
     answer?: string
     disposition: 'ANSWERED' | 'UNKNOWN' | 'SKIPPED'
   }>
@@ -177,8 +179,10 @@ interface GrillInput {
 ```ts
 interface GrillOutput {
   shouldAsk: boolean
+  questionType?: 'SINGLE_CHOICE' | 'FREE_TEXT'
   question?: string
   reason?: string
+  options?: Array<{ value: string; label: string }>
   criticalExtraReason?: string
   updatedState: {
     confirmed: string[]
@@ -206,6 +210,8 @@ interface GrillOutput {
 约束：
 
 - 一次最多一个问题；
+- 如果问题可以由 2–6 个清晰选项回答，优先使用 `SINGLE_CHOICE` 并返回唯一的稳定 ASCII `value` 与目标语言 `label`；需要解释或开放输入时使用 `FREE_TEXT` 且不返回 `options`；
+- 单选选项必须为 2–6 个，`value` 与 `label` 均不可为空且各自唯一；
 - 不重复已有答案；
 - `CRITICAL_EXTRA` 必须返回 `criticalExtraReason`，且问题只覆盖让会议无法成立的缺口；
 - `suggestedBrief` 只在 `shouldAsk = false` 时存在；

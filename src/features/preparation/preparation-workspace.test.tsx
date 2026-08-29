@@ -92,6 +92,18 @@ function pendingTurn(): GrillTurn {
   };
 }
 
+function pendingChoiceTurn(): GrillTurn {
+  return {
+    ...pendingTurn(),
+    options: [
+      { label: 'One named decision maker', value: 'named_decision_maker' },
+      { label: 'The group decides by consensus', value: 'group_consensus' },
+      { label: 'No decision owner yet', value: 'not_decided' },
+    ],
+    questionType: 'SINGLE_CHOICE',
+  };
+}
+
 function renderWorkspace(client: PreparationAIClient) {
   return render(
     <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
@@ -234,6 +246,65 @@ describe('PreparationWorkspace', () => {
         grillTurns: [
           { answer: 'The product sponsor', disposition: 'ANSWERED', index: 0 },
           { disposition: 'PENDING', index: 1 },
+        ],
+      },
+    });
+  });
+
+  it('uses a single-choice control by default and persists the selected label', async () => {
+    databaseName = `preparation-ui-${crypto.randomUUID()}`;
+    database = new MeetingDatabase(databaseName);
+    const repository = new MeetingRepository(database);
+    const meeting = await grillingMeeting(repository);
+    const stored = await repository.putGrillTurn(
+      pendingChoiceTurn(),
+      meeting.updatedAt,
+      new Date('2026-08-29T09:06:00.000Z'),
+    );
+    if (!stored.ok) throw new Error(stored.error.code);
+
+    const nextFreeTextQuestion = {
+      ...grillOutputFixtures.DECISION,
+      options: undefined,
+      question: 'Which decision criteria matter most?',
+      questionType: 'FREE_TEXT' as const,
+    };
+    const client: PreparationAIClient = {
+      grill: vi.fn().mockResolvedValue(nextFreeTextQuestion),
+      initialMap: vi.fn(),
+    };
+    const user = userEvent.setup();
+    renderWorkspace(client);
+
+    expect(await screen.findByText('Choose one answer')).toBeVisible();
+    const submit = screen.getByRole('button', { name: 'Submit answer' });
+    expect(submit).toBeDisabled();
+    const selectedOption = screen.getByRole('radio', { name: 'One named decision maker' });
+    await user.click(selectedOption);
+    expect(selectedOption).toBeChecked();
+    expect(screen.queryByLabelText('Your answer')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'None of these — write another answer' }),
+    ).toBeVisible();
+    expect(submit).toBeEnabled();
+    await user.click(submit);
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: nextFreeTextQuestion.question,
+      }),
+    ).toBeVisible();
+    const aggregate = await readMeetingAggregate(database, 'meeting-1');
+    expect(aggregate).toMatchObject({
+      ok: true,
+      value: {
+        grillTurns: [
+          {
+            answer: 'One named decision maker',
+            disposition: 'ANSWERED',
+            questionType: 'SINGLE_CHOICE',
+          },
+          { disposition: 'PENDING', questionType: 'FREE_TEXT' },
         ],
       },
     });

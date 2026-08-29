@@ -1283,8 +1283,10 @@ export class MeetingRepository {
               sameId.index === snapshot.index &&
               JSON.stringify(sameId.knownState) === JSON.stringify(snapshot.knownState) &&
               sameId.meetingId === snapshot.meetingId &&
+              JSON.stringify(sameId.options) === JSON.stringify(snapshot.options) &&
               sameId.phase === snapshot.phase &&
               sameId.question === snapshot.question &&
+              (sameId.questionType ?? 'FREE_TEXT') === snapshot.questionType &&
               JSON.stringify(sameId.readiness) === JSON.stringify(snapshot.readiness) &&
               sameId.reason === snapshot.reason;
             if (!unchangedPrompt) return failure('GRILL_TURN_ALREADY_EXISTS');

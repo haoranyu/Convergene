@@ -1659,6 +1659,11 @@ describe('MeetingRepository', () => {
     const pending = grillTurn('meeting-1', {
       disposition: 'PENDING',
       id: 'turn-1',
+      options: [
+        { label: 'One named decision maker', value: 'named_decision_maker' },
+        { label: 'The group decides by consensus', value: 'group_consensus' },
+      ],
+      questionType: 'SINGLE_CHOICE',
     });
     const inserted = await repository.putGrillTurn(
       pending,
@@ -1678,14 +1683,42 @@ describe('MeetingRepository', () => {
       repository.savePreparationTransition(earlyBrief.value, inserted.value.meeting.updatedAt),
     ).resolves.toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
 
+    await expect(
+      repository.putGrillTurn(
+        {
+          ...pending,
+          answer: 'A different answer',
+          disposition: 'ANSWERED',
+          options: undefined,
+          questionType: 'FREE_TEXT',
+        },
+        inserted.value.meeting.updatedAt,
+        new Date('2026-08-29T09:37:30.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'GRILL_TURN_ALREADY_EXISTS' }, ok: false });
+    await expect(
+      repository.putGrillTurn(
+        {
+          ...pending,
+          answer: 'One named decision maker',
+          disposition: 'ANSWERED',
+          options: pending.options?.map((option, index) =>
+            index === 0 ? { ...option, label: 'A silently changed option' } : option,
+          ),
+        },
+        inserted.value.meeting.updatedAt,
+        new Date('2026-08-29T09:37:45.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'GRILL_TURN_ALREADY_EXISTS' }, ok: false });
+
     const answered = await repository.putGrillTurn(
-      { ...pending, answer: 'The sponsor', disposition: 'ANSWERED' },
+      { ...pending, answer: 'One named decision maker', disposition: 'ANSWERED' },
       inserted.value.meeting.updatedAt,
       new Date('2026-08-29T09:38:00.000Z'),
     );
     expect(answered).toMatchObject({
       ok: true,
-      value: { turn: { answer: 'The sponsor', disposition: 'ANSWERED' } },
+      value: { turn: { answer: 'One named decision maker', disposition: 'ANSWERED' } },
     });
     if (!answered.ok) return;
     await expect(

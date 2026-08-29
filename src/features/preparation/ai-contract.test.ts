@@ -127,6 +127,34 @@ describe('preparation AI contracts', () => {
     );
   });
 
+  it('requires a valid option list for single-choice questions', () => {
+    const fixture = grillOutputFixtures.DECISION;
+    expect(fixture.questionType).toBe('SINGLE_CHOICE');
+    expect(fixture.options).toHaveLength(3);
+    expect(() =>
+      parseGrillOutput(input('DECISION'), {
+        ...fixture,
+        options: [{ label: 'Only one', value: 'only_one' }],
+      }),
+    ).toThrow();
+    expect(() =>
+      parseGrillOutput(input('DECISION'), {
+        ...fixture,
+        options: [
+          { label: 'One', value: 'same' },
+          { label: 'Two', value: 'same' },
+        ],
+      }),
+    ).toThrow();
+    expect(() =>
+      parseGrillOutput(input('DECISION'), {
+        ...fixture,
+        questionType: 'FREE_TEXT',
+        options: fixture.options,
+      }),
+    ).toThrow();
+  });
+
   it('allows only two named custom dimensions for GENERAL', () => {
     expect(
       validReadinessForMode('GENERAL', [

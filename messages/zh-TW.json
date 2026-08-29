@@ -492,6 +492,7 @@
     "grill": {
       "answerLabel": "你的回答",
       "answerPlaceholder": "盡量具體，也可以使用下方的快速操作。",
+      "choiceLabel": "請選擇一個答案",
       "critical": "臨門一問",
       "defaultComplete": "預設拷問已完成",
       "defaultCompleteDescription": "現在可以產生 Brief，也可以再主動增加一輪；總輪次不會超過 10。",
@@ -502,9 +503,11 @@
       },
       "history": "過往回答（{count}）",
       "nextQuestion": "正在準備下一問…",
+      "otherAnswer": "沒有合適的選項，改用文字回答",
       "resumeDescription": "既有回答都已儲存；模型連線可用後即可繼續。",
       "resumeTitle": "可以繼續下一問",
       "round": "第 {current} 輪 · 最多 10 輪",
+      "useChoices": "改回選擇選項",
       "why": "為什麼問：{reason}"
     },
     "loading": "正在恢復本機會前準備…",

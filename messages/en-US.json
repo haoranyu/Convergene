@@ -492,6 +492,7 @@
     "grill": {
       "answerLabel": "Your answer",
       "answerPlaceholder": "Be specific, or use the options below.",
+      "choiceLabel": "Choose one answer",
       "critical": "Final critical question",
       "defaultComplete": "The default Grill is complete",
       "defaultCompleteDescription": "Create the Brief now, or ask for one more user-directed round. The total can never exceed 10.",
@@ -502,9 +503,11 @@
       },
       "history": "Previous answers ({count})",
       "nextQuestion": "Preparing the next question…",
+      "otherAnswer": "None of these — write another answer",
       "resumeDescription": "Your saved answers are intact. Continue when the model connection is ready.",
       "resumeTitle": "Ready for the next question",
       "round": "Question {current} of at most 10",
+      "useChoices": "Use the choices instead",
       "why": "Why this matters: {reason}"
     },
     "loading": "Restoring local preparation…",

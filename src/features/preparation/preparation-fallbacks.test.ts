@@ -77,6 +77,24 @@ describe('Preparation prompt fixtures', () => {
     expect(completed.suggestedBrief?.confirmed).toContain('The product sponsor owns the decision.');
   });
 
+  it.each([
+    ['en-US', 'Who owns the final decision?'],
+    ['zh-CN', '谁负责做出最终决策？'],
+    ['zh-TW', '誰負責做出最終決策？'],
+  ] as const)('localizes the %s deterministic decision-owner question', (locale, question) => {
+    const fixture = createGrillFewShotFixture('DECISION', locale, 'ASK');
+    const output = createDeterministicGrillFallback(fixture.input, locale);
+
+    expect(output).toMatchObject({
+      options: expect.arrayContaining([
+        expect.objectContaining({ label: expect.any(String), value: 'named_decision_maker' }),
+      ]),
+      question,
+      questionType: 'SINGLE_CHOICE',
+    });
+    expect(generatedTextMatchesLocale(grillOutputGeneratedText(output), locale)).toBe(true);
+  });
+
   it('keeps valid multi-code-unit titles up to the grapheme limit', () => {
     const fixture = createInitialMapFewShotFixture('GENERAL', 'en-US');
     const objective = '😀'.repeat(30);

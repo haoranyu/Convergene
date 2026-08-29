@@ -40,6 +40,16 @@ export const preparationBriefFixtures = {
 
 function grillOutput(mode: MeetingMode, question: string): GrillOutput {
   return {
+    ...(mode === 'DECISION'
+      ? {
+          options: [
+            { label: 'One named decision maker', value: 'named_decision_maker' },
+            { label: 'The group decides by consensus', value: 'group_consensus' },
+            { label: 'No decision owner yet', value: 'not_decided' },
+          ],
+          questionType: 'SINGLE_CHOICE' as const,
+        }
+      : { questionType: 'FREE_TEXT' as const }),
     question,
     readiness: { dimensions: readinessDimensions(mode), level: 'INSUFFICIENT' },
     reason: 'This missing detail determines whether the meeting can produce a useful result.',
