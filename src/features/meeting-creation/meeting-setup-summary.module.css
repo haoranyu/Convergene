@@ -1,0 +1,53 @@
+.shell {
+  margin: 0 auto;
+  max-width: 900px;
+  min-height: calc(100dvh - 72px);
+  padding: 40px var(--space-6) 80px;
+}
+
+.backLink {
+  align-items: center;
+  color: var(--color-muted-foreground);
+  display: inline-flex;
+  gap: var(--space-2);
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.titleBlock :global(.arco-typography) {
+  max-width: 720px;
+}
+
+.summaryCard {
+  border-color: var(--color-border) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.rawRequest {
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+}
+
+.rawRequest :global(.arco-typography) {
+  overflow-wrap: anywhere;
+}
+
+.errorState {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 767px) {
+  .shell {
+    padding: 32px var(--space-4) 64px;
+  }
+}

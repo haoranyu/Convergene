@@ -1,15 +1,14 @@
 import { setRequestLocale } from 'next-intl/server';
 
-import { DashboardHome } from '@/features/dashboard/dashboard-home';
+import { GuideSandbox } from '@/features/guide/guide-sandbox';
 import type { AppLocale } from '@/i18n/routing';
 
-interface HomePageProps {
+interface GuidePageProps {
   params: Promise<{ locale: AppLocale }>;
 }
 
-export default async function HomePage({ params }: HomePageProps) {
+export default async function GuidePage({ params }: GuidePageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-
-  return <DashboardHome />;
+  return <GuideSandbox />;
 }
