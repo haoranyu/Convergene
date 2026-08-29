@@ -53,15 +53,19 @@ function streamingResponse(provider: ProviderId): Response {
 }
 
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provider) => {
-  it('uses only the approved endpoint/model and requires JSON Schema output', async () => {
+  it('uses only the approved endpoint, model, request policy, and JSON Schema output', async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as {
+        enable_thinking?: boolean;
         max_tokens?: number;
         model?: string;
+        reasoning_effort?: string;
         response_format?: { type?: string };
       };
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
+      expect(body.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+      expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
       expect(body.max_tokens).toBe(2_048);
       expect(body.response_format?.type).toBe('json_schema');
       return streamingResponse(provider);

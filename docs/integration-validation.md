@@ -117,6 +117,12 @@ Spike 延迟失真。成功结果只返回 Provider、model id、first-chunk/tot
 StepFun 会把 reasoning token 计入输出上限；128/256 token 在实测中可能在 JSON 发出前耗尽，
 probe 使用 512 token 后稳定通过。后续产品任务应按各任务 schema 另行设置足够但有界的预算。
 
+上表的延迟样本采集于双方最低推理策略落地之前，不把它们冒充优化后的性能结果。自 #37 起，
+产品共享 adapter 与独立 structured-output probe 都通过各自配置的 provider name 发送供应商专属
+参数：SiliconFlow 使用 `enable_thinking: false` 完全关闭 thinking；StepFun `step-3.7-flash`
+没有关闭档，使用最低受支持的 `reasoning_effort: low`。fixture test 直接检查最终 HTTP JSON body，
+并确认两家字段互不泄漏。后续具备临时凭据时应重跑 credential-gated suite 并另记低推理延迟样本。
+
 官方资料（访问于 2026-08-29）：
 
 - [Step Plan 快速开始](https://platform.stepfun.com/docs/zh/step-plan/quick-start)：OpenAI-compatible Base URL 和推荐验证模型 `step-3.7-flash`。

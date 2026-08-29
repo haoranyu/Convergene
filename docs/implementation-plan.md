@@ -130,6 +130,7 @@
 - status/test/save/delete；
 - 已配置供应商之间显式切换，保存/重配一家不覆盖另一家；
 - StepFun / 硅基流动预设；
+- 硅基流动结构化请求固定使用 `enable_thinking: false`，StepFun 固定使用最低受支持的 `reasoning_effort: low`，且两家字段互不发送；
 - Key password input；
 - 保存后不回显；
 - 认证、权限限制、限流、未知模型和 Redis 错误；只有确认的认证拒绝标记目标供应商需重配。
