@@ -14,12 +14,12 @@ import {
 import { ReportWorkspace } from '@/features/report';
 import { useRouter } from '@/i18n/navigation';
 import {
-  MeetingDatabase,
   MeetingRepository,
   observeMeetingAggregate,
   type MeetingAggregate,
   type MeetingRepositoryErrorCode,
 } from '@/modules/meeting-db';
+import { getBrowserMeetingDatabase } from '@/modules/meeting-db/client';
 import type { MindMapNode } from '@/modules/mind-map-domain';
 import { layoutMeetingGraph } from '@/modules/mind-map-layout';
 
@@ -43,7 +43,7 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
   const meetingT = useTranslations('meeting');
   const router = useRouter();
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
-  const database = useMemo(() => new MeetingDatabase(), []);
+  const database = useMemo(() => getBrowserMeetingDatabase(), []);
   const repository = useMemo(() => new MeetingRepository(database), [database]);
   const [aggregate, setAggregate] = useState<MeetingAggregate>();
   const [failedMeetingId, setFailedMeetingId] = useState<string>();
@@ -64,8 +64,6 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
     });
     return () => unsubscribe();
   }, [database, meetingId, receiveAggregate]);
-
-  useEffect(() => () => database.close(), [database]);
 
   const refresh = useCallback(async (): Promise<boolean> => {
     const [result, activeId] = await Promise.all([
