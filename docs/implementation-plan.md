@@ -17,13 +17,15 @@
 - [x] 阅读 `docs/README.md` 指定的核心文档；
 - [x] 使用 `.nvmrc` 指定的 Node 24.x 与 `packageManager` 指定的 pnpm 10；
 - [x] 初始化 Git 仓库并提交文档基线；
-- [ ] 创建 Vercel 项目但不要填公共模型 Key；
-- [ ] 创建并认领 Upstash Redis 免费实例；
-- [ ] 准备 StepFun 与硅基流动测试 Key，只写本地私有环境文件；
-- [ ] 生成 `APP_ENCRYPTION_SECRET`，不提交仓库；
+- [x] 创建 Vercel 项目但不要填公共模型 Key；Hobby production 已 Ready，且当前无环境变量；
+- [x] 创建并认领 Upstash Redis 免费实例；
+- [x] 通过已登录控制台准备 StepFun 与硅基流动测试 Key，仅临时注入测试子进程；
+- [x] 生成 `APP_ENCRYPTION_SECRET`，不提交仓库或本地环境文件；
 - [ ] 明确目标浏览器：最新版 Chrome 为主演示，Safari/Edge 为次要冒烟。
 
 ## 3. 风险优先 Spike（0–1.5 小时）
+
+状态（2026-08-29）：R1–R3 已完成。StepFun `step-3.7-flash`、硅基流动 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case 已通过；免费 Upstash 上的加密 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见 [高风险集成验证记录](./integration-validation.md)。
 
 ### R1：Provider 合约
 
