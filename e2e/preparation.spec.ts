@@ -268,3 +268,42 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
   );
   await expect(page.getByLabel('Markdown source')).toContainText('```mermaid');
 });
+
+test('keeps the Traditional Chinese lifecycle and report path usable on a phone', async ({
+  page,
+}) => {
+  await page.setViewportSize({ height: 812, width: 375 });
+  await page.goto('/zh-TW/meetings/demo-lifecycle');
+  await expect(page.getByText('目前瀏覽器裡沒有這場會議。')).toBeVisible();
+  await seedMapReadyMeeting(page);
+  await page.reload();
+
+  await expect(
+    page.getByText('完整畫布和結構編輯建議在電腦上使用；你仍可在這裡查看並切換議題。'),
+  ).toBeVisible();
+  await expect(page.getByTestId('meeting-canvas-pane')).toBeHidden();
+  await page.getByRole('button', { name: '開始會議' }).click();
+  const startDialog = page.getByRole('dialog', { name: '開始這場會議？' });
+  await startDialog.getByRole('button', { name: '開始會議' }).click();
+
+  await expect(page.getByRole('region', { name: '會中狀態列' })).toBeVisible();
+  await page.getByRole('button', { exact: true, name: 'Compare options' }).click();
+  await expect(page.getByRole('heading', { name: '會議產出' })).toBeVisible();
+  await page.getByRole('button', { name: '收進會議產出' }).click();
+  await expect(page.getByRole('button', { name: '移出會議產出' })).toBeVisible();
+
+  await page.getByRole('button', { name: '結束會議' }).click();
+  const endDialog = page.getByRole('dialog', { name: '準備散會？' });
+  await endDialog.getByRole('button', { name: '繼續確認' }).click();
+  await page
+    .getByRole('dialog', { name: '確認結束會議' })
+    .getByRole('button', { name: '確認並結束會議' })
+    .click();
+
+  await expect(page.getByRole('region', { name: '會議報告' })).toBeVisible();
+  await page.getByRole('button', { name: '產生報告' }).click();
+  await expect(page.getByRole('button', { name: '重新產生' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
