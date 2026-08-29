@@ -11,6 +11,7 @@ import {
   OutcomePanel,
   StartMeetingDialog,
 } from '@/features/live-meeting';
+import { ReportWorkspace } from '@/features/report';
 import { useRouter } from '@/i18n/navigation';
 import {
   MeetingDatabase,
@@ -41,6 +42,7 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
   const t = useTranslations('mindMap');
   const meetingT = useTranslations('meeting');
   const router = useRouter();
+  const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const database = useMemo(() => new MeetingDatabase(), []);
   const repository = useMemo(() => new MeetingRepository(database), [database]);
   const [aggregate, setAggregate] = useState<MeetingAggregate>();
@@ -221,6 +223,9 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
             onUpdate={liveCommands.updateOutcome}
           />
         </div>
+      ) : null}
+      {aggregate.meeting.status === 'ENDED' ? (
+        <ReportWorkspace aggregate={aggregate} timezone={timezone} />
       ) : null}
       {liveCommands ? (
         <>
