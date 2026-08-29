@@ -288,6 +288,7 @@
         "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
         "OUTPUT_INVALID": "The model returned an unusable recommendation. Retry once or choose a script manually.",
         "OUTPUT_LANGUAGE_MISMATCH": "The recommendation used the wrong language. Retry or choose a script manually; your input is unchanged.",
+        "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. The saved key is unchanged; retry later or use another configured provider.",
         "PROVIDER_AUTH_FAILED": "The provider rejected the saved key. Reconnect it, then retry.",
         "PROVIDER_CONFIG_INVALID": "The saved model configuration can no longer be used. Replace it, then retry.",
         "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your form is still here; retry later or choose manually.",
@@ -474,6 +475,7 @@
       "OUTPUT_INVALID": "The model response did not pass validation. Your saved work is unchanged.",
       "OUTPUT_LANGUAGE_MISMATCH": "The model answered in the wrong language. Try again.",
       "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
+      "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. Your saved key is unchanged; retry later or switch providers.",
       "PROVIDER_AUTH_FAILED": "The model key was rejected. Reconnect the provider to continue.",
       "PROVIDER_CONFIG_INVALID": "The saved model configuration needs to be replaced.",
       "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration is temporarily unavailable. Local meeting data is safe.",
@@ -799,6 +801,7 @@
   },
   "providerConfig": {
     "actions": {
+      "addProvider": "Add another provider",
       "cancel": "Cancel",
       "confirmDelete": "Clear configuration",
       "delete": "Clear model configuration",
@@ -807,6 +810,7 @@
       "reconfigure": "Replace configuration",
       "retryStatus": "Try loading again",
       "save": "Save configuration",
+      "select": "Use {provider}",
       "test": "Test connection"
     },
     "delete": {
@@ -820,6 +824,7 @@
     "errors": {
       "INPUT_INVALID": "Check the provider and API key fields, then try again.",
       "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
+      "PROVIDER_ACCESS_RESTRICTED": "The provider denied access because of an account or model restriction. The saved key was not marked invalid.",
       "PROVIDER_AUTH_FAILED": "Authentication failed. Check the API key and try again.",
       "PROVIDER_CONFIG_INVALID": "The saved configuration can no longer be used. Enter the key again.",
       "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your local meetings are still safe.",
@@ -831,6 +836,7 @@
     "feedback": {
       "deleteSuccess": "Model configuration cleared. Local meetings were not changed.",
       "saveSuccess": "Model configuration saved. The API key is hidden from now on.",
+      "selectSuccess": "Active provider changed. Future AI actions will use this provider.",
       "testSuccess": "Connection verified. You can save this configuration."
     },
     "fields": {
@@ -855,7 +861,7 @@
     "page": {
       "back": "Back to meetings",
       "backLabel": "Model settings navigation",
-      "description": "Connect one approved provider, verify the key, and keep model access separate from meeting data.",
+      "description": "Connect either or both approved providers, switch explicitly, and keep model access separate from meeting data.",
       "eyebrow": "Your key, your quota",
       "metadataDescription": "Securely configure a StepFun or SiliconFlow model key for Convergene.",
       "title": "Model connection"
@@ -886,13 +892,15 @@
       "vaultTitle": "Credential vault"
     },
     "status": {
+      "active": "Active",
       "actionRequired": "Action required",
       "available": "Model connection ready",
       "connected": "Connected",
       "lastUsed": "Last used",
       "loading": "Checking model configuration",
       "needsReconfiguration": "Model needs a new key",
-      "providerReady": "{provider} is selected for AI actions"
+      "providerReady": "{provider} is selected for AI actions",
+      "providerStored": "{provider} is saved and ready to select"
     },
     "validation": {
       "keyRequired": "Enter an API key.",

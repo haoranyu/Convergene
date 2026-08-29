@@ -47,15 +47,23 @@ describe('ProviderConfigPanel', () => {
       .mockResolvedValueOnce({
         ok: true,
         value: {
+          activeProvider: 'STEPFUN',
           configured: true,
-          lastUsedAt: '2026-08-29T00:00:00.000Z',
-          models: {
-            fast: 'step-3.7-flash',
-            grill: 'step-3.7-flash',
-            report: 'step-3.7-flash',
+          providers: {
+            SILICONFLOW: null,
+            STEPFUN: {
+              createdAt: '2026-08-29T00:00:00.000Z',
+              keyHint: '••••••••',
+              lastUsedAt: '2026-08-29T00:00:00.000Z',
+              models: {
+                fast: 'step-3.7-flash',
+                grill: 'step-3.7-flash',
+                report: 'step-3.7-flash',
+              },
+              provider: 'STEPFUN',
+              state: 'AVAILABLE',
+            },
           },
-          provider: 'STEPFUN',
-          state: 'AVAILABLE',
         },
       });
     const testConnection = vi.fn<ProviderConfigClient['testConnection']>().mockResolvedValue({
@@ -77,6 +85,7 @@ describe('ProviderConfigPanel', () => {
       deleteConfig: vi.fn(),
       getStatus,
       saveConfig,
+      selectProvider: vi.fn(),
       testConnection,
     };
 
@@ -117,6 +126,7 @@ describe('ProviderConfigPanel', () => {
         .fn<ProviderConfigClient['getStatus']>()
         .mockResolvedValue({ ok: true, value: { configured: false, state: 'NOT_CONFIGURED' } }),
       saveConfig: vi.fn(),
+      selectProvider: vi.fn(),
       testConnection: vi.fn<ProviderConfigClient['testConnection']>().mockResolvedValue({
         error: { code: 'PROVIDER_AUTH_FAILED' },
         ok: false,
@@ -143,6 +153,7 @@ describe('ProviderConfigPanel', () => {
         ok: false,
       }),
       saveConfig: vi.fn(),
+      selectProvider: vi.fn(),
       testConnection: vi.fn(),
     };
 
@@ -160,19 +171,27 @@ describe('ProviderConfigPanel', () => {
       getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
         ok: true,
         value: {
+          activeProvider: 'STEPFUN',
           configured: true,
-          keyHint: '••••••••',
-          lastUsedAt: '2026-08-29T00:00:00.000Z',
-          models: {
-            fast: 'step-3.7-flash',
-            grill: 'step-3.7-flash',
-            report: 'step-3.7-flash',
+          providers: {
+            SILICONFLOW: null,
+            STEPFUN: {
+              createdAt: '2026-08-29T00:00:00.000Z',
+              keyHint: '••••••••',
+              lastUsedAt: '2026-08-29T00:00:00.000Z',
+              models: {
+                fast: 'step-3.7-flash',
+                grill: 'step-3.7-flash',
+                report: 'step-3.7-flash',
+              },
+              provider: 'STEPFUN',
+              state: 'AVAILABLE',
+            },
           },
-          provider: 'STEPFUN',
-          state: 'AVAILABLE',
         },
       }),
       saveConfig: vi.fn(),
+      selectProvider: vi.fn(),
       testConnection: vi.fn(),
     };
 
@@ -182,5 +201,57 @@ describe('ProviderConfigPanel', () => {
     expect(
       screen.getByText('The saved configuration can no longer be used. Enter the key again.'),
     ).toBeVisible();
+  });
+
+  it('shows both saved providers and switches without asking for another key', async () => {
+    const user = userEvent.setup();
+    const credential = (provider: 'STEPFUN' | 'SILICONFLOW') => ({
+      createdAt: '2026-08-29T00:00:00.000Z',
+      keyHint: '••••••••' as const,
+      lastUsedAt: '2026-08-29T00:00:00.000Z',
+      models:
+        provider === 'STEPFUN'
+          ? {
+              fast: 'step-3.7-flash',
+              grill: 'step-3.7-flash',
+              report: 'step-3.7-flash',
+            }
+          : {
+              fast: 'deepseek-ai/DeepSeek-V4-Flash',
+              grill: 'deepseek-ai/DeepSeek-V4-Flash',
+              report: 'deepseek-ai/DeepSeek-V4-Flash',
+            },
+      provider,
+      state: 'AVAILABLE' as const,
+    });
+    const providers = {
+      SILICONFLOW: credential('SILICONFLOW'),
+      STEPFUN: credential('STEPFUN'),
+    };
+    const selectProvider = vi.fn<ProviderConfigClient['selectProvider']>().mockResolvedValue({
+      ok: true,
+      value: { activeProvider: 'SILICONFLOW', configured: true, providers },
+    });
+    const api: ProviderConfigClient = {
+      deleteConfig: vi.fn(),
+      getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
+        ok: true,
+        value: { activeProvider: 'STEPFUN', configured: true, providers },
+      }),
+      saveConfig: vi.fn(),
+      selectProvider,
+      testConnection: vi.fn(),
+    };
+
+    renderPanel(api);
+
+    expect(await screen.findByText('StepFun is selected for AI actions')).toBeVisible();
+    expect(screen.getByText('SiliconFlow is saved and ready to select')).toBeVisible();
+    expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Use SiliconFlow' }));
+
+    await waitFor(() => expect(selectProvider).toHaveBeenCalledWith('SILICONFLOW'));
+    expect(await screen.findByText('SiliconFlow is selected for AI actions')).toBeVisible();
+    expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
   });
 });

@@ -17,6 +17,11 @@ export {
   expandNodeRequestSchema,
 } from './expand-node';
 export { buildExpandNodePrompt } from './expand-node-prompt';
+export {
+  resolveConfiguredProviderCaller,
+  runConfiguredProviderCall,
+  type ConfiguredProviderCaller,
+} from './configured-provider-call';
 export { meetingAIErrorResponse, meetingAIJson } from './http';
 export {
   ProviderGatewayError,

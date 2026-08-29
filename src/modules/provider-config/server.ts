@@ -1,7 +1,17 @@
 import 'server-only';
 
-export type { AesGcmEnvelope } from './credential-crypto';
-export { decryptCredential, encryptCredential } from './credential-crypto';
+export type {
+  AesGcmEnvelope,
+  EncryptionKey,
+  EncryptionKeyring,
+  LegacyAesGcmEnvelope,
+} from './credential-crypto';
+export {
+  createEncryptionKeyring,
+  decryptCredential,
+  encryptCredential,
+  encryptionKeyId,
+} from './credential-crypto';
 export {
   createProviderConfigRuntime,
   providerConfigErrorResponse,
@@ -24,10 +34,23 @@ export {
 } from './service';
 export type { ProviderConfigServiceDependencies, ResolvedStoredProviderConfig } from './service';
 export {
+  createProviderConfigRevision,
   encryptedProviderConfigSchema,
+  encryptedProviderConfigV2Schema,
+  encryptedProviderCredentialSchema,
   providerConfigKey,
   providerConfigTtlSeconds,
   rateLimitKey,
   toEncryptedProviderConfig,
+  toEncryptedProviderCredential,
 } from './store';
-export type { EncryptedProviderConfig, ProviderConfigStore } from './store';
+export type {
+  EncryptedProviderConfig,
+  EncryptedProviderConfigV2,
+  EncryptedProviderCredential,
+  LegacyEncryptedProviderConfig,
+  ProviderConfigTouch,
+  ProviderConfigWrite,
+  ProviderConfigWriteExpectation,
+  ProviderConfigStore,
+} from './store';

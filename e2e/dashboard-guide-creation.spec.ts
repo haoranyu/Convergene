@@ -6,15 +6,23 @@ const notConfigured = { ok: true, value: { configured: false, state: 'NOT_CONFIG
 const available = {
   ok: true,
   value: {
+    activeProvider: 'STEPFUN',
     configured: true,
-    lastUsedAt: '2026-08-29T00:00:00.000Z',
-    models: {
-      fast: 'step-3.7-flash',
-      grill: 'step-3.7-flash',
-      report: 'step-3.7-flash',
+    providers: {
+      SILICONFLOW: null,
+      STEPFUN: {
+        createdAt: '2026-08-29T00:00:00.000Z',
+        keyHint: '••••••••',
+        lastUsedAt: '2026-08-29T00:00:00.000Z',
+        models: {
+          fast: 'step-3.7-flash',
+          grill: 'step-3.7-flash',
+          report: 'step-3.7-flash',
+        },
+        provider: 'STEPFUN',
+        state: 'AVAILABLE',
+      },
     },
-    provider: 'STEPFUN',
-    state: 'AVAILABLE',
   },
 } as const;
 
@@ -452,7 +460,16 @@ test('preserves query state when switching locale and flags model reconfiguratio
     await route.fulfill({
       json: {
         ok: true,
-        value: { ...available.value, state: 'NEEDS_RECONFIGURATION' },
+        value: {
+          ...available.value,
+          providers: {
+            ...available.value.providers,
+            STEPFUN: {
+              ...available.value.providers.STEPFUN,
+              state: 'NEEDS_RECONFIGURATION',
+            },
+          },
+        },
       },
     });
   });

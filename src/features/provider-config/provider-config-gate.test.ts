@@ -16,6 +16,9 @@ describe('ProviderConfigGate', () => {
     expect(
       providerConfigGateReason({ error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false }),
     ).toBeNull();
+    expect(
+      providerConfigGateReason({ error: { code: 'PROVIDER_ACCESS_RESTRICTED' }, ok: false }),
+    ).toBeNull();
     expect(providerConfigGateReason(new Error('provider not configured'))).toBeNull();
   });
 });

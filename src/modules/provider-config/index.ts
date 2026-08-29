@@ -8,6 +8,7 @@ export {
   providerIds,
   providerModelPresets,
   providerModelMappingSchema,
+  providerSelectionInputSchema,
 } from './model';
 export type {
   ProviderConfigApiResponse,
@@ -15,6 +16,8 @@ export type {
   ProviderConfigInput,
   ProviderConfigSummary,
   ProviderConnectionResult,
+  ProviderCredentialSummary,
   ProviderId,
   ProviderModelMapping,
+  ProviderSelectionInput,
 } from './model';

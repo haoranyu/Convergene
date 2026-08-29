@@ -119,6 +119,8 @@
 
 - HttpOnly Cookie；
 - Redis key hash；
+- 一个 v2 record 分别保存两家凭证槽和独立 `activeProvider`；
+- v1 记录与旧加密 keyring 的无明文迁移；
 - 30 天滑动 TTL；
 - 清除配置；
 - 同源 Origin 检查。
@@ -126,10 +128,11 @@
 ### P0-08 Provider 配置 UI/API
 
 - status/test/save/delete；
+- 已配置供应商之间显式切换，保存/重配一家不覆盖另一家；
 - StepFun / 硅基流动预设；
 - Key password input；
 - 保存后不回显；
-- 认证、限流、未知模型和 Redis 错误。
+- 认证、权限限制、限流、未知模型和 Redis 错误；只有确认的认证拒绝标记目标供应商需重配。
 
 ### ST-01 高级模型覆盖
 

@@ -20,6 +20,7 @@ describe('provider configuration runtime environment', () => {
       }),
     ).toEqual({
       encryptionSecret: secret,
+      previousEncryptionSecrets: [],
       redisToken: redisEnvironment.UPSTASH_REDIS_REST_TOKEN,
       redisUrl: redisEnvironment.UPSTASH_REDIS_REST_URL,
     });
@@ -36,4 +37,23 @@ describe('provider configuration runtime environment', () => {
       ).toThrowError('PROVIDER_CONFIG_UNAVAILABLE');
     },
   );
+
+  it('accepts a comma-separated keyring for safe secret rotation', () => {
+    const currentSecret = randomBytes(32).toString('base64');
+    const previousSecrets = [
+      randomBytes(32).toString('base64'),
+      randomBytes(32).toString('base64'),
+    ];
+
+    expect(
+      readProviderConfigRuntimeEnvironment({
+        ...redisEnvironment,
+        APP_ENCRYPTION_PREVIOUS_SECRETS: previousSecrets.join(','),
+        APP_ENCRYPTION_SECRET: currentSecret,
+      }),
+    ).toMatchObject({
+      encryptionSecret: currentSecret,
+      previousEncryptionSecrets: previousSecrets,
+    });
+  });
 });
