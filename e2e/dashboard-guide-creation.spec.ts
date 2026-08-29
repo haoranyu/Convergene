@@ -53,6 +53,11 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
 
   await page.goto('/en-US/guide');
   await expect(page.getByRole('tab')).toHaveCount(3);
+  const rootBox = await page.getByText('Choose the launch plan', { exact: true }).boundingBox();
+  const topicBox = await page.getByText('Options', { exact: true }).boundingBox();
+  expect(rootBox).not.toBeNull();
+  expect(topicBox).not.toBeNull();
+  expect(topicBox!.x).toBeGreaterThan(rootBox!.x + rootBox!.width);
   await page.getByRole('tab', { name: 'Brainstorm together' }).click();
   await expect(page.getByText('Find a memorable launch angle')).toBeVisible();
   await page.getByRole('tab', { name: 'Reflect and improve' }).click();
@@ -104,11 +109,70 @@ test('opens BYOK configuration on the first real AI action and preserves the for
   await page.goto('/en-US/meetings/new');
   const rawRequest = page.getByLabel('The original meeting request');
   await rawRequest.fill('Choose one launch plan for the September release.');
+  await expect(page.getByRole('button', { name: 'Choose a script manually' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
 
   await expect(page.getByRole('dialog', { name: 'Connect a model provider' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(rawRequest).toHaveValue('Choose one launch plan for the September release.');
+});
+
+test('manual fallback cancels an in-flight retry and ignores its late recommendation', async ({
+  page,
+}) => {
+  await mockStatus(page, true);
+  let callCount = 0;
+  let releaseRetry: (() => void) | undefined;
+  const retryMayFinish = new Promise<void>((resolve) => {
+    releaseRetry = resolve;
+  });
+  await page.route('**/api/ai/classify-meeting', async (route) => {
+    callCount += 1;
+    if (callCount === 1) {
+      await route.fulfill({
+        json: { error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false },
+        status: 503,
+      });
+      return;
+    }
+
+    const request = route.request().postDataJSON() as { requestId: string };
+    await retryMayFinish;
+    await route
+      .fulfill({
+        json: {
+          output: {
+            confidence: 'HIGH',
+            reason: 'The request requires a concrete choice.',
+            recommendedMode: 'DECISION',
+            suggestedTitle: 'Choose the launch plan',
+          },
+          requestId: request.requestId,
+          task: 'classify-meeting',
+        },
+      })
+      .catch(() => undefined);
+  });
+
+  await page.goto('/en-US/meetings/new');
+  await page
+    .getByLabel('The original meeting request')
+    .fill('Choose one launch plan for the September release.');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+  await expect(page.getByRole('button', { name: 'Choose a script manually' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Retry recommendation' }).click();
+  await expect.poll(() => callCount).toBe(2);
+  await page.getByRole('button', { name: 'Choose a script manually' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Choose the meeting script yourself' }),
+  ).toBeVisible();
+
+  releaseRetry?.();
+  await page.waitForTimeout(100);
+  await expect(
+    page.getByRole('heading', { name: 'Choose the meeting script yourself' }),
+  ).toBeVisible();
 });
 
 test('applies an AI recommendation only after user confirmation and allows override', async ({

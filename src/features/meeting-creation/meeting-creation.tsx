@@ -190,12 +190,14 @@ export function MeetingCreation() {
   const router = useRouter();
   const t = useTranslations('meetingCreation');
   const [form] = Form.useForm<CreationFormValues>();
+  const classificationOperation = useRef(0);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const requestController = useRef<AbortController | null>(null);
   const [classifying, setClassifying] = useState(false);
   const [draftValues, setDraftValues] = useState<CreationFormValues | null>(null);
   const [formInvalid, setFormInvalid] = useState(false);
   const [manual, setManual] = useState(false);
+  const [manualFallbackAvailable, setManualFallbackAvailable] = useState(false);
   const [notice, setNotice] = useState<MeetingAIErrorCode | 'SAVE_FAILED' | null>(null);
   const [recommendation, setRecommendation] = useState<ClassifyMeetingOutput | null>(null);
   const [saving, setSaving] = useState(false);
@@ -204,10 +206,19 @@ export function MeetingCreation() {
 
   useEffect(
     () => () => {
+      classificationOperation.current += 1;
       requestController.current?.abort();
     },
     [],
   );
+
+  function invalidateClassification(): number {
+    classificationOperation.current += 1;
+    requestController.current?.abort();
+    requestController.current = null;
+    setClassifying(false);
+    return classificationOperation.current;
+  }
 
   async function validatedValues(): Promise<CreationFormValues | null> {
     try {
@@ -228,10 +239,10 @@ export function MeetingCreation() {
   }
 
   async function classify(handleAIError: (error: unknown) => boolean) {
+    const operation = invalidateClassification();
     const values = await validatedValues();
-    if (!values) return;
+    if (!values || classificationOperation.current !== operation) return;
 
-    requestController.current?.abort();
     const controller = new AbortController();
     requestController.current = controller;
     setClassifying(true);
@@ -245,18 +256,30 @@ export function MeetingCreation() {
         values.contentLocale,
         controller.signal,
       );
-      if (requestController.current !== controller) return;
+      if (
+        classificationOperation.current !== operation ||
+        requestController.current !== controller
+      ) {
+        return;
+      }
       if (!result.ok) {
-        if (!handleAIError(result)) setNotice(result.error.code);
+        if (!handleAIError(result)) {
+          setNotice(result.error.code);
+          setManualFallbackAvailable(true);
+        }
         return;
       }
       setDraftValues(values);
       setRecommendation(result.value);
       setSelectedMode(result.value.recommendedMode);
       setManual(false);
+      setManualFallbackAvailable(false);
       setShowRecommendation(true);
     } finally {
-      if (requestController.current === controller) {
+      if (
+        classificationOperation.current === operation &&
+        requestController.current === controller
+      ) {
         requestController.current = null;
         setClassifying(false);
       }
@@ -264,8 +287,9 @@ export function MeetingCreation() {
   }
 
   async function chooseManually() {
+    const operation = invalidateClassification();
     const values = await validatedValues();
-    if (!values) return;
+    if (!values || classificationOperation.current !== operation) return;
     setNotice(null);
     setDraftValues(values);
     setRecommendation(null);
@@ -448,9 +472,13 @@ export function MeetingCreation() {
                   </div>
 
                   <div className={styles.formActions}>
-                    <Button onClick={() => void chooseManually()} type="text">
-                      {t('actions.manual')}
-                    </Button>
+                    {manualFallbackAvailable ? (
+                      <Button onClick={() => void chooseManually()} type="text">
+                        {t('actions.manual')}
+                      </Button>
+                    ) : (
+                      <span />
+                    )}
                     <Space wrap>
                       {notice && notice !== 'SAVE_FAILED' ? (
                         <Button

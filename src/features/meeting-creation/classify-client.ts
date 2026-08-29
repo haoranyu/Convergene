@@ -1,3 +1,5 @@
+import { ZodError } from 'zod';
+
 import {
   classifyMeetingRequestSchema,
   classifyMeetingResponseSchema,
@@ -51,8 +53,11 @@ export function createClassifyMeetingClient(
           value: classifyMeetingOutputSchema.parse(success.data.output),
         };
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        if (error instanceof Error && error.name === 'AbortError') {
           return { error: { code: 'REQUEST_CANCELLED' }, ok: false };
+        }
+        if (error instanceof ZodError) {
+          return { error: { code: 'INPUT_INVALID' }, ok: false };
         }
         return { error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false };
       }

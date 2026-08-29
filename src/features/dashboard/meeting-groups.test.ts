@@ -5,7 +5,7 @@ import { createMapReadyMeeting, createMeeting } from '@/fixtures/meeting';
 import { groupMeetings, staleLiveMeetings } from './meeting-groups';
 
 describe('dashboard meeting groups', () => {
-  it('keeps lifecycle and preparation groups deterministic', () => {
+  it('keeps lifecycle and canonical timing groups deterministic', () => {
     const meetings = [
       createMeeting({ id: 'draft' }),
       createMapReadyMeeting({ id: 'waiting' }),
@@ -34,8 +34,8 @@ describe('dashboard meeting groups', () => {
       ]),
     ).toEqual([
       ['active', ['live']],
-      ['waiting', ['waiting']],
-      ['preparing', ['draft']],
+      ['waiting', ['draft', 'waiting']],
+      ['preparing', []],
       ['ended', ['ended']],
     ]);
   });
@@ -52,6 +52,22 @@ describe('dashboard meeting groups', () => {
       ['active', []],
       ['waiting', []],
       ['preparing', ['waiting']],
+      ['ended', []],
+    ]);
+  });
+
+  it('keeps an early draft in preparation until its scheduled start', () => {
+    const draft = createMeeting({ id: 'draft' });
+
+    expect(
+      groupMeetings([draft], new Date('2026-08-29T09:59:59.000Z')).map((group) => [
+        group.id,
+        group.meetings.map((meeting) => meeting.id),
+      ]),
+    ).toEqual([
+      ['active', []],
+      ['waiting', []],
+      ['preparing', ['draft']],
       ['ended', []],
     ]);
   });

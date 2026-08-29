@@ -132,6 +132,31 @@ describe('provider configuration HTTP security', () => {
     expect(receivedKey).not.toContain('203.0.113.10');
   });
 
+  it('keeps AI tasks in a separate rate-limit namespace', async () => {
+    const receivedKeys: string[] = [];
+    const store = {
+      consumeRateLimit(key: string) {
+        receivedKeys.push(key);
+        return Promise.resolve(1);
+      },
+      delete: () => Promise.resolve(),
+      get: () => Promise.resolve(null),
+      has: () => Promise.resolve(false),
+      set: () => Promise.resolve(),
+      touch: () => Promise.resolve(null),
+    } as ProviderConfigStore;
+    const request = new Request('https://convergene.example/api/ai/classify-meeting', {
+      headers: { 'x-forwarded-for': '203.0.113.10' },
+    });
+
+    await enforceProviderConfigRateLimit(request, store);
+    await enforceProviderConfigRateLimit(request, store, 20, 60, 'classify-meeting');
+
+    expect(receivedKeys[0]).toMatch(/^rate-limit:provider-config:[a-f0-9]{64}$/u);
+    expect(receivedKeys[1]).toMatch(/^rate-limit:classify-meeting:[a-f0-9]{64}$/u);
+    expect(receivedKeys[0]).not.toBe(receivedKeys[1]);
+  });
+
   it('keeps forged session cookies in the pre-session client bucket', async () => {
     const receivedKeys: string[] = [];
     const store = {

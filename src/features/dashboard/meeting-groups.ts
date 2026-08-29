@@ -23,7 +23,7 @@ export function groupMeetings(meetings: readonly Meeting[], now: Date): MeetingG
       grouped.active.push(meeting);
     } else if (timingState === 'ENDED_ON_TIME' || timingState === 'ENDED_OVERRUN') {
       grouped.ended.push(meeting);
-    } else if (meeting.preparationStage === 'MAP_READY' && timingState === 'WAITING_TO_START') {
+    } else if (timingState === 'WAITING_TO_START') {
       grouped.waiting.push(meeting);
     } else {
       grouped.preparing.push(meeting);

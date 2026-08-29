@@ -26,6 +26,13 @@ function titleWithinLimit(title: string): boolean {
   return normalized.split(/\s+/u).length <= 10;
 }
 
+function isSingleSentence(value: string): boolean {
+  const segments = [
+    ...new Intl.Segmenter(undefined, { granularity: 'sentence' }).segment(value.trim()),
+  ].filter(({ segment }) => /[\p{L}\p{N}]/u.test(segment));
+  return segments.length === 1;
+}
+
 export const classifyMeetingOutputSchema = z
   .object({
     confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']),
@@ -34,7 +41,8 @@ export const classifyMeetingOutputSchema = z
       .trim()
       .min(1)
       .max(240)
-      .refine((value) => !/[\r\n]/u.test(value)),
+      .refine((value) => !/[\r\n]/u.test(value))
+      .refine(isSingleSentence, { message: 'Reason must be one sentence' }),
     recommendedMode: z.enum(meetingModes),
     suggestedTitle: z.string().trim().min(1).max(160).refine(titleWithinLimit),
   })

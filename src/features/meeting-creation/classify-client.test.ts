@@ -71,4 +71,16 @@ describe('classifyMeetingClient', () => {
       ),
     ).resolves.toEqual({ error: { code: 'REQUEST_CANCELLED' }, ok: false });
   });
+
+  it('maps local input schema failures without making a provider request', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+
+    await expect(
+      createClassifyMeetingClient(fetchImplementation, () => requestId).classify(
+        { rawRequest: ' ' },
+        'en-US',
+      ),
+    ).resolves.toEqual({ error: { code: 'INPUT_INVALID' }, ok: false });
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
 });

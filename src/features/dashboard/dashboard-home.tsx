@@ -41,11 +41,11 @@ import {
 import styles from './dashboard-home.module.css';
 import { groupMeetings, staleLiveMeetings } from './meeting-groups';
 
-const modeColor: Record<MeetingMode, 'arcoblue' | 'gray' | 'green' | 'orange'> = {
-  BRAINSTORM: 'orange',
+const modeColor: Record<MeetingMode, 'arcoblue' | 'cyan' | 'gray' | 'purple'> = {
+  BRAINSTORM: 'purple',
   DECISION: 'arcoblue',
   GENERAL: 'gray',
-  RETRO: 'green',
+  RETRO: 'cyan',
 };
 
 function modeKey(mode: MeetingMode | undefined) {

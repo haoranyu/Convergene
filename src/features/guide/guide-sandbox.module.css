@@ -92,6 +92,7 @@
 }
 
 .map {
+  align-items: center;
   align-content: center;
   background:
     linear-gradient(var(--color-border) 1px, transparent 1px),
@@ -101,7 +102,7 @@
   border-radius: var(--radius-md);
   display: grid;
   gap: 56px;
-  justify-items: center;
+  grid-template-columns: minmax(140px, 0.75fr) minmax(0, 1.75fr);
   min-height: 360px;
   overflow: hidden;
   padding: var(--space-6);
@@ -125,27 +126,40 @@
 .rootNode {
   border-color: var(--color-primary);
   color: var(--color-primary);
+  justify-self: end;
+  position: relative;
+}
+
+.rootNode::after {
+  background: var(--color-border);
+  content: '';
+  height: 2px;
+  left: 100%;
+  position: absolute;
+  top: 50%;
+  width: 56px;
 }
 
 .topicRow {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
   position: relative;
   width: 100%;
 }
 
 .topicRow::before {
   background: var(--color-border);
+  bottom: 16.7%;
   content: '';
-  height: 2px;
-  left: 16.7%;
+  left: 0;
   position: absolute;
-  right: 16.7%;
-  top: -28px;
+  top: 16.7%;
+  width: 2px;
 }
 
 .topicNode {
+  margin-left: 56px;
   min-width: 0;
   position: relative;
 }
@@ -153,11 +167,11 @@
 .topicNode::before {
   background: var(--color-border);
   content: '';
-  height: 28px;
-  left: 50%;
+  height: 2px;
+  left: -56px;
   position: absolute;
-  top: -30px;
-  width: 2px;
+  top: 50%;
+  width: 56px;
 }
 
 .activeNode {
@@ -257,13 +271,27 @@
     grid-template-columns: 1fr;
   }
 
-  .topicRow {
+  .map {
+    gap: var(--space-4);
     grid-template-columns: 1fr;
   }
 
+  .rootNode {
+    justify-self: center;
+  }
+
+  .topicRow {
+    grid-template-rows: none;
+  }
+
+  .rootNode::after,
   .topicRow::before,
   .topicNode::before {
     display: none;
+  }
+
+  .topicNode {
+    margin-left: 0;
   }
 
   .controls > :last-child {

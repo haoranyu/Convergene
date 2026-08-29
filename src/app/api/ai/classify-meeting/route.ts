@@ -27,7 +27,7 @@ export async function POST(request: Request): Promise<Response> {
       classifyMeetingMaximumRequestBodyBytes,
     );
     const { service, store } = await createProviderConfigRuntime();
-    await enforceProviderConfigRateLimit(request, store, 20, 60);
+    await enforceProviderConfigRateLimit(request, store, 20, 60, 'classify-meeting');
     const config = await service.resolve();
     const output = await runStructuredProviderCall({
       abortSignal: request.signal,

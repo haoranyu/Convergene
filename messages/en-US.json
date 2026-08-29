@@ -303,7 +303,7 @@
         "required": "Choose the meeting content language."
       },
       "rawRequest": {
-        "help": "Sent only to your provider for this classification request. It is saved locally only after you confirm a script.",
+        "help": "For this classification, the request passes transiently through Convergene's backend to your selected provider. The backend does not persist it; it is saved only in this browser after you confirm a script.",
         "label": "The original meeting request",
         "placeholder": "Paste the boss's words, the calendar ask, or the messy problem exactly as you received it…",
         "required": "Enter the original meeting request.",

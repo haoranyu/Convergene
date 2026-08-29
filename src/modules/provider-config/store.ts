@@ -52,8 +52,8 @@ export function providerConfigKey(sessionId: string): string {
   return `provider-config:${createHash('sha256').update(sessionId).digest('hex')}`;
 }
 
-export function rateLimitKey(scope: string): string {
-  return `rate-limit:provider-config:${createHash('sha256').update(scope).digest('hex')}`;
+export function rateLimitKey(scope: string, namespace = 'provider-config'): string {
+  return `rate-limit:${namespace}:${createHash('sha256').update(scope).digest('hex')}`;
 }
 
 export function toEncryptedProviderConfig(

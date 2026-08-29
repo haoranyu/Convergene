@@ -148,10 +148,15 @@ export async function enforceProviderConfigRateLimit(
   store: ProviderConfigStore,
   limit = 30,
   windowSeconds = 60,
+  namespace = 'provider-config',
 ): Promise<void> {
   try {
     const scope = await requestRateLimitScope(request, store);
-    const count = await store.consumeRateLimit(rateLimitKey(scope), limit, windowSeconds);
+    const count = await store.consumeRateLimit(
+      rateLimitKey(scope, namespace),
+      limit,
+      windowSeconds,
+    );
     if (count > limit) {
       throw new ApiSecurityError('RATE_LIMITED');
     }
