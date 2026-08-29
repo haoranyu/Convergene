@@ -188,6 +188,21 @@ interface MeetingBriefSnapshot extends MeetingBriefContent {
   confirmedAt: string
 }
 
+interface GrillTurn {
+  id: string
+  meetingId: string
+  index: number
+  phase: 'DEFAULT' | 'CRITICAL_EXTRA' | 'USER_EXTENDED'
+  question: string
+  reason?: string
+  criticalExtraReason?: string
+  disposition: 'PENDING' | 'ANSWERED' | 'UNKNOWN' | 'SKIPPED'
+  answer?: string
+  knownState: { confirmed: string[]; assumptions: string[]; unknowns: string[] }
+  readiness: MeetingBriefContent['readiness']
+  createdAt: string
+}
+
 type NodeKind =
   | 'OBJECTIVE'
   | 'TOPIC'
@@ -254,6 +269,8 @@ interface MeetingReport {
 ```
 
 准备阶段与 Brief 形态必须一起校验：`DRAFT` 不保存已确认的 `mode` 或 Brief；`GRILLING` 已有锁定剧本但没有 Brief；`BRIEF_READY` 可以保存草稿或已确认快照；`MAP_READY` 必须保存已确认快照和合法初始图。点击确认只把草稿替换为快照，初始图成功后才转入 `MAP_READY`。
+
+`GrillTurn` 按 `[meetingId+index]` 连续保存且总数不超过 10；只有最后一轮可以是 `PENDING`，并且该记录只能原位更新一次处置与回答，问题、阶段、已知状态和准备度快照保持不变。
 
 `StrategyId` 的闭集定义在 [AI 任务契约](./ai-contracts.md)。不要以用户可见的翻译文案作为持久化 id。
 

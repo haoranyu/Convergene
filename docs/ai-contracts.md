@@ -152,6 +152,7 @@ interface GrillInput {
   mode: MeetingMode
   rawRequest: string
   turnIndex: number
+  finishRequested?: true
   history: Array<{
     question: string
     answer?: string
@@ -168,6 +169,8 @@ interface GrillInput {
 ```
 
 客户端决定 `phase` 和是否允许下一轮；模型不能自行突破 10 轮上限。
+`finishRequested` 只表示用户明确要求结束 Grill；此时模型必须直接返回
+`shouldAsk = false` 和 `suggestedBrief`，即使准备度仍为 `INSUFFICIENT`。
 
 ### 输出
 
@@ -340,11 +343,17 @@ interface ClassifyNoteOutput {
 
 ```ts
 interface ReportFacts {
+  title: string
   mode: MeetingMode
   objective: string
-  schedule: { planned: TimeRange; actual: TimeRange; timezone: string }
+  schedule: {
+    planned: { startAt: string; endAt: string }
+    actual: { startAt: string; endAt: string }
+    timezone: string
+  }
   attendeeCount: number
   totalPersonMinutes: number
+  unallocatedPersonMinutes: number
   overtimeMinutes: number
   outcomes: Array<{
     kind: OutcomeKind
@@ -353,6 +362,7 @@ interface ReportFacts {
     owner?: string
     dueDate?: string
     origin: 'LIVE' | 'POST_MEETING'
+    markedAt?: string
     formationPersonMinutes?: number
   }>
   parkingLot: string[]
@@ -380,6 +390,7 @@ interface ReportOutput {
 约束：
 
 - 不新增 facts 中没有的负责人、日期、方案、原因或决策；
+- 润色输出中的每个字符串必须精确引用 `ReportFacts` 已有的目标、产出、备注或对应模式事实；模型只选择、排序和分节，程序拒绝任何改写或补充后的句子；
 - 没有产出时明确表述“未标记正式产出”；
 - 会后补记必须与会中产出区分；
 - 不计算数字，不输出 Mermaid；

@@ -12,10 +12,12 @@
   --color-success-subtle: #ecfdf3;
   --color-surface: #ffffff;
   --color-warning: #b45309;
-  --opacity-dimmed: 0.34;
+  --opacity-dimmed: 0.58;
   --radius-lg: 14px;
   --radius-md: 10px;
   --radius-sm: 6px;
+  --shadow-float: 0 8px 24px rgb(15 23 42 / 12%);
+  --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;

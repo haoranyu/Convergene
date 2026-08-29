@@ -9,7 +9,7 @@ import type { ProviderModelMapping } from '../provider-config';
 import { providerPresets } from '../provider-config/server';
 
 const defaultTimeoutMs = 15_000;
-const maximumTimeoutMs = 30_000;
+const maximumTimeoutMs = 60_000;
 const defaultMaxOutputTokens = 2_048;
 const minimumMaxOutputTokens = 512;
 

@@ -46,6 +46,35 @@ function meeting(id: string, overrides: Partial<Meeting> = {}): Meeting {
   };
 }
 
+function grillTurn(meetingId: string, overrides: Partial<GrillTurn> = {}): GrillTurn {
+  return {
+    createdAt: timestamp,
+    disposition: 'UNKNOWN',
+    id: `${meetingId}-turn-1`,
+    index: 0,
+    knownState: { assumptions: [], confirmed: [], unknowns: [] },
+    meetingId,
+    phase: 'DEFAULT',
+    question: 'Who decides?',
+    readiness: {
+      dimensions: [
+        'objective',
+        'desired_outcome',
+        'participants_and_authority',
+        'inputs',
+        'constraints',
+        'minimum_outcome',
+        'decision_owner',
+        'options',
+        'criteria',
+        'decision_deadline',
+      ].map((key) => ({ key, status: 'MISSING' as const })),
+      level: 'INSUFFICIENT',
+    },
+    ...overrides,
+  };
+}
+
 function node(
   meetingId: string,
   id: string,
@@ -327,19 +356,162 @@ describe('MeetingRepository', () => {
     expect(await database.meetings.count()).toBe(1);
   });
 
+  it('persists manual nodes and drag positions with optimistic revisions', async () => {
+    const firstDatabase = openDatabase();
+    const repository = new MeetingRepository(firstDatabase);
+    const prepared = await createPreparedMeeting(repository, 'meeting-1');
+
+    const inserted = await repository.insertNode(
+      'meeting-1',
+      {
+        edgeId: 'meeting-1-manual-edge',
+        id: 'meeting-1-manual',
+        kind: 'NOTE',
+        parentNodeId: 'meeting-1-topic-2',
+        position: { x: 640, y: 240 },
+        title: 'Confirm the success threshold',
+      },
+      prepared.updatedAt,
+      new Date('2026-08-29T09:50:00.000Z'),
+    );
+    expect(inserted).toMatchObject({
+      ok: true,
+      value: {
+        edges: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'meeting-1-manual-edge',
+            sourceNodeId: 'meeting-1-topic-2',
+            targetNodeId: 'meeting-1-manual',
+          }),
+        ]),
+        nodes: expect.arrayContaining([
+          expect.objectContaining({ id: 'meeting-1-manual', source: 'USER' }),
+        ]),
+      },
+    });
+    const afterInsert = await readStoredAggregate(repository, 'meeting-1');
+    expect(afterInsert).toBeDefined();
+    if (afterInsert === undefined) return;
+
+    const positioned = await repository.updateNodePositions(
+      'meeting-1',
+      [
+        { nodeId: 'meeting-1-manual', position: { x: 812, y: 366 } },
+        { nodeId: 'meeting-1-topic-2', position: { x: 400, y: 300 } },
+      ],
+      afterInsert.meeting.updatedAt,
+      new Date('2026-08-29T09:51:00.000Z'),
+    );
+    expect(positioned).toMatchObject({ ok: true });
+    await expect(
+      repository.updateNodePositions(
+        'meeting-1',
+        [{ nodeId: 'meeting-1-manual', position: { x: 0, y: 0 } }],
+        afterInsert.meeting.updatedAt,
+        new Date('2026-08-29T09:52:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'STALE_WRITE' }, ok: false });
+
+    firstDatabase.close();
+    const reopened = new MeetingRepository(openDatabase());
+    expect(await readStoredAggregate(reopened, 'meeting-1')).toMatchObject({
+      nodes: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'meeting-1-manual',
+          position: { x: 812, y: 366 },
+        }),
+        expect.objectContaining({
+          id: 'meeting-1-topic-2',
+          position: { x: 400, y: 300 },
+        }),
+      ]),
+    });
+  });
+
+  it('cascades an explicit branch deletion and advances a deleted active topic', async () => {
+    const database = openDatabase();
+    const repository = new MeetingRepository(database);
+    await createPreparedMeeting(repository, 'meeting-1');
+    const started = await startStoredMeeting(
+      repository,
+      'meeting-1',
+      4,
+      new Date('2026-08-29T10:00:00.000Z'),
+    );
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+    const marked = await repository.markOutcome(
+      'meeting-1',
+      { id: 'outcome-1', kind: 'DECISION', nodeId: 'meeting-1-detail' },
+      started.value.updatedAt,
+      new Date('2026-08-29T10:01:00.000Z'),
+    );
+    expect(marked.ok).toBe(true);
+    const current = await storedMeeting(repository, 'meeting-1');
+
+    const deleted = await repository.deleteNodeSubtree(
+      'meeting-1',
+      'meeting-1-topic-1',
+      current.updatedAt,
+      new Date('2026-08-29T10:02:00.000Z'),
+    );
+    expect(deleted).toMatchObject({
+      ok: true,
+      value: {
+        deletedNodeIds: expect.arrayContaining(['meeting-1-topic-1', 'meeting-1-detail']),
+        meeting: { activeTopicNodeId: 'meeting-1-topic-2' },
+      },
+    });
+    expect(await readStoredAggregate(repository, 'meeting-1')).toMatchObject({
+      meeting: { activeTopicNodeId: 'meeting-1-topic-2' },
+      nodes: [
+        expect.objectContaining({ id: 'meeting-1-root' }),
+        expect.objectContaining({ id: 'meeting-1-topic-2' }),
+        expect.objectContaining({ id: 'meeting-1-topic-3' }),
+      ],
+      outcomes: [],
+    });
+    expect(await database.edges.get('meeting-1-edge-2')).toMatchObject({ order: 0 });
+    expect(await database.edges.get('meeting-1-edge-3')).toMatchObject({ order: 1 });
+  });
+
+  it('requires explicit topic metadata for a manual root topic and never deletes the root', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const prepared = await createPreparedMeeting(repository, 'meeting-1');
+    await expect(
+      repository.insertNode(
+        'meeting-1',
+        {
+          edgeId: 'meeting-1-topic-4-edge',
+          id: 'meeting-1-topic-4',
+          kind: 'TOPIC',
+          parentNodeId: 'meeting-1-root',
+          position: { x: 320, y: 480 },
+          title: 'Dependencies',
+        },
+        prepared.updatedAt,
+        new Date('2026-08-29T09:50:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_TOPIC' }, ok: false });
+    await expect(
+      repository.deleteNodeSubtree(
+        'meeting-1',
+        'meeting-1-root',
+        prepared.updatedAt,
+        new Date('2026-08-29T09:50:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_DELETE' }, ok: false });
+  });
+
   it('recovers a complete aggregate after the database is closed and reopened', async () => {
     const firstDatabase = openDatabase();
     const firstRepository = new MeetingRepository(firstDatabase);
 
-    const turn: GrillTurn = {
+    const turn = grillTurn('meeting-1', {
       answer: 'The sponsor',
-      createdAt: timestamp,
       disposition: 'ANSWERED',
       id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    });
     await createPreparedMeetingWithGrillTurn(firstRepository, 'meeting-1', turn);
     const started = await startStoredMeeting(
       firstRepository,
@@ -567,14 +739,10 @@ describe('MeetingRepository', () => {
     await expect(
       putStoredGrillTurn(
         repository,
-        {
+        grillTurn('meeting-1', {
           createdAt: '2026-08-29T17:30:00+08:00',
-          disposition: 'UNKNOWN',
           id: 'turn-1',
-          index: 0,
-          meetingId: 'meeting-1',
-          question: 'Who decides?',
-        },
+        }),
         new Date('2026-08-29T09:36:00.000Z'),
       ),
     ).resolves.toMatchObject({ error: { code: 'INVALID_GRILL_TURN' }, ok: false });
@@ -654,13 +822,8 @@ describe('MeetingRepository', () => {
 
     const grilling = await createGrillingMeeting(repository, 'meeting-3');
     const contaminatedTurn = {
+      ...grillTurn('meeting-3', { id: 'turn-1' }),
       apiKey: 'grill-secret',
-      createdAt: '2026-08-29T09:36:00.000Z',
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-3',
-      question: 'Who decides?',
       tempUi: { active: true },
     } as unknown as GrillTurn;
     await expect(
@@ -899,6 +1062,61 @@ describe('MeetingRepository', () => {
     });
   });
 
+  it('writes quick notes atomically with their required source and rejects stale retries', async () => {
+    const database = openDatabase();
+    const repository = new MeetingRepository(database);
+    await createPreparedMeeting(repository, 'meeting-quick-note');
+    const started = await startStoredMeeting(
+      repository,
+      'meeting-quick-note',
+      4,
+      new Date('2026-08-29T10:00:00.000Z'),
+    );
+    expect(started.ok).toBe(true);
+    if (!started.ok) return;
+
+    const inserted = await repository.insertQuickNote(
+      'meeting-quick-note',
+      {
+        edgeId: 'quick-note-edge',
+        id: 'quick-note',
+        parentNodeId: 'meeting-quick-note-topic-1',
+        position: { x: 500, y: 120 },
+        title: 'Confirm the rollout owner',
+      },
+      started.value.updatedAt,
+      new Date('2026-08-29T10:01:00.000Z'),
+    );
+
+    expect(inserted).toMatchObject({ ok: true });
+    expect(await database.nodes.get('quick-note')).toMatchObject({
+      kind: 'NOTE',
+      source: 'QUICK_NOTE',
+      strategyId: undefined,
+    });
+    expect(await database.edges.get('quick-note-edge')).toMatchObject({
+      sourceNodeId: 'meeting-quick-note-topic-1',
+      targetNodeId: 'quick-note',
+    });
+
+    await expect(
+      repository.insertQuickNote(
+        'meeting-quick-note',
+        {
+          edgeId: 'stale-note-edge',
+          id: 'stale-note',
+          parentNodeId: 'meeting-quick-note-topic-1',
+          position: { x: 500, y: 240 },
+          title: 'This must not be partially saved',
+        },
+        started.value.updatedAt,
+        new Date('2026-08-29T10:02:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'STALE_WRITE' }, ok: false });
+    expect(await database.nodes.get('stale-note')).toBeUndefined();
+    expect(await database.edges.get('stale-note-edge')).toBeUndefined();
+  });
+
   it('forbids structural graph changes after ENDED but permits narrow node text correction', async () => {
     const repository = new MeetingRepository(openDatabase());
     await createPreparedMeeting(repository, 'meeting-1');
@@ -1075,14 +1293,7 @@ describe('MeetingRepository', () => {
 
   it('clears aggregate content according to the two distinct preparation rollback rules', async () => {
     const repository = new MeetingRepository(openDatabase());
-    const turn: GrillTurn = {
-      createdAt: timestamp,
-      disposition: 'ANSWERED',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    const turn = grillTurn('meeting-1', { disposition: 'UNKNOWN', id: 'turn-1' });
     await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', turn);
     const prepared = await readStoredAggregate(repository, 'meeting-1');
     expect(prepared).toBeDefined();
@@ -1378,14 +1589,7 @@ describe('MeetingRepository', () => {
     await createGrillingMeeting(firstRepository, 'meeting-2');
     await firstRepository.createMeeting(meeting('meeting-3'));
 
-    const turn: GrillTurn = {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    };
+    const turn = grillTurn('meeting-1', { id: 'turn-1' });
     await expect(
       putStoredGrillTurn(firstRepository, turn, new Date('2026-08-29T09:36:00.000Z')),
     ).resolves.toMatchObject({ ok: true });
@@ -1431,12 +1635,12 @@ describe('MeetingRepository', () => {
     const concurrent = await Promise.all([
       putStoredGrillTurn(
         firstRepository,
-        { ...turn, id: 'turn-a', index: 2 },
+        { ...turn, id: 'turn-a', index: 1 },
         new Date('2026-08-29T09:38:00.000Z'),
       ),
       putStoredGrillTurn(
         secondRepository,
-        { ...turn, id: 'turn-b', index: 2 },
+        { ...turn, id: 'turn-b', index: 1 },
         new Date('2026-08-29T09:38:00.000Z'),
       ),
     ]);
@@ -1447,6 +1651,86 @@ describe('MeetingRepository', () => {
         ok: false,
       }),
     ]);
+  });
+
+  it('persists a pending question, permits only its disposition update, and blocks Brief early', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const grilling = await createGrillingMeeting(repository, 'meeting-1');
+    const pending = grillTurn('meeting-1', {
+      disposition: 'PENDING',
+      id: 'turn-1',
+    });
+    const inserted = await repository.putGrillTurn(
+      pending,
+      grilling.updatedAt,
+      new Date('2026-08-29T09:36:00.000Z'),
+    );
+    expect(inserted.ok).toBe(true);
+    if (!inserted.ok) return;
+
+    const earlyBrief = completeGrill(
+      inserted.value.meeting,
+      briefDraft,
+      new Date('2026-08-29T09:37:00.000Z'),
+    );
+    if (!earlyBrief.ok) throw new Error(earlyBrief.error.code);
+    await expect(
+      repository.savePreparationTransition(earlyBrief.value, inserted.value.meeting.updatedAt),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
+
+    const answered = await repository.putGrillTurn(
+      { ...pending, answer: 'The sponsor', disposition: 'ANSWERED' },
+      inserted.value.meeting.updatedAt,
+      new Date('2026-08-29T09:38:00.000Z'),
+    );
+    expect(answered).toMatchObject({
+      ok: true,
+      value: { turn: { answer: 'The sponsor', disposition: 'ANSWERED' } },
+    });
+    if (!answered.ok) return;
+    await expect(
+      repository.putGrillTurn(
+        { ...answered.value.turn, question: 'Silently changed prompt' },
+        answered.value.meeting.updatedAt,
+        new Date('2026-08-29T09:39:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'GRILL_TURN_ALREADY_EXISTS' }, ok: false });
+  });
+
+  it('edits only an unlocked Brief draft and preserves the confirmed snapshot', async () => {
+    const repository = new MeetingRepository(openDatabase());
+    const grilling = await createGrillingMeeting(repository, 'meeting-1');
+    const completed = completeGrill(grilling, briefDraft, new Date('2026-08-29T09:36:00.000Z'));
+    if (!completed.ok) throw new Error(completed.error.code);
+    const saved = await repository.savePreparationTransition(completed.value, grilling.updatedAt);
+    if (!saved.ok) throw new Error(saved.error.code);
+
+    const editedDraft = { ...briefDraft, objective: 'Choose the final launch path' };
+    const edited = await repository.updateBriefDraft(
+      'meeting-1',
+      editedDraft,
+      saved.value.updatedAt,
+      new Date('2026-08-29T09:37:00.000Z'),
+    );
+    expect(edited).toMatchObject({
+      ok: true,
+      value: { brief: { objective: 'Choose the final launch path' } },
+    });
+    if (!edited.ok) return;
+    const confirmed = await repository.confirmBrief(
+      'meeting-1',
+      edited.value.updatedAt,
+      new Date('2026-08-29T09:38:00.000Z'),
+    );
+    if (!confirmed.ok) throw new Error(confirmed.error.code);
+    await expect(
+      repository.updateBriefDraft(
+        'meeting-1',
+        { ...editedDraft, objective: 'Changed after lock' },
+        confirmed.value.updatedAt,
+        new Date('2026-08-29T09:39:00.000Z'),
+      ),
+    ).resolves.toMatchObject({ error: { code: 'INVALID_MEETING_STATE' }, ok: false });
   });
 
   it('exposes a live-query seam that observes writes made through another database instance', async () => {
@@ -1537,14 +1821,11 @@ describe('MeetingRepository', () => {
     const observedDatabase = openDatabase();
     const writerDatabase = openDatabase();
     const repository = new MeetingRepository(writerDatabase);
-    await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await createPreparedMeetingWithGrillTurn(
+      repository,
+      'meeting-1',
+      grillTurn('meeting-1', { id: 'turn-1' }),
+    );
     const storedMeeting = await writerDatabase.meetings.get('meeting-1');
     const storedNode = await writerDatabase.nodes.get('meeting-1-detail');
     const storedTurn = await writerDatabase.grillTurns.get('turn-1');
@@ -1690,14 +1971,11 @@ describe('JSON export', () => {
   it('exports a consistent versioned snapshot without app state or credentials', async () => {
     const database = openDatabase();
     const repository = new MeetingRepository(database);
-    await createPreparedMeetingWithGrillTurn(repository, 'meeting-1', {
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await createPreparedMeetingWithGrillTurn(
+      repository,
+      'meeting-1',
+      grillTurn('meeting-1', { id: 'turn-1' }),
+    );
     await startStoredMeeting(repository, 'meeting-1', 4, new Date('2026-08-29T10:00:00.000Z'));
     await endStoredMeeting(repository, 'meeting-1', new Date('2026-08-29T10:45:00.000Z'));
     await database.appState.put({ key: 'guideCompleted', value: true });
@@ -1834,14 +2112,7 @@ describe('JSON export', () => {
     const database = openDatabase();
     const repository = new MeetingRepository(database);
     await repository.createMeeting(meeting('meeting-1'));
-    await database.grillTurns.add({
-      createdAt: timestamp,
-      disposition: 'UNKNOWN',
-      id: 'turn-1',
-      index: 0,
-      meetingId: 'meeting-1',
-      question: 'Who decides?',
-    });
+    await database.grillTurns.add(grillTurn('meeting-1', { id: 'turn-1' }));
 
     await expect(
       createExportSnapshot(database, new Date('2026-08-29T12:00:00.000Z')),

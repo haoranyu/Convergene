@@ -49,6 +49,5 @@ export function meetingAIErrorResponse(error: unknown): Response {
     error instanceof ProviderConfigServiceError
       ? error.code
       : 'UNKNOWN';
-
   return meetingAIJson({ error: { code }, ok: false }, statusForCode(code));
 }

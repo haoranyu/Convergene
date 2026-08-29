@@ -410,6 +410,360 @@
     },
     "summaryTitle": "已确认的会议设置"
   },
+  "preparation": {
+    "actions": {
+      "back": "返回会议列表",
+      "confirmGenerate": "确认、锁定并生成脑图",
+      "continueGrill": "继续拷问我 · {current} / {limit}",
+      "finish": "结束拷问",
+      "generateBrief": "生成 Brief",
+      "openCanvas": "打开会议画布",
+      "restart": "重新准备",
+      "retry": "重试",
+      "retryMap": "重试生成脑图",
+      "returnGrill": "继续补问",
+      "saveDraft": "保存修改",
+      "skip": "跳过",
+      "submit": "提交回答",
+      "unknown": "不知道"
+    },
+    "brief": {
+      "editDescription": "锁定前可以修改这份结构化 Brief。",
+      "editable": "可编辑草稿",
+      "eyebrow": "会前准备快照",
+      "fields": {
+        "assumptions": "合理假设 · 每行一项",
+        "confirmed": "已确认 · 每行一项",
+        "desiredOutcome": "期望产出",
+        "objective": "会议目标",
+        "openingLine": "建议开场白",
+        "unknowns": "仍待确认 · 每行一项"
+      },
+      "lockWarning": "点击确认会立即锁定当前 Brief。即使脑图生成失败，它也不会解锁；重试仍使用同一份快照。",
+      "locked": "已锁定快照",
+      "lockedDescription": "这份 Brief 已锁定；生成或重试脑图时会一直保留在页面上。",
+      "title": "会议 Brief"
+    },
+    "dimensions": {
+      "challenge": "核心挑战",
+      "constraints": "限制条件",
+      "creative_constraints": "创意边界",
+      "criteria": "判断标准",
+      "decision_deadline": "决策期限",
+      "decision_owner": "拍板人",
+      "desired_improvement": "期望改进",
+      "desired_outcome": "期望产出",
+      "expected_vs_actual": "预期与实际",
+      "facts": "共同事实",
+      "inputs": "所需材料",
+      "minimum_outcome": "最低可接受结果",
+      "objective": "会议目标",
+      "options": "可行选项",
+      "participants_and_authority": "参与角色与权限",
+      "scope": "复盘范围",
+      "selection_method": "筛选方式",
+      "target_audience": "目标人群"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "这份 Brief 已经锁定。",
+      "INPUT_INVALID": "部分会议信息无效，请检查后重试。",
+      "INVALID_BRIEF": "请补全会议目标、期望产出和开场白。",
+      "INVALID_GRILL_TURN": "已保存的拷问轮次不连续，请刷新后重试。",
+      "INVALID_MEETING_STATE": "会议状态已被其他操作改变，请刷新后重试。",
+      "INVALID_STORED_DATA": "无法从本机存储安全恢复这场会议。",
+      "OUTPUT_INVALID": "模型返回未通过校验；已保存内容没有变化。",
+      "OUTPUT_LANGUAGE_MISMATCH": "模型使用了错误语言，请重试。",
+      "ORIGIN_INVALID": "无法验证这次请求，请刷新 Convergene 后重试。",
+      "PROVIDER_AUTH_FAILED": "模型 Key 被拒绝，请重新连接供应商。",
+      "PROVIDER_CONFIG_INVALID": "已保存的模型配置需要重新填写。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型配置暂时不可用，本机会议数据仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "当前账号无法使用已配置模型。",
+      "PROVIDER_NOT_CONFIGURED": "请先连接模型供应商。",
+      "PROVIDER_RATE_LIMITED": "供应商正在限流，请稍后重试。",
+      "PROVIDER_UNAVAILABLE": "暂时无法连接供应商；已保存内容没有变化。",
+      "RATE_LIMITED": "准备请求过多，请稍后重试。",
+      "REQUEST_CANCELLED": "请求已取消；已保存内容没有变化。",
+      "STALE_WRITE": "另一标签页更新了会议，本机最新版本仍然安全。",
+      "UNKNOWN": "发生错误；已保存内容没有变化。",
+      "title": "准备流程已暂停"
+    },
+    "grill": {
+      "answerLabel": "你的回答",
+      "answerPlaceholder": "尽量具体，也可以使用下面的快捷操作。",
+      "critical": "临门一问",
+      "defaultComplete": "默认拷问已完成",
+      "defaultCompleteDescription": "现在可以生成 Brief，也可以再主动增加一轮；总轮次不会超过 10。",
+      "dispositions": {
+        "ANSWERED": "已回答",
+        "SKIPPED": "已跳过",
+        "UNKNOWN": "不知道"
+      },
+      "history": "过往回答（{count}）",
+      "nextQuestion": "正在准备下一问…",
+      "resumeDescription": "已有回答都已保存；模型连接可用后即可继续。",
+      "resumeTitle": "可以继续下一问",
+      "round": "第 {current} 轮 · 最多 10 轮",
+      "why": "为什么问：{reason}"
+    },
+    "loading": "正在恢复本机会前准备…",
+    "localOnly": "本机保存",
+    "map": {
+      "description": "包含 {count} 个节点的合法初始图已保存在本机，可以开始会议。",
+      "ready": "脑图已就绪",
+      "title": "会前准备完成"
+    },
+    "metadata": {
+      "description": "把会议问清楚、锁定 Brief，并生成受控初始脑图。",
+      "title": "准备会议 · Convergene"
+    },
+    "modeSelection": {
+      "action": "返回会议创建",
+      "description": "开始拷问前，请先确认 AI 推荐或手动选择的会议剧本。",
+      "title": "请先选择会议剧本"
+    },
+    "modes": {
+      "BRAINSTORM": "脑暴共创",
+      "DECISION": "决策对齐",
+      "GENERAL": "通用讨论",
+      "RETRO": "复盘改进"
+    },
+    "notFound": "未找到这场本机会议。",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "勉强能开",
+        "INSUFFICIENT": "信息不足",
+        "READY": "可以开了"
+      },
+      "prioritySelected": "下一次请求会优先追问这个缺口。",
+      "statuses": {
+        "MISSING": "缺失",
+        "PARTIAL": "部分具备",
+        "READY": "已具备"
+      },
+      "title": "开会准备度"
+    },
+    "rollback": {
+      "continueConfirm": "继续补问？会议剧本和已有回答会保留，Brief 和脑图会清空。",
+      "restartConfirm": "回到剧本选择重新准备？只保留老板原话，剧本、拷问、Brief 和脑图都会清空。"
+    },
+    "working": "正在保存准备内容…"
+  },
+  "mindMap": {
+    "actions": {
+      "addChild": "添加子节点",
+      "addNode": "添加节点",
+      "cancel": "取消",
+      "confirmDelete": "确认删除",
+      "deleteBranch": "删除这条分支",
+      "fitAll": "一览全图",
+      "moveNode": "移动节点",
+      "nextTopic": "下一议题",
+      "previousTopic": "上一议题",
+      "refocus": "重新聚焦当前议题",
+      "relayout": "整理布局",
+      "saveNode": "保存节点"
+    },
+    "activeTopic": {
+      "label": "当前议题",
+      "navigationLabel": "议题导航",
+      "none": "尚未开始议题",
+      "position": "议题 {current} / {total}"
+    },
+    "add": {
+      "kind": "节点类型",
+      "title": "添加子节点",
+      "topicPrompt": "议题启动问题",
+      "transitionHint": "转场提示"
+    },
+    "delete": {
+      "content": "这会从当前浏览器永久删除此分支的 {count} 个节点，以及挂在这些节点上的会议结果。",
+      "title": "删除这条分支？"
+    },
+    "detail": {
+      "empty": "选择一个节点，查看并编辑详细信息。",
+      "label": "节点详情",
+      "note": "补充说明",
+      "title": "节点标题"
+    },
+    "errors": {
+      "invalidOperation": "此操作会破坏会议树，未作任何更改。",
+      "stale": "会议已在其他标签页更新，请重试。",
+      "storage": "无法读写本机会议数据，请检查浏览器存储权限。"
+    },
+    "feedback": { "saved": "已保存到本机" },
+    "loading": "正在加载本机会议图",
+    "mobile": {
+      "desktopAdvice": "完整画布和结构编辑建议在电脑上使用；你仍可在这里查看并切换议题。",
+      "treeTitle": "按议题查看"
+    },
+    "node": { "outcome": "会议结果" },
+    "nodeKinds": {
+      "ACTION": "行动",
+      "IDEA": "创意",
+      "INSIGHT": "洞察",
+      "NOTE": "记录",
+      "OBJECTIVE": "会议目标",
+      "OPTION": "备选方案",
+      "PARKING": "停车场",
+      "RISK": "风险",
+      "TOPIC": "一级议题"
+    },
+    "structure": {
+      "label": "结构操作",
+      "noParentOptions": "没有可用的新父节点",
+      "parent": "新父节点",
+      "parentPlaceholder": "选择新的父节点"
+    },
+    "workspaceLabel": "会议讨论画布",
+    "quickNote": {
+      "title": "随手记",
+      "hint": "按 Enter 立即保存到本机",
+      "inputLabel": "随手记输入",
+      "placeholder": "记下刚才说了什么……",
+      "rootFallback": "当前没有议题，已保存到会议目标下。"
+    },
+    "expansion": {
+      "groupLabel": "为“{node}”提供 AI 建议",
+      "cancel": "取消",
+      "retry": "重试",
+      "loading": "正在生成建议",
+      "saved": "建议已保存到本机",
+      "errors": {
+        "stale": "会议已有变化，未添加内容，请重试。",
+        "storage": "无法保存到本机。",
+        "notConfigured": "连接模型后才能使用 AI 建议。",
+        "reconfigure": "重新连接模型后再试。",
+        "rateLimited": "模型正在限流，请稍后再试。",
+        "invalidOutput": "模型返回的建议不可用，请重试。",
+        "unavailable": "AI 建议暂不可用，本机会议仍安全。"
+      }
+    }
+  },
+  "facilitation": {
+    "title": "主持人小抄",
+    "opening": "开场",
+    "activeTopic": "本议题启动问题",
+    "transition": "转场提示",
+    "closing": "散会前",
+    "empty": "暂未添加。",
+    "advisory": "AI 建议仅供参考。由你决定说什么、保留什么。"
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": { "label": "补一个选项", "description": "寻找不同的备选方案。" },
+    "DECISION_SURFACE_RISK": { "label": "查风险", "description": "暴露假设和失败条件。" },
+    "DECISION_DRIVE_CHOICE": { "label": "逼近选择", "description": "厘清取舍和决策问题。" },
+    "BRAINSTORM_GO_WILDER": { "label": "再野一点", "description": "跳出显而易见的方向。" },
+    "BRAINSTORM_CHANGE_LENS": { "label": "换个视角", "description": "尝试另一类对象或限制。" },
+    "BRAINSTORM_CONVERGE": { "label": "收敛", "description": "找差异和筛选问题。" },
+    "RETRO_FIND_CAUSE": { "label": "追根因", "description": "追问机制和条件。" },
+    "RETRO_FIND_COUNTEREXAMPLE": { "label": "找反例", "description": "挑战当前叙事。" },
+    "RETRO_TURN_INTO_ACTION": { "label": "转成行动", "description": "拟定具体下一步。" },
+    "GENERAL_DIVERGE": { "label": "打开方向", "description": "增加不同路径。" },
+    "GENERAL_DECOMPOSE": { "label": "往下拆", "description": "拆成可讨论的问题。" },
+    "GENERAL_CHALLENGE": { "label": "反方挑战", "description": "检验假设和反例。" }
+  },
+  "meeting": {
+    "actions": {
+      "backToCheck": "返回散会检查",
+      "cancel": "取消",
+      "confirmEnd": "确认并结束会议",
+      "continueToConfirm": "继续确认",
+      "end": "结束会议",
+      "returnToLive": "返回正在进行的会议",
+      "returnToMeeting": "返回整理",
+      "reviewAndEndLive": "检查并结束进行中的会议",
+      "start": "开始会议"
+    },
+    "end": {
+      "actionGaps": "行动项缺少负责人：{ownerCount} 项；缺少截止日期：{dueDateCount} 项。",
+      "actualAttendees": "实际参会人数",
+      "attendeeHelp": "结束前可修正这份人数快照；总人时和产出形成成本会统一重算。",
+      "confirmDescription": "结束后将冻结实际结束时间，这场会议不能再回到进行中。",
+      "confirmTitle": "确认结束会议",
+      "confirmZeroOutcomes": "这场会还没有正式产出，但仍可结束；全部人时会保留为未归属人时。",
+      "description": "先核对会议事实。完成最后一次确认前，不会写入结束时间。",
+      "elapsed": "实际时长",
+      "outcomeBreakdown": "会议产出分类",
+      "outcomeCount": "正式产出",
+      "overtime": "超时",
+      "parkingLot": "停车场问题",
+      "personHours": "累计人时",
+      "title": "准备散会？",
+      "unresolved": "Brief 未决项",
+      "zeroOutcomeWarning": "这场会还没有留下正式产出。"
+    },
+    "errors": {
+      "activeMeetingExists": "已有另一场会议正在进行。请返回或明确结束上一场，再开始这场会议。",
+      "generic": "本机会议更新失败。请重新加载会议后再试。",
+      "invalidAttendeeCount": "实际参会人数必须是至少 1 的整数。",
+      "invalidMeetingState": "当前会议状态已不允许执行这个操作。",
+      "invalidTimeRange": "会议时间无效。请重新加载最新会议状态后再试。",
+      "outcomeAlreadyExists": "这个节点已经是会议产出。请先编辑或取消已有标记。",
+      "staleWrite": "会议已在另一个标签页更新。请重新加载最新版本后继续。"
+    },
+    "live": {
+      "attendeeValue": "{count} 人",
+      "attendees": "实际人数",
+      "elapsed": "已进行",
+      "inProgress": "进行中",
+      "minuteValue": "{value} 分钟",
+      "overtime": "已超时",
+      "overrun": "进行中 · 已超时",
+      "personHours": "累计人时",
+      "personHourValue": "{value} 人时",
+      "status": "会议状态",
+      "summaryLabel": "会中状态栏"
+    },
+    "start": {
+      "actualAttendees": "实际参会人数",
+      "actualAttendeesHelp": "这会成为整场会议唯一的人数快照；结束前仍可修正。",
+      "conflictDescription": "同一浏览器只允许一场会议进行中，Convergene 不会静默结束上一场。",
+      "conflictTitle": "已有会议正在进行",
+      "description": "确认真正到场的人数。开始后会记录实际开始时间，并聚焦第一个议题。",
+      "expectedAttendees": "预计参会人数",
+      "schedule": "计划时间",
+      "scheduleValue": "{start} – {end}",
+      "title": "开始这场会议？"
+    }
+  },
+  "outcome": {
+    "actionHelp": "负责人和截止日期均可留空，Convergene 不会代填。",
+    "actions": {
+      "cancel": "取消",
+      "confirmUnmark": "取消标记",
+      "editMetadata": "编辑行动信息",
+      "mark": "收进会议产出",
+      "saveMetadata": "保存行动信息",
+      "unmark": "移出会议产出"
+    },
+    "feedback": {
+      "marked": "已将节点收进会议产出。",
+      "unmarked": "已取消产出标记，并重新计算形成成本。",
+      "updated": "行动信息已保存。"
+    },
+    "fields": {
+      "dueDate": "截止日期（可选）",
+      "kind": "产出类型",
+      "owner": "负责人（可选）",
+      "ownerPlaceholder": "姓名或角色"
+    },
+    "kinds": {
+      "ACTION": "行动项",
+      "CANDIDATE_IDEA": "候选创意",
+      "DECISION": "决策",
+      "INSIGHT": "洞察"
+    },
+    "markHelp": "只有用户明确确认才会创建产出；AI 建议始终只是建议。",
+    "savedDescription": "这个节点已成为正式会议产出。",
+    "title": "会议产出",
+    "unmark": {
+      "content": "取消会中产出会影响后续产出的形成成本，Convergene 会用确定性规则重新计算。",
+      "title": "取消这项会议产出？"
+    },
+    "values": {
+      "notSet": "未填写"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",
@@ -512,5 +866,144 @@
       "keyTooLong": "API Key 过长。",
       "keyWhitespace": "API Key 不能包含空格或换行。"
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "复制 Markdown",
+      "download": "下载 .md",
+      "generate": "生成报告",
+      "preview": "查看报告",
+      "regenerate": "重新生成",
+      "source": "查看源码"
+    },
+    "description": "报告根据当前浏览器里的会议事实组装。模型润色可以失败，成本和图表始终由程序确定。",
+    "document": {
+      "chartData": "图表数据",
+      "charts": {
+        "allocation": "人时分配",
+        "formation": "产出形成人时",
+        "from": "从",
+        "minute": "分钟",
+        "narrative": "会议脉络",
+        "outcome": "产出",
+        "personMinutes": "人分钟",
+        "start": "开始",
+        "timeline": "产出时间线",
+        "to": "到",
+        "unallocated": "未归属"
+      },
+      "empty": {
+        "modeFact": "没有记录对应事实。",
+        "nextSteps": "没有记录行动项产出。",
+        "outcomes": "本次会议未标记正式产出。",
+        "parkingLot": "没有记录停车场问题。",
+        "unknowns": "没有记录 Brief 未决项。"
+      },
+      "estimatedFormationEffort": "产出形成成本估算（人时）",
+      "factDraftSummary": {
+        "one": "这场{mode}会议记录了 {count} 项正式产出。",
+        "other": "这场{mode}会议记录了 {count} 项正式产出。"
+      },
+      "headings": {
+        "diagrams": "图表",
+        "executiveSummary": "摘要",
+        "meetingFacts": "会议事实",
+        "modeDetails": "剧本专属内容",
+        "nextSteps": "下一步",
+        "outcomes": "会议产出",
+        "parkingLot": "停车场",
+        "unresolved": "仍待解决"
+      },
+      "labels": {
+        "actualTime": "实际时间",
+        "attendees": "实际参会人数",
+        "dueDate": "截止日期",
+        "kind": "类型",
+        "mode": "会议剧本",
+        "note": "备注",
+        "objective": "会议目标",
+        "origin": "来源",
+        "overtime": "超时（分钟）",
+        "owner": "负责人",
+        "plannedTime": "计划时间",
+        "reportLocale": "报告语言",
+        "timezone": "时区",
+        "title": "产出",
+        "totalPersonHours": "累计人时",
+        "unallocatedPersonHours": "未归属人时"
+      },
+      "modeFacts": {
+        "brainstorm_assumptions": "待验证假设",
+        "brainstorm_candidates": "入选候选",
+        "brainstorm_groups": "创意分组",
+        "decision_outcomes": "已记录决策",
+        "decision_rationale": "选择依据",
+        "decision_rejected_options": "放弃方案",
+        "decision_risks": "风险",
+        "retro_actions": "改进行动",
+        "retro_causes": "原因链",
+        "retro_differences": "预期与实际差异",
+        "retro_insights": "经验与洞察"
+      },
+      "modes": {
+        "BRAINSTORM": "脑暴共创",
+        "DECISION": "决策对齐",
+        "GENERAL": "通用讨论",
+        "RETRO": "复盘改进"
+      },
+      "noFormalOutcomesSummary": "本次会议未标记正式产出。",
+      "notSet": "未填写",
+      "origin": {
+        "live": "会中记录",
+        "postMeeting": "会后补记"
+      },
+      "outcomeKinds": {
+        "ACTION": "行动项",
+        "CANDIDATE_IDEA": "候选创意",
+        "DECISION": "决策",
+        "INSIGHT": "洞察"
+      },
+      "reportTitle": "会议报告"
+    },
+    "empty": {
+      "description": "先生成一份本地事实稿；即使模型润色失败，同一份报告仍可使用。",
+      "title": "尚未生成报告"
+    },
+    "errors": {
+      "copyFailed": "无法复制 Markdown。请打开源码后手动复制。",
+      "downloadFailed": "无法下载 Markdown 文件。请打开源码后手动保存。",
+      "generationFailed": "新报告未能保存，上一版报告仍可使用。",
+      "generationFailedEmpty": "报告未能保存，会议事实没有变化；请再次生成。",
+      "invalidMeeting": "会议结束后才能生成报告。",
+      "mermaidFailed": "这张图未能渲染；源码和同一数据表仍可使用。"
+    },
+    "feedback": {
+      "copied": "已复制 Markdown。",
+      "factDraft": "模型润色不可用，已保存确定性事实稿。",
+      "saved": "新报告已保存在本机。"
+    },
+    "labels": {
+      "diagram": "会议报告图表",
+      "language": "报告语言",
+      "outcomes": "正式产出",
+      "overtime": "超时",
+      "personHours": "累计人时",
+      "reportView": "报告视图",
+      "reportSummary": "报告摘要",
+      "scrollTable": "可横向滚动的报告数据表",
+      "source": "Markdown 源码"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "正在生成新报告",
+      "localOnly": "仅保存在这台浏览器",
+      "renderingDiagram": "正在渲染报告图表",
+      "stale": "报告生成后会议事实有更新，请重新生成。"
+    },
+    "title": "会议报告"
   }
 }

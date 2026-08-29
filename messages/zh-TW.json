@@ -410,6 +410,360 @@
     },
     "summaryTitle": "已確認的會議設定"
   },
+  "preparation": {
+    "actions": {
+      "back": "返回會議列表",
+      "confirmGenerate": "確認、鎖定並產生心智圖",
+      "continueGrill": "繼續拷問我 · {current} / {limit}",
+      "finish": "結束拷問",
+      "generateBrief": "產生 Brief",
+      "openCanvas": "開啟會議畫布",
+      "restart": "重新準備",
+      "retry": "重試",
+      "retryMap": "重試產生心智圖",
+      "returnGrill": "繼續補問",
+      "saveDraft": "儲存修改",
+      "skip": "跳過",
+      "submit": "提交回答",
+      "unknown": "不知道"
+    },
+    "brief": {
+      "editDescription": "鎖定前可以修改這份結構化 Brief。",
+      "editable": "可編輯草稿",
+      "eyebrow": "會前準備快照",
+      "fields": {
+        "assumptions": "合理假設 · 每行一項",
+        "confirmed": "已確認 · 每行一項",
+        "desiredOutcome": "期望產出",
+        "objective": "會議目標",
+        "openingLine": "建議開場白",
+        "unknowns": "仍待確認 · 每行一項"
+      },
+      "lockWarning": "按下確認會立即鎖定目前 Brief。即使心智圖產生失敗，它也不會解鎖；重試仍使用同一份快照。",
+      "locked": "已鎖定快照",
+      "lockedDescription": "這份 Brief 已鎖定；產生或重試心智圖時會一直保留在頁面上。",
+      "title": "會議 Brief"
+    },
+    "dimensions": {
+      "challenge": "核心挑戰",
+      "constraints": "限制條件",
+      "creative_constraints": "創意邊界",
+      "criteria": "判斷標準",
+      "decision_deadline": "決策期限",
+      "decision_owner": "拍板人",
+      "desired_improvement": "期望改善",
+      "desired_outcome": "期望產出",
+      "expected_vs_actual": "預期與實際",
+      "facts": "共同事實",
+      "inputs": "所需資料",
+      "minimum_outcome": "最低可接受結果",
+      "objective": "會議目標",
+      "options": "可行選項",
+      "participants_and_authority": "參與角色與權限",
+      "scope": "復盤範圍",
+      "selection_method": "篩選方式",
+      "target_audience": "目標對象"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "這份 Brief 已經鎖定。",
+      "INPUT_INVALID": "部分會議資訊無效，請檢查後重試。",
+      "INVALID_BRIEF": "請補全會議目標、期望產出和開場白。",
+      "INVALID_GRILL_TURN": "已儲存的拷問輪次不連續，請重新整理後重試。",
+      "INVALID_MEETING_STATE": "會議狀態已被其他操作改變，請重新整理後重試。",
+      "INVALID_STORED_DATA": "無法從本機儲存安全恢復這場會議。",
+      "OUTPUT_INVALID": "模型回傳未通過驗證；已儲存內容沒有變化。",
+      "OUTPUT_LANGUAGE_MISMATCH": "模型使用了錯誤語言，請重試。",
+      "ORIGIN_INVALID": "無法驗證這次請求，請重新整理 Convergene 後重試。",
+      "PROVIDER_AUTH_FAILED": "模型 Key 被拒絕，請重新連接供應商。",
+      "PROVIDER_CONFIG_INVALID": "已儲存的模型設定需要重新填寫。",
+      "PROVIDER_CONFIG_UNAVAILABLE": "模型設定暫時無法使用，本機會議資料仍然安全。",
+      "PROVIDER_MODEL_NOT_FOUND": "目前帳號無法使用已設定模型。",
+      "PROVIDER_NOT_CONFIGURED": "請先連接模型供應商。",
+      "PROVIDER_RATE_LIMITED": "供應商正在限流，請稍後重試。",
+      "PROVIDER_UNAVAILABLE": "暫時無法連接供應商；已儲存內容沒有變化。",
+      "RATE_LIMITED": "準備請求過多，請稍後重試。",
+      "REQUEST_CANCELLED": "請求已取消；已儲存內容沒有變化。",
+      "STALE_WRITE": "另一個分頁更新了會議，本機最新版本仍然安全。",
+      "UNKNOWN": "發生錯誤；已儲存內容沒有變化。",
+      "title": "準備流程已暫停"
+    },
+    "grill": {
+      "answerLabel": "你的回答",
+      "answerPlaceholder": "盡量具體，也可以使用下方的快速操作。",
+      "critical": "臨門一問",
+      "defaultComplete": "預設拷問已完成",
+      "defaultCompleteDescription": "現在可以產生 Brief，也可以再主動增加一輪；總輪次不會超過 10。",
+      "dispositions": {
+        "ANSWERED": "已回答",
+        "SKIPPED": "已跳過",
+        "UNKNOWN": "不知道"
+      },
+      "history": "過往回答（{count}）",
+      "nextQuestion": "正在準備下一問…",
+      "resumeDescription": "既有回答都已儲存；模型連線可用後即可繼續。",
+      "resumeTitle": "可以繼續下一問",
+      "round": "第 {current} 輪 · 最多 10 輪",
+      "why": "為什麼問：{reason}"
+    },
+    "loading": "正在恢復本機會前準備…",
+    "localOnly": "本機儲存",
+    "map": {
+      "description": "包含 {count} 個節點的合法初始圖已儲存在本機，可以開始會議。",
+      "ready": "心智圖已就緒",
+      "title": "會前準備完成"
+    },
+    "metadata": {
+      "description": "把會議問清楚、鎖定 Brief，並產生受控初始心智圖。",
+      "title": "準備會議 · Convergene"
+    },
+    "modeSelection": {
+      "action": "返回會議建立",
+      "description": "開始拷問前，請先確認 AI 建議或手動選擇的會議劇本。",
+      "title": "請先選擇會議劇本"
+    },
+    "modes": {
+      "BRAINSTORM": "腦暴共創",
+      "DECISION": "決策對齊",
+      "GENERAL": "通用討論",
+      "RETRO": "復盤改善"
+    },
+    "notFound": "找不到這場本機會議。",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "勉強能開",
+        "INSUFFICIENT": "資訊不足",
+        "READY": "可以開了"
+      },
+      "prioritySelected": "下一次請求會優先追問這個缺口。",
+      "statuses": {
+        "MISSING": "缺少",
+        "PARTIAL": "部分具備",
+        "READY": "已具備"
+      },
+      "title": "開會準備度"
+    },
+    "rollback": {
+      "continueConfirm": "繼續補問？會議劇本和既有回答會保留，Brief 和心智圖會清空。",
+      "restartConfirm": "回到劇本選擇重新準備？只保留老闆原話，劇本、拷問、Brief 和心智圖都會清空。"
+    },
+    "working": "正在儲存準備內容…"
+  },
+  "mindMap": {
+    "actions": {
+      "addChild": "新增子節點",
+      "addNode": "新增節點",
+      "cancel": "取消",
+      "confirmDelete": "確認刪除",
+      "deleteBranch": "刪除這條分支",
+      "fitAll": "一覽全圖",
+      "moveNode": "移動節點",
+      "nextTopic": "下一議題",
+      "previousTopic": "上一議題",
+      "refocus": "重新聚焦目前議題",
+      "relayout": "整理版面",
+      "saveNode": "儲存節點"
+    },
+    "activeTopic": {
+      "label": "目前議題",
+      "navigationLabel": "議題導覽",
+      "none": "尚未開始議題",
+      "position": "議題 {current} / {total}"
+    },
+    "add": {
+      "kind": "節點類型",
+      "title": "新增子節點",
+      "topicPrompt": "議題開場問題",
+      "transitionHint": "轉場提示"
+    },
+    "delete": {
+      "content": "這會從目前瀏覽器永久刪除此分支的 {count} 個節點，以及掛在這些節點上的會議結果。",
+      "title": "刪除這條分支？"
+    },
+    "detail": {
+      "empty": "選取一個節點，查看並編輯詳細內容。",
+      "label": "節點詳情",
+      "note": "補充說明",
+      "title": "節點標題"
+    },
+    "errors": {
+      "invalidOperation": "此操作會破壞會議樹，因此未作任何變更。",
+      "stale": "會議已在其他分頁更新，請再試一次。",
+      "storage": "無法讀寫本機會議資料，請檢查瀏覽器儲存權限。"
+    },
+    "feedback": { "saved": "已儲存到本機" },
+    "loading": "正在載入本機會議圖",
+    "mobile": {
+      "desktopAdvice": "完整畫布和結構編輯建議在電腦上使用；你仍可在這裡查看並切換議題。",
+      "treeTitle": "依議題查看"
+    },
+    "node": { "outcome": "會議結果" },
+    "nodeKinds": {
+      "ACTION": "行動",
+      "IDEA": "點子",
+      "INSIGHT": "洞察",
+      "NOTE": "記錄",
+      "OBJECTIVE": "會議目標",
+      "OPTION": "備選方案",
+      "PARKING": "待議區",
+      "RISK": "風險",
+      "TOPIC": "一級議題"
+    },
+    "structure": {
+      "label": "結構操作",
+      "noParentOptions": "沒有可用的新父節點",
+      "parent": "新父節點",
+      "parentPlaceholder": "選擇新的父節點"
+    },
+    "workspaceLabel": "會議討論畫布",
+    "quickNote": {
+      "title": "隨手記",
+      "hint": "按 Enter 立即儲存到本機",
+      "inputLabel": "隨手記輸入",
+      "placeholder": "記下剛才說了什麼……",
+      "rootFallback": "目前沒有議題，已儲存到會議目標下。"
+    },
+    "expansion": {
+      "groupLabel": "為「{node}」提供 AI 建議",
+      "cancel": "取消",
+      "retry": "重試",
+      "loading": "正在產生建議",
+      "saved": "建議已儲存到本機",
+      "errors": {
+        "stale": "會議已有變更，未新增內容，請重試。",
+        "storage": "無法儲存到本機。",
+        "notConfigured": "連接模型後才能使用 AI 建議。",
+        "reconfigure": "重新連接模型後再試。",
+        "rateLimited": "模型正在限制請求，請稍後再試。",
+        "invalidOutput": "模型回傳的建議不可用，請重試。",
+        "unavailable": "AI 建議暫時無法使用，本機會議仍安全。"
+      }
+    }
+  },
+  "facilitation": {
+    "title": "主持人小抄",
+    "opening": "開場",
+    "activeTopic": "本議題啟動問題",
+    "transition": "轉場提示",
+    "closing": "散會前",
+    "empty": "尚未新增。",
+    "advisory": "AI 建議僅供參考。由你決定說什麼、保留什麼。"
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": { "label": "補一個選項", "description": "尋找不同的備選方案。" },
+    "DECISION_SURFACE_RISK": { "label": "查風險", "description": "揭露假設和失敗條件。" },
+    "DECISION_DRIVE_CHOICE": { "label": "逼近選擇", "description": "釐清取捨和決策問題。" },
+    "BRAINSTORM_GO_WILDER": { "label": "再野一點", "description": "跳出顯而易見的方向。" },
+    "BRAINSTORM_CHANGE_LENS": { "label": "換個視角", "description": "嘗試另一類對象或限制。" },
+    "BRAINSTORM_CONVERGE": { "label": "收斂", "description": "找差異和篩選問題。" },
+    "RETRO_FIND_CAUSE": { "label": "追根因", "description": "追問機制和條件。" },
+    "RETRO_FIND_COUNTEREXAMPLE": { "label": "找反例", "description": "挑戰目前敘事。" },
+    "RETRO_TURN_INTO_ACTION": { "label": "轉成行動", "description": "擬定具體下一步。" },
+    "GENERAL_DIVERGE": { "label": "打開方向", "description": "增加不同路徑。" },
+    "GENERAL_DECOMPOSE": { "label": "往下拆", "description": "拆成可討論的問題。" },
+    "GENERAL_CHALLENGE": { "label": "反方挑戰", "description": "檢驗假設和反例。" }
+  },
+  "meeting": {
+    "actions": {
+      "backToCheck": "返回散會檢查",
+      "cancel": "取消",
+      "confirmEnd": "確認並結束會議",
+      "continueToConfirm": "繼續確認",
+      "end": "結束會議",
+      "returnToLive": "返回進行中的會議",
+      "returnToMeeting": "返回整理",
+      "reviewAndEndLive": "檢查並結束進行中的會議",
+      "start": "開始會議"
+    },
+    "end": {
+      "actionGaps": "行動項目缺少負責人：{ownerCount} 項；缺少截止日期：{dueDateCount} 項。",
+      "actualAttendees": "實際與會人數",
+      "attendeeHelp": "結束前可修正這份人數快照；總人時和產出形成成本會一併重算。",
+      "confirmDescription": "結束後將固定實際結束時間，這場會議不能再回到進行中。",
+      "confirmTitle": "確認結束會議",
+      "confirmZeroOutcomes": "這場會還沒有正式產出，但仍可結束；全部人時會保留為未歸屬人時。",
+      "description": "先核對會議事實。完成最後一次確認前，不會寫入結束時間。",
+      "elapsed": "實際時長",
+      "outcomeBreakdown": "會議產出分類",
+      "outcomeCount": "正式產出",
+      "overtime": "超時",
+      "parkingLot": "停車場問題",
+      "personHours": "累計人時",
+      "title": "準備散會？",
+      "unresolved": "Brief 未決項",
+      "zeroOutcomeWarning": "這場會還沒有留下正式產出。"
+    },
+    "errors": {
+      "activeMeetingExists": "已有另一場會議正在進行。請返回或明確結束上一場，再開始這場會議。",
+      "generic": "本機會議更新失敗。請重新載入會議後再試。",
+      "invalidAttendeeCount": "實際與會人數必須是至少 1 的整數。",
+      "invalidMeetingState": "目前會議狀態已不允許執行這個操作。",
+      "invalidTimeRange": "會議時間無效。請重新載入最新會議狀態後再試。",
+      "outcomeAlreadyExists": "這個節點已經是會議產出。請先編輯或取消現有標記。",
+      "staleWrite": "會議已在另一個分頁更新。請重新載入最新版本後繼續。"
+    },
+    "live": {
+      "attendeeValue": "{count} 人",
+      "attendees": "實際人數",
+      "elapsed": "已進行",
+      "inProgress": "進行中",
+      "minuteValue": "{value} 分鐘",
+      "overtime": "已超時",
+      "overrun": "進行中 · 已超時",
+      "personHours": "累計人時",
+      "personHourValue": "{value} 人時",
+      "status": "會議狀態",
+      "summaryLabel": "會中狀態列"
+    },
+    "start": {
+      "actualAttendees": "實際與會人數",
+      "actualAttendeesHelp": "這會成為整場會議唯一的人數快照；結束前仍可修正。",
+      "conflictDescription": "同一瀏覽器只允許一場會議進行中，Convergene 不會靜默結束上一場。",
+      "conflictTitle": "已有會議正在進行",
+      "description": "確認真正到場的人數。開始後會記錄實際開始時間，並聚焦第一個議題。",
+      "expectedAttendees": "預計與會人數",
+      "schedule": "計畫時間",
+      "scheduleValue": "{start} – {end}",
+      "title": "開始這場會議？"
+    }
+  },
+  "outcome": {
+    "actionHelp": "負責人和截止日期都可留空，Convergene 不會代填。",
+    "actions": {
+      "cancel": "取消",
+      "confirmUnmark": "取消標記",
+      "editMetadata": "編輯行動資訊",
+      "mark": "收進會議產出",
+      "saveMetadata": "儲存行動資訊",
+      "unmark": "移出會議產出"
+    },
+    "feedback": {
+      "marked": "已將節點收進會議產出。",
+      "unmarked": "已取消產出標記，並重新計算形成成本。",
+      "updated": "行動資訊已儲存。"
+    },
+    "fields": {
+      "dueDate": "截止日期（可選）",
+      "kind": "產出類型",
+      "owner": "負責人（可選）",
+      "ownerPlaceholder": "姓名或角色"
+    },
+    "kinds": {
+      "ACTION": "行動項目",
+      "CANDIDATE_IDEA": "候選點子",
+      "DECISION": "決策",
+      "INSIGHT": "洞察"
+    },
+    "markHelp": "只有使用者明確確認才會建立產出；AI 建議始終只是建議。",
+    "savedDescription": "這個節點已成為正式會議產出。",
+    "title": "會議產出",
+    "unmark": {
+      "content": "取消會中產出會影響後續產出的形成成本，Convergene 會用確定性規則重新計算。",
+      "title": "取消這項會議產出？"
+    },
+    "values": {
+      "notSet": "未填寫"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "取消",
@@ -512,5 +866,144 @@
       "keyTooLong": "API Key 太長。",
       "keyWhitespace": "API Key 不能包含空格或換行。"
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "複製 Markdown",
+      "download": "下載 .md",
+      "generate": "產生報告",
+      "preview": "查看報告",
+      "regenerate": "重新產生",
+      "source": "查看原始碼"
+    },
+    "description": "報告根據目前瀏覽器裡的會議事實組裝。模型潤飾可以失敗，成本和圖表始終由程式確定。",
+    "document": {
+      "chartData": "圖表資料",
+      "charts": {
+        "allocation": "人時分配",
+        "formation": "產出形成人時",
+        "from": "從",
+        "minute": "分鐘",
+        "narrative": "會議脈絡",
+        "outcome": "產出",
+        "personMinutes": "人分鐘",
+        "start": "開始",
+        "timeline": "產出時間軸",
+        "to": "到",
+        "unallocated": "未歸屬"
+      },
+      "empty": {
+        "modeFact": "沒有記錄對應事實。",
+        "nextSteps": "沒有記錄行動項目產出。",
+        "outcomes": "本次會議未標記正式產出。",
+        "parkingLot": "沒有記錄停車場問題。",
+        "unknowns": "沒有記錄 Brief 未決項目。"
+      },
+      "estimatedFormationEffort": "產出形成成本估算（人時）",
+      "factDraftSummary": {
+        "one": "這場{mode}會議記錄了 {count} 項正式產出。",
+        "other": "這場{mode}會議記錄了 {count} 項正式產出。"
+      },
+      "headings": {
+        "diagrams": "圖表",
+        "executiveSummary": "摘要",
+        "meetingFacts": "會議事實",
+        "modeDetails": "劇本專屬內容",
+        "nextSteps": "下一步",
+        "outcomes": "會議產出",
+        "parkingLot": "停車場",
+        "unresolved": "仍待解決"
+      },
+      "labels": {
+        "actualTime": "實際時間",
+        "attendees": "實際與會人數",
+        "dueDate": "截止日期",
+        "kind": "類型",
+        "mode": "會議劇本",
+        "note": "備註",
+        "objective": "會議目標",
+        "origin": "來源",
+        "overtime": "超時（分鐘）",
+        "owner": "負責人",
+        "plannedTime": "計畫時間",
+        "reportLocale": "報告語言",
+        "timezone": "時區",
+        "title": "產出",
+        "totalPersonHours": "累計人時",
+        "unallocatedPersonHours": "未歸屬人時"
+      },
+      "modeFacts": {
+        "brainstorm_assumptions": "待驗證假設",
+        "brainstorm_candidates": "入選候選",
+        "brainstorm_groups": "點子分組",
+        "decision_outcomes": "已記錄決策",
+        "decision_rationale": "選擇依據",
+        "decision_rejected_options": "放棄方案",
+        "decision_risks": "風險",
+        "retro_actions": "改進行動",
+        "retro_causes": "原因鏈",
+        "retro_differences": "預期與實際差異",
+        "retro_insights": "經驗與洞察"
+      },
+      "modes": {
+        "BRAINSTORM": "腦力激盪",
+        "DECISION": "決策對齊",
+        "GENERAL": "一般討論",
+        "RETRO": "回顧改進"
+      },
+      "noFormalOutcomesSummary": "本次會議未標記正式產出。",
+      "notSet": "未填寫",
+      "origin": {
+        "live": "會中記錄",
+        "postMeeting": "會後補記"
+      },
+      "outcomeKinds": {
+        "ACTION": "行動項目",
+        "CANDIDATE_IDEA": "候選點子",
+        "DECISION": "決策",
+        "INSIGHT": "洞察"
+      },
+      "reportTitle": "會議報告"
+    },
+    "empty": {
+      "description": "先產生一份本機事實稿；即使模型潤飾失敗，同一份報告仍可使用。",
+      "title": "尚未產生報告"
+    },
+    "errors": {
+      "copyFailed": "無法複製 Markdown。請開啟原始碼後手動複製。",
+      "downloadFailed": "無法下載 Markdown 檔案。請開啟原始碼後手動儲存。",
+      "generationFailed": "新報告未能儲存，上一版報告仍可使用。",
+      "generationFailedEmpty": "報告未能儲存，會議事實沒有變更；請再次產生。",
+      "invalidMeeting": "會議結束後才能產生報告。",
+      "mermaidFailed": "這張圖未能渲染；原始碼和同一資料表仍可使用。"
+    },
+    "feedback": {
+      "copied": "已複製 Markdown。",
+      "factDraft": "模型潤飾不可用，已儲存確定性事實稿。",
+      "saved": "新報告已儲存在本機。"
+    },
+    "labels": {
+      "diagram": "會議報告圖表",
+      "language": "報告語言",
+      "outcomes": "正式產出",
+      "overtime": "超時",
+      "personHours": "累計人時",
+      "reportView": "報告檢視",
+      "reportSummary": "報告摘要",
+      "scrollTable": "可水平捲動的報告資料表",
+      "source": "Markdown 原始碼"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "正在產生新報告",
+      "localOnly": "僅儲存在這個瀏覽器",
+      "renderingDiagram": "正在呈現報告圖表",
+      "stale": "報告產生後會議事實有更新，請重新產生。"
+    },
+    "title": "會議報告"
   }
 }

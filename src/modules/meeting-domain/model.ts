@@ -91,15 +91,27 @@ export interface Meeting {
 
 export type GrillTurnDisposition = 'ANSWERED' | 'UNKNOWN' | 'SKIPPED';
 
+export type GrillPhase = 'DEFAULT' | 'CRITICAL_EXTRA' | 'USER_EXTENDED';
+
+export interface GrillKnownState {
+  assumptions: string[];
+  confirmed: string[];
+  unknowns: string[];
+}
+
 export interface GrillTurn {
-  id: string;
-  meetingId: string;
-  index: number;
-  question: string;
-  reason?: string;
   answer?: string;
-  disposition: GrillTurnDisposition;
+  criticalExtraReason?: string;
   createdAt: string;
+  disposition: GrillTurnDisposition | 'PENDING';
+  id: string;
+  index: number;
+  knownState: GrillKnownState;
+  meetingId: string;
+  phase: GrillPhase;
+  question: string;
+  readiness: MeetingBriefContent['readiness'];
+  reason?: string;
 }
 
 export interface MeetingOutcome {

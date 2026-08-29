@@ -10,6 +10,9 @@ import {
   restartPreparation,
   resumeGrill,
   startMeeting,
+  updateBriefDraft as updateMeetingBriefDraft,
+  validateGrillHistory,
+  validateGrillTurn,
   validateMeeting,
 } from '@/modules/meeting-domain';
 import type {
@@ -25,6 +28,8 @@ import type {
 } from '@/modules/meeting-domain';
 import {
   applyExpansion,
+  deleteSubtree,
+  insertNode,
   orderedTopicIds,
   reparentNode,
   validateInitialMap,
@@ -35,6 +40,7 @@ import type {
   GraphErrorCode,
   MeetingGraph,
   MindMapNode,
+  NodeKind,
 } from '@/modules/mind-map-domain';
 
 import { exportSchemaVersion, type MeetingDatabase } from './database';
@@ -67,6 +73,37 @@ export interface MeetingSetupPatch {
 export interface NodeTextPatch {
   note?: string;
   title: string;
+}
+
+export interface NodePositionPatch {
+  nodeId: string;
+  position: { x: number; y: number };
+}
+
+export interface ManualNodeInput {
+  edgeId: string;
+  id: string;
+  kind: NodeKind;
+  note?: string;
+  parentNodeId: string;
+  position: { x: number; y: number };
+  title: string;
+  topicPrompt?: string;
+  transitionHint?: string;
+}
+
+export interface QuickNoteInput {
+  edgeId: string;
+  id: string;
+  parentNodeId: string;
+  position: { x: number; y: number };
+  title: string;
+}
+
+export interface DeleteSubtreeWrite {
+  deletedNodeIds: string[];
+  graph: MeetingGraph;
+  meeting: Meeting;
 }
 
 export interface OutcomeMetadataPatch {
@@ -181,6 +218,14 @@ function validLiveOutcomeEnd(outcomes: readonly MeetingOutcome[], endedAt: Date)
         isCanonicalUtcTimestamp(outcome.markedAt) &&
         Date.parse(outcome.markedAt) <= endedAt.getTime(),
     );
+}
+
+function graphFromRecords(
+  meetingId: string,
+  nodes: MindMapNode[],
+  edges: MeetingGraph['edges'],
+): MeetingGraph {
+  return { edges, meetingId, nodes };
 }
 
 export class MeetingRepository {
@@ -306,6 +351,33 @@ export class MeetingRepository {
     });
   }
 
+  async updateBriefDraft(
+    meetingId: string,
+    brief: MeetingBriefDraft,
+    expectedUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<Meeting, MeetingRepositoryErrorCode>> {
+    const briefSnapshot = deepSnapshot(brief);
+    if (briefSnapshot === undefined) return failure('INVALID_BRIEF');
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction('rw', this.database.meetings, async () => {
+      const current = await this.database.meetings.get(meetingId);
+      if (current === undefined) return failure('MEETING_NOT_FOUND');
+      const revision = validNextRevision(current, expectedUpdatedAt, nowSnapshot);
+      if (!revision.ok) return revision;
+      const updatedBrief = updateMeetingBriefDraft(
+        current,
+        briefSnapshot,
+        new Date(revision.value),
+      );
+      if (!updatedBrief.ok) return updatedBrief;
+      const value = validProjectedMeeting(updatedBrief.value);
+      if (value === undefined) return failure('INVALID_MEETING');
+      await this.database.meetings.put(value);
+      return { ok: true, value };
+    });
+  }
+
   async savePreparationTransition(
     meeting: Meeting,
     expectedUpdatedAt: string,
@@ -349,6 +421,13 @@ export class MeetingRepository {
           snapshot.brief !== undefined &&
           snapshot.brief.confirmedAt === undefined
         ) {
+          const turns = await this.database.grillTurns
+            .where('meetingId')
+            .equals(snapshot.id)
+            .sortBy('index');
+          if (turns.some(({ disposition }) => disposition === 'PENDING')) {
+            return failure('INVALID_MEETING_STATE');
+          }
           expected = completeGrill(current, snapshot.brief as MeetingBriefDraft, transitionTime);
         } else if (transition === 'BRIEF_READY->GRILLING' || transition === 'MAP_READY->GRILLING') {
           expected = resumeGrill(current, transitionTime);
@@ -606,6 +685,257 @@ export class MeetingRepository {
         await this.database.edges.bulkAdd(snapshot.edges);
         await this.database.meetings.put(meetingValue);
         return { ok: true, value: snapshot };
+      },
+    );
+  }
+
+  async insertNode(
+    meetingId: string,
+    input: ManualNodeInput,
+    expectedMeetingUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<MeetingGraph, MeetingRepositoryErrorCode>> {
+    const inputSnapshot = deepSnapshot(input);
+    if (inputSnapshot === undefined) return failure('INVALID_INSERT');
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.nodes, this.database.edges],
+      async () => {
+        const meeting = await this.database.meetings.get(meetingId);
+        if (meeting === undefined) return failure('MEETING_NOT_FOUND');
+        if (meeting.preparationStage !== 'MAP_READY' || meeting.status === 'ENDED') {
+          return failure('INVALID_MEETING_STATE');
+        }
+        const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
+        if (!revision.ok) return revision;
+        const graph = graphFromRecords(
+          meetingId,
+          await this.database.nodes.where('meetingId').equals(meetingId).toArray(),
+          await this.database.edges.where('meetingId').equals(meetingId).toArray(),
+        );
+        const node = safeProject(
+          {
+            createdAt: revision.value,
+            id: inputSnapshot.id,
+            kind: inputSnapshot.kind,
+            meetingId,
+            note: inputSnapshot.note,
+            position: inputSnapshot.position,
+            source: 'USER' as const,
+            title: inputSnapshot.title,
+            topicPrompt: inputSnapshot.topicPrompt,
+            transitionHint: inputSnapshot.transitionHint,
+            updatedAt: revision.value,
+          },
+          projectNode,
+        );
+        if (node === undefined) return failure('INVALID_INSERT');
+        const inserted = insertNode(graph, inputSnapshot.parentNodeId, node, inputSnapshot.edgeId);
+        if (!inserted.ok) return graphError(inserted);
+        const insertedEdge = inserted.value.edges.find((edge) => edge.id === inputSnapshot.edgeId);
+        if (insertedEdge === undefined) return failure('INVALID_INSERT');
+        const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
+        if (meetingValue === undefined) return failure('INVALID_MEETING');
+
+        await this.database.nodes.add(projectNode(node));
+        await this.database.edges.add(projectEdge(insertedEdge));
+        await this.database.meetings.put(meetingValue);
+        return inserted;
+      },
+    );
+  }
+
+  async insertQuickNote(
+    meetingId: string,
+    input: QuickNoteInput,
+    expectedMeetingUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<MeetingGraph, MeetingRepositoryErrorCode>> {
+    const inputSnapshot = deepSnapshot(input);
+    if (inputSnapshot === undefined) return failure('INVALID_INSERT');
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.nodes, this.database.edges],
+      async () => {
+        const meeting = await this.database.meetings.get(meetingId);
+        if (meeting === undefined) return failure('MEETING_NOT_FOUND');
+        if (meeting.preparationStage !== 'MAP_READY' || meeting.status === 'ENDED') {
+          return failure('INVALID_MEETING_STATE');
+        }
+        const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
+        if (!revision.ok) return revision;
+        const graph = graphFromRecords(
+          meetingId,
+          await this.database.nodes.where('meetingId').equals(meetingId).toArray(),
+          await this.database.edges.where('meetingId').equals(meetingId).toArray(),
+        );
+        const node = safeProject(
+          {
+            createdAt: revision.value,
+            id: inputSnapshot.id,
+            kind: 'NOTE' as const,
+            meetingId,
+            position: inputSnapshot.position,
+            source: 'QUICK_NOTE' as const,
+            title: inputSnapshot.title,
+            updatedAt: revision.value,
+          },
+          projectNode,
+        );
+        if (node === undefined) return failure('INVALID_INSERT');
+        const inserted = insertNode(graph, inputSnapshot.parentNodeId, node, inputSnapshot.edgeId);
+        if (!inserted.ok) return graphError(inserted);
+        const insertedEdge = inserted.value.edges.find((edge) => edge.id === inputSnapshot.edgeId);
+        if (insertedEdge === undefined) return failure('INVALID_INSERT');
+        const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
+        if (meetingValue === undefined) return failure('INVALID_MEETING');
+
+        await this.database.nodes.add(projectNode(node));
+        await this.database.edges.add(projectEdge(insertedEdge));
+        await this.database.meetings.put(meetingValue);
+        return inserted;
+      },
+    );
+  }
+
+  async updateNodePositions(
+    meetingId: string,
+    patches: readonly NodePositionPatch[],
+    expectedMeetingUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<MeetingGraph, MeetingRepositoryErrorCode>> {
+    const patchSnapshot = deepSnapshot([...patches]);
+    if (
+      patchSnapshot === undefined ||
+      patchSnapshot.length === 0 ||
+      new Set(patchSnapshot.map(({ nodeId }) => nodeId)).size !== patchSnapshot.length ||
+      patchSnapshot.some(
+        ({ nodeId, position }) =>
+          nodeId.trim() === '' ||
+          position === null ||
+          typeof position !== 'object' ||
+          !Number.isFinite(position.x) ||
+          !Number.isFinite(position.y),
+      )
+    ) {
+      return failure('INVALID_POSITION');
+    }
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.nodes, this.database.edges],
+      async () => {
+        const meeting = await this.database.meetings.get(meetingId);
+        if (meeting === undefined) return failure('MEETING_NOT_FOUND');
+        if (meeting.preparationStage !== 'MAP_READY' || meeting.status === 'ENDED') {
+          return failure('INVALID_MEETING_STATE');
+        }
+        const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
+        if (!revision.ok) return revision;
+        const [nodes, edges] = await Promise.all([
+          this.database.nodes.where('meetingId').equals(meetingId).toArray(),
+          this.database.edges.where('meetingId').equals(meetingId).toArray(),
+        ]);
+        const positions = new Map(patchSnapshot.map((patch) => [patch.nodeId, patch.position]));
+        if ([...positions.keys()].some((nodeId) => !nodes.some((node) => node.id === nodeId))) {
+          return failure('NODE_NOT_FOUND');
+        }
+        const updatedNodes = nodes.map((node) => {
+          const position = positions.get(node.id);
+          return position === undefined
+            ? node
+            : projectNode({
+                ...node,
+                position: { ...position },
+                updatedAt: revision.value,
+              });
+        });
+        const graph = graphFromRecords(meetingId, updatedNodes, edges);
+        const validation = validateTree(graph);
+        if (!validation.ok) return graphError(validation);
+        const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
+        if (meetingValue === undefined) return failure('INVALID_MEETING');
+
+        await this.database.nodes.bulkPut(
+          updatedNodes.filter((node) => positions.has(node.id)).map(projectNode),
+        );
+        await this.database.meetings.put(meetingValue);
+        return { ok: true, value: graph };
+      },
+    );
+  }
+
+  async deleteNodeSubtree(
+    meetingId: string,
+    nodeId: string,
+    expectedMeetingUpdatedAt: string,
+    now: Date,
+  ): Promise<Result<DeleteSubtreeWrite, MeetingRepositoryErrorCode>> {
+    const nowSnapshot = new Date(now.getTime());
+    return this.database.transaction(
+      'rw',
+      [this.database.meetings, this.database.nodes, this.database.edges, this.database.outcomes],
+      async () => {
+        const meeting = await this.database.meetings.get(meetingId);
+        if (meeting === undefined) return failure('MEETING_NOT_FOUND');
+        if (meeting.preparationStage !== 'MAP_READY' || meeting.status === 'ENDED') {
+          return failure('INVALID_MEETING_STATE');
+        }
+        const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
+        if (!revision.ok) return revision;
+        const graph = graphFromRecords(
+          meetingId,
+          await this.database.nodes.where('meetingId').equals(meetingId).toArray(),
+          await this.database.edges.where('meetingId').equals(meetingId).toArray(),
+        );
+        const deleted = deleteSubtree(graph, nodeId);
+        if (!deleted.ok) return graphError(deleted);
+        const remainingTopics = orderedTopicIds(deleted.value);
+        if (!remainingTopics.ok) return graphError(remainingTopics);
+        if (meeting.status === 'LIVE' && remainingTopics.value.length === 0) {
+          return failure('INVALID_TOPIC');
+        }
+
+        const deletedNodeIds = graph.nodes
+          .filter((node) => !deleted.value.nodes.some((candidate) => candidate.id === node.id))
+          .map((node) => node.id);
+        const deletedEdgeIds = graph.edges
+          .filter((edge) => !deleted.value.edges.some((candidate) => candidate.id === edge.id))
+          .map((edge) => edge.id);
+        let activeTopicNodeId = meeting.activeTopicNodeId;
+        if (activeTopicNodeId !== undefined && !remainingTopics.value.includes(activeTopicNodeId)) {
+          const priorTopics = orderedTopicIds(graph);
+          if (!priorTopics.ok) return graphError(priorTopics);
+          const priorIndex = Math.max(0, priorTopics.value.indexOf(activeTopicNodeId));
+          activeTopicNodeId =
+            remainingTopics.value[Math.min(priorIndex, remainingTopics.value.length - 1)];
+        }
+        const meetingValue = validProjectedMeeting({
+          ...meeting,
+          activeTopicNodeId,
+          updatedAt: revision.value,
+        });
+        if (meetingValue === undefined) return failure('INVALID_MEETING');
+
+        await this.database.nodes.bulkDelete(deletedNodeIds);
+        await this.database.edges.bulkDelete(deletedEdgeIds);
+        await this.database.edges.bulkPut(deleted.value.edges.map(projectEdge));
+        if (deletedNodeIds.length > 0) {
+          const deletedNodeIdSet = new Set(deletedNodeIds);
+          const deletedOutcomeIds = await this.database.outcomes
+            .where('meetingId')
+            .equals(meetingId)
+            .filter((outcome) => deletedNodeIdSet.has(outcome.nodeId))
+            .primaryKeys();
+          await this.database.outcomes.bulkDelete(deletedOutcomeIds);
+        }
+        await this.database.meetings.put(meetingValue);
+        return {
+          ok: true,
+          value: { deletedNodeIds, graph: deleted.value, meeting: meetingValue },
+        };
       },
     );
   }
@@ -907,25 +1237,6 @@ export class MeetingRepository {
   ): Promise<Result<GrillTurnWrite, MeetingRepositoryErrorCode>> {
     const snapshot = safeProject(turn, projectGrillTurn);
     if (snapshot === undefined) return failure('INVALID_GRILL_TURN');
-    if (
-      typeof snapshot.id !== 'string' ||
-      snapshot.id.trim() === '' ||
-      typeof snapshot.meetingId !== 'string' ||
-      snapshot.meetingId.trim() === '' ||
-      typeof snapshot.question !== 'string' ||
-      snapshot.question.trim() === '' ||
-      !Number.isInteger(snapshot.index) ||
-      snapshot.index < 0 ||
-      snapshot.index > 9 ||
-      (snapshot.reason !== undefined && typeof snapshot.reason !== 'string') ||
-      (snapshot.answer !== undefined && typeof snapshot.answer !== 'string') ||
-      (snapshot.disposition !== 'ANSWERED' &&
-        snapshot.disposition !== 'UNKNOWN' &&
-        snapshot.disposition !== 'SKIPPED') ||
-      !isCanonicalUtcTimestamp(snapshot.createdAt)
-    ) {
-      return failure('INVALID_GRILL_TURN');
-    }
     const nowSnapshot = new Date(now.getTime());
 
     try {
@@ -938,7 +1249,9 @@ export class MeetingRepository {
           if (meeting.status !== 'PREPARING' || meeting.preparationStage !== 'GRILLING') {
             return failure('INVALID_MEETING_STATE');
           }
-
+          if (meeting.mode === undefined || !validateGrillTurn(snapshot, meeting.mode).ok) {
+            return failure('INVALID_GRILL_TURN');
+          }
           const sameId = await this.database.grillTurns.get(snapshot.id);
           if (
             sameId !== undefined &&
@@ -954,8 +1267,37 @@ export class MeetingRepository {
             return failure('GRILL_TURN_ALREADY_EXISTS');
           }
 
+          if (sameId !== undefined) {
+            const unchangedPrompt =
+              sameId.disposition === 'PENDING' &&
+              snapshot.disposition !== 'PENDING' &&
+              sameId.answer === undefined &&
+              sameId.criticalExtraReason === snapshot.criticalExtraReason &&
+              sameId.createdAt === snapshot.createdAt &&
+              sameId.index === snapshot.index &&
+              JSON.stringify(sameId.knownState) === JSON.stringify(snapshot.knownState) &&
+              sameId.meetingId === snapshot.meetingId &&
+              sameId.phase === snapshot.phase &&
+              sameId.question === snapshot.question &&
+              JSON.stringify(sameId.readiness) === JSON.stringify(snapshot.readiness) &&
+              sameId.reason === snapshot.reason;
+            if (!unchangedPrompt) return failure('GRILL_TURN_ALREADY_EXISTS');
+          }
+
           const revision = validNextRevision(meeting, expectedMeetingUpdatedAt, nowSnapshot);
           if (!revision.ok) return revision;
+
+          const existingTurns = await this.database.grillTurns
+            .where('meetingId')
+            .equals(snapshot.meetingId)
+            .sortBy('index');
+          const candidateTurns = sameId
+            ? existingTurns.map((existing) => (existing.id === snapshot.id ? snapshot : existing))
+            : [...existingTurns, snapshot];
+          if (!validateGrillHistory(candidateTurns, meeting.mode).ok) {
+            return failure('INVALID_GRILL_TURN');
+          }
+
           const meetingValue = validProjectedMeeting({ ...meeting, updatedAt: revision.value });
           if (meetingValue === undefined) return failure('INVALID_MEETING');
           await this.database.grillTurns.put(snapshot);

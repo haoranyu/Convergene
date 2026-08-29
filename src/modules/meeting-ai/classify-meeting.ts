@@ -93,7 +93,13 @@ export function classifyMeetingOutputMatchesLocale(
   output: ClassifyMeetingOutput,
   outputLocale: (typeof supportedLocales)[number],
 ): boolean {
-  const generatedText = `${output.suggestedTitle} ${output.reason}`;
+  return generatedTextMatchesLocale(`${output.suggestedTitle} ${output.reason}`, outputLocale);
+}
+
+export function generatedTextMatchesLocale(
+  generatedText: string,
+  outputLocale: (typeof supportedLocales)[number],
+): boolean {
   const hanCount = matches(generatedText, /\p{Script=Han}/gu);
   const latinCount = matches(generatedText, /\p{Script=Latin}/gu);
 
@@ -112,10 +118,11 @@ export function classifyMeetingOutputMatchesLocale(
 }
 
 export class MeetingAIContractError extends Error {
-  readonly code = 'OUTPUT_LANGUAGE_MISMATCH' as const;
+  readonly code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH';
 
-  constructor() {
-    super('OUTPUT_LANGUAGE_MISMATCH');
+  constructor(code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH' = 'OUTPUT_LANGUAGE_MISMATCH') {
+    super(code);
+    this.code = code;
     this.name = 'MeetingAIContractError';
   }
 }

@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { mermaidValidationDiagrams } from '@/fixtures/integration-validation/mermaid-diagrams';
 
@@ -89,5 +89,27 @@ describe('Mermaid strict-mode rendering validation', () => {
       errorCode: 'MERMAID_RENDER_FAILED',
       ok: false,
     });
+  });
+
+  it('rejects renderer output that is not a script-free SVG', async () => {
+    const renderer = {
+      initialize: vi.fn(),
+      render: vi.fn().mockResolvedValue({ svg: '<svg><script>alert(1)</script></svg>' }),
+    };
+
+    await expect(
+      renderStrictMermaid('unsafe', 'flowchart LR', '| fallback |', renderer),
+    ).resolves.toMatchObject({ errorCode: 'MERMAID_RENDER_FAILED', ok: false });
+  });
+
+  it('rejects active event handlers in renderer output', async () => {
+    const renderer = {
+      initialize: vi.fn(),
+      render: vi.fn().mockResolvedValue({ svg: '<svg onload="alert(1)"></svg>' }),
+    };
+
+    await expect(
+      renderStrictMermaid('unsafe-event', 'flowchart LR', '', renderer),
+    ).resolves.toMatchObject({ errorCode: 'MERMAID_RENDER_FAILED', ok: false });
   });
 });

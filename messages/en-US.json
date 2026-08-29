@@ -33,7 +33,7 @@
       },
       "cloud": {
         "comingSoon": "Coming later",
-        "description": "Accounts and cloud sync are not available in P0. Nothing on this page is currently uploaded or synced.",
+        "description": "Accounts and cloud sync are not available in P0. No meeting content on this page is currently uploaded or synced.",
         "title": "Sign in and enable cloud sync"
       },
       "errors": {
@@ -410,6 +410,393 @@
     },
     "summaryTitle": "Confirmed meeting setup"
   },
+  "preparation": {
+    "actions": {
+      "back": "Back to meetings",
+      "confirmGenerate": "Confirm, lock, and generate map",
+      "continueGrill": "Keep grilling me · {current} / {limit}",
+      "finish": "Finish Grill",
+      "generateBrief": "Generate Brief",
+      "openCanvas": "Open meeting canvas",
+      "restart": "Prepare again",
+      "retry": "Try again",
+      "retryMap": "Retry map generation",
+      "returnGrill": "Ask more questions",
+      "saveDraft": "Save edits",
+      "skip": "Skip",
+      "submit": "Submit answer",
+      "unknown": "I don't know"
+    },
+    "brief": {
+      "editDescription": "Edit the structured Brief before locking it.",
+      "editable": "Editable draft",
+      "eyebrow": "Preparation snapshot",
+      "fields": {
+        "assumptions": "Reasonable assumptions · one per line",
+        "confirmed": "Confirmed · one per line",
+        "desiredOutcome": "Desired outcome",
+        "objective": "Meeting objective",
+        "openingLine": "Suggested opening",
+        "unknowns": "Still unknown · one per line"
+      },
+      "lockWarning": "Confirming locks this exact Brief immediately. If map generation fails, it stays locked and retry uses the same snapshot.",
+      "locked": "Locked snapshot",
+      "lockedDescription": "This Brief is locked. It remains visible while the map is generated or retried.",
+      "title": "Meeting Brief"
+    },
+    "dimensions": {
+      "challenge": "Challenge",
+      "constraints": "Constraints",
+      "creative_constraints": "Creative constraints",
+      "criteria": "Decision criteria",
+      "decision_deadline": "Decision deadline",
+      "decision_owner": "Decision owner",
+      "desired_improvement": "Desired improvement",
+      "desired_outcome": "Desired outcome",
+      "expected_vs_actual": "Expected versus actual",
+      "facts": "Shared facts",
+      "inputs": "Required inputs",
+      "minimum_outcome": "Minimum acceptable outcome",
+      "objective": "Meeting objective",
+      "options": "Viable options",
+      "participants_and_authority": "Participants and authority",
+      "scope": "Review scope",
+      "selection_method": "Selection method",
+      "target_audience": "Target audience"
+    },
+    "errors": {
+      "BRIEF_ALREADY_CONFIRMED": "This Brief is already locked.",
+      "INPUT_INVALID": "Some meeting context is invalid. Review it and try again.",
+      "INVALID_BRIEF": "Complete the objective, desired outcome, and opening before continuing.",
+      "INVALID_GRILL_TURN": "The saved Grill sequence is inconsistent. Reload and try again.",
+      "INVALID_MEETING_STATE": "The meeting changed in another action. Reload and try again.",
+      "INVALID_STORED_DATA": "This meeting could not be restored safely from local storage.",
+      "OUTPUT_INVALID": "The model response did not pass validation. Your saved work is unchanged.",
+      "OUTPUT_LANGUAGE_MISMATCH": "The model answered in the wrong language. Try again.",
+      "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
+      "PROVIDER_AUTH_FAILED": "The model key was rejected. Reconnect the provider to continue.",
+      "PROVIDER_CONFIG_INVALID": "The saved model configuration needs to be replaced.",
+      "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration is temporarily unavailable. Local meeting data is safe.",
+      "PROVIDER_MODEL_NOT_FOUND": "The configured model is unavailable for this account.",
+      "PROVIDER_NOT_CONFIGURED": "Connect a model provider to continue.",
+      "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment and retry.",
+      "PROVIDER_UNAVAILABLE": "The provider could not be reached. Your saved work is unchanged.",
+      "RATE_LIMITED": "Too many preparation requests were sent. Wait a moment and retry.",
+      "REQUEST_CANCELLED": "The request was cancelled. Your saved work is unchanged.",
+      "STALE_WRITE": "This meeting changed in another tab. The latest local version is still safe.",
+      "UNKNOWN": "Something went wrong. Your saved work is unchanged.",
+      "title": "Preparation paused"
+    },
+    "grill": {
+      "answerLabel": "Your answer",
+      "answerPlaceholder": "Be specific, or use the options below.",
+      "critical": "Final critical question",
+      "defaultComplete": "The default Grill is complete",
+      "defaultCompleteDescription": "Create the Brief now, or ask for one more user-directed round. The total can never exceed 10.",
+      "dispositions": {
+        "ANSWERED": "Answered",
+        "SKIPPED": "Skipped",
+        "UNKNOWN": "Unknown"
+      },
+      "history": "Previous answers ({count})",
+      "nextQuestion": "Preparing the next question…",
+      "resumeDescription": "Your saved answers are intact. Continue when the model connection is ready.",
+      "resumeTitle": "Ready for the next question",
+      "round": "Question {current} of at most 10",
+      "why": "Why this matters: {reason}"
+    },
+    "loading": "Restoring local preparation…",
+    "localOnly": "Saved on this device",
+    "map": {
+      "description": "A valid initial map with {count} nodes is saved locally and ready for the meeting.",
+      "ready": "Map ready",
+      "title": "Preparation is ready"
+    },
+    "metadata": {
+      "description": "Clarify the meeting, lock its Brief, and generate a controlled initial map.",
+      "title": "Prepare meeting · Convergene"
+    },
+    "modeSelection": {
+      "action": "Return to meeting setup",
+      "description": "Confirm a recommended or manually selected meeting script before the Grill begins.",
+      "title": "Choose the meeting script first"
+    },
+    "modes": {
+      "BRAINSTORM": "Brainstorm together",
+      "DECISION": "Align on a decision",
+      "GENERAL": "General discussion",
+      "RETRO": "Reflect and improve"
+    },
+    "notFound": "This local meeting was not found.",
+    "readiness": {
+      "levels": {
+        "BARELY_READY": "Barely ready",
+        "INSUFFICIENT": "Not enough information",
+        "READY": "Ready to meet"
+      },
+      "prioritySelected": "The next request will prioritize this gap.",
+      "statuses": {
+        "MISSING": "Missing",
+        "PARTIAL": "Partial",
+        "READY": "Ready"
+      },
+      "title": "Meeting readiness"
+    },
+    "rollback": {
+      "continueConfirm": "Ask more questions? The script and answers stay, while the Brief and map are cleared.",
+      "restartConfirm": "Prepare again from script selection? Only the original request stays; the script, Grill, Brief, and map are cleared."
+    },
+    "working": "Saving preparation…"
+  },
+  "mindMap": {
+    "actions": {
+      "addChild": "Add child node",
+      "addNode": "Add node",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete branch",
+      "deleteBranch": "Delete this branch",
+      "fitAll": "Fit all",
+      "moveNode": "Move node",
+      "nextTopic": "Next topic",
+      "previousTopic": "Previous topic",
+      "refocus": "Refocus current topic",
+      "relayout": "Arrange map",
+      "saveNode": "Save node"
+    },
+    "activeTopic": {
+      "label": "Current topic",
+      "navigationLabel": "Topic navigation",
+      "none": "No current topic",
+      "position": "Topic {current} of {total}"
+    },
+    "add": {
+      "kind": "Node type",
+      "title": "Add child node",
+      "topicPrompt": "Topic opening question",
+      "transitionHint": "Transition cue"
+    },
+    "delete": {
+      "content": "This permanently deletes {count} node(s) in this branch and any outcomes attached to them from this browser.",
+      "title": "Delete this branch?"
+    },
+    "detail": {
+      "empty": "Select a node to view and edit its details.",
+      "label": "Node details",
+      "note": "Supporting note",
+      "title": "Node title"
+    },
+    "errors": {
+      "invalidOperation": "That operation would break the meeting tree, so nothing was changed.",
+      "stale": "This meeting changed in another tab. Try again.",
+      "storage": "Convergene cannot access this browser's meeting storage. Check the browser storage permissions."
+    },
+    "feedback": { "saved": "Saved in this browser" },
+    "loading": "Loading the saved meeting map",
+    "mobile": {
+      "desktopAdvice": "Use a computer for the full canvas and structure editing. You can still review and switch topics here.",
+      "treeTitle": "Browse by topic"
+    },
+    "node": { "outcome": "Meeting outcome" },
+    "nodeKinds": {
+      "ACTION": "Action",
+      "IDEA": "Idea",
+      "INSIGHT": "Insight",
+      "NOTE": "Note",
+      "OBJECTIVE": "Meeting objective",
+      "OPTION": "Option",
+      "PARKING": "Parking lot",
+      "RISK": "Risk",
+      "TOPIC": "Topic"
+    },
+    "structure": {
+      "label": "Structure actions",
+      "noParentOptions": "No available parent node",
+      "parent": "New parent node",
+      "parentPlaceholder": "Choose a new parent"
+    },
+    "workspaceLabel": "Meeting discussion canvas",
+    "quickNote": {
+      "title": "Quick note",
+      "hint": "Press Enter to save locally",
+      "inputLabel": "Quick note input",
+      "placeholder": "Capture what was just said…",
+      "rootFallback": "Saved under the meeting objective because no topic is active."
+    },
+    "expansion": {
+      "groupLabel": "AI suggestions for {node}",
+      "cancel": "Cancel",
+      "retry": "Retry",
+      "loading": "Generating suggestions",
+      "saved": "Suggestions added to this browser",
+      "errors": {
+        "stale": "This meeting changed. Nothing was added; try again.",
+        "storage": "Could not save suggestions in this browser.",
+        "notConfigured": "Connect a model to use AI suggestions.",
+        "reconfigure": "Reconnect your model, then try again.",
+        "rateLimited": "The model is limiting requests. Try again shortly.",
+        "invalidOutput": "The model returned unusable suggestions. Try again.",
+        "unavailable": "AI suggestions are unavailable. Your meeting is still safe."
+      }
+    }
+  },
+  "facilitation": {
+    "title": "Host cheat sheet",
+    "opening": "Opening",
+    "activeTopic": "Start this topic with",
+    "transition": "Transition cue",
+    "closing": "Before closing",
+    "empty": "Nothing added yet.",
+    "advisory": "AI suggestions are advisory. You decide what to say and what to keep."
+  },
+  "strategy": {
+    "DECISION_ADD_OPTION": {
+      "label": "Add an option",
+      "description": "Find a distinct alternative."
+    },
+    "DECISION_SURFACE_RISK": {
+      "label": "Surface risk",
+      "description": "Expose assumptions and failure modes."
+    },
+    "DECISION_DRIVE_CHOICE": {
+      "label": "Drive a choice",
+      "description": "Clarify trade-offs and decision questions."
+    },
+    "BRAINSTORM_GO_WILDER": { "label": "Go wilder", "description": "Push beyond the obvious." },
+    "BRAINSTORM_CHANGE_LENS": {
+      "label": "Change lens",
+      "description": "Try another audience or constraint."
+    },
+    "BRAINSTORM_CONVERGE": {
+      "label": "Converge",
+      "description": "Find differences and screening questions."
+    },
+    "RETRO_FIND_CAUSE": {
+      "label": "Find cause",
+      "description": "Probe mechanisms and conditions."
+    },
+    "RETRO_FIND_COUNTEREXAMPLE": {
+      "label": "Find counterexample",
+      "description": "Challenge the current narrative."
+    },
+    "RETRO_TURN_INTO_ACTION": {
+      "label": "Turn into action",
+      "description": "Draft concrete next steps."
+    },
+    "GENERAL_DIVERGE": {
+      "label": "Open directions",
+      "description": "Add meaningfully different paths."
+    },
+    "GENERAL_DECOMPOSE": {
+      "label": "Break it down",
+      "description": "Split this into discussable questions."
+    },
+    "GENERAL_CHALLENGE": {
+      "label": "Challenge it",
+      "description": "Test assumptions and counterexamples."
+    }
+  },
+  "meeting": {
+    "actions": {
+      "backToCheck": "Back to end check",
+      "cancel": "Cancel",
+      "confirmEnd": "Confirm and end meeting",
+      "continueToConfirm": "Continue to confirmation",
+      "end": "End meeting",
+      "returnToLive": "Return to live meeting",
+      "returnToMeeting": "Return to meeting",
+      "reviewAndEndLive": "Review and end live meeting",
+      "start": "Start meeting"
+    },
+    "end": {
+      "actionGaps": "Action items missing an owner: {ownerCount}; missing a due date: {dueDateCount}.",
+      "actualAttendees": "Actual attendees",
+      "attendeeHelp": "Correct this snapshot before ending. All person-time and formation effort will be recalculated.",
+      "confirmDescription": "Ending freezes the actual end time. This meeting cannot return to LIVE.",
+      "confirmTitle": "Confirm meeting end",
+      "confirmZeroOutcomes": "This meeting has no formal outcomes. You can still end it; all person-time will remain unallocated.",
+      "description": "Review the meeting facts. Nothing is written until the final confirmation.",
+      "elapsed": "Actual duration",
+      "outcomeBreakdown": "Outcome breakdown",
+      "outcomeCount": "Formal outcomes",
+      "overtime": "Overtime",
+      "parkingLot": "Parking lot items",
+      "personHours": "Total person-hours",
+      "title": "Ready to end the meeting?",
+      "unresolved": "Unresolved brief items",
+      "zeroOutcomeWarning": "This meeting has not left any formal outcomes yet."
+    },
+    "errors": {
+      "activeMeetingExists": "Another meeting is already LIVE. Return to it or end it explicitly before starting this one.",
+      "generic": "The local meeting update failed. Reload the meeting and try again.",
+      "invalidAttendeeCount": "Enter a whole number of at least 1 for actual attendees.",
+      "invalidMeetingState": "This action is no longer available for the meeting's current state.",
+      "invalidTimeRange": "The meeting time is invalid. Reload the latest meeting state and try again.",
+      "outcomeAlreadyExists": "This node is already a meeting outcome. Edit or remove the existing outcome first.",
+      "staleWrite": "The meeting changed in another tab. Reload the latest version before continuing."
+    },
+    "live": {
+      "attendeeValue": "{count, plural, one {# attendee} other {# attendees}}",
+      "attendees": "Actual attendees",
+      "elapsed": "Elapsed",
+      "inProgress": "In progress",
+      "minuteValue": "{value} min",
+      "overtime": "Overtime",
+      "overrun": "In progress · overtime",
+      "personHours": "Cumulative person-hours",
+      "personHourValue": "{value, plural, one {# person-hour} other {# person-hours}}",
+      "status": "Meeting status",
+      "summaryLabel": "Live meeting status"
+    },
+    "start": {
+      "actualAttendees": "Actual attendees",
+      "actualAttendeesHelp": "This becomes the single attendee snapshot used for the entire meeting. You can correct it before ending.",
+      "conflictDescription": "Convergene allows only one LIVE meeting in this browser and will never end it silently.",
+      "conflictTitle": "Another meeting is already LIVE",
+      "description": "Confirm who is actually here. Starting records the real start time and the first active topic.",
+      "expectedAttendees": "Expected attendees",
+      "schedule": "Planned time",
+      "scheduleValue": "{start} – {end}",
+      "title": "Start this meeting?"
+    }
+  },
+  "outcome": {
+    "actionHelp": "Owner and due date are optional. Convergene will not invent them.",
+    "actions": {
+      "cancel": "Cancel",
+      "confirmUnmark": "Remove outcome",
+      "editMetadata": "Edit action details",
+      "mark": "Add to meeting outcomes",
+      "saveMetadata": "Save action details",
+      "unmark": "Remove from outcomes"
+    },
+    "feedback": {
+      "marked": "The node was added to the meeting outcomes.",
+      "unmarked": "The outcome was removed. Formation effort has been recalculated.",
+      "updated": "Action details saved."
+    },
+    "fields": {
+      "dueDate": "Due date (optional)",
+      "kind": "Outcome type",
+      "owner": "Owner (optional)",
+      "ownerPlaceholder": "Name or role"
+    },
+    "kinds": {
+      "ACTION": "Action item",
+      "CANDIDATE_IDEA": "Candidate idea",
+      "DECISION": "Decision",
+      "INSIGHT": "Insight"
+    },
+    "markHelp": "Only this explicit action creates an outcome; AI suggestions remain suggestions.",
+    "savedDescription": "This node is a formal meeting outcome.",
+    "title": "Meeting outcome",
+    "unmark": {
+      "content": "Removing a LIVE outcome changes the formation effort of later outcomes. Convergene will recalculate it deterministically.",
+      "title": "Remove this meeting outcome?"
+    },
+    "values": {
+      "notSet": "Not set"
+    }
+  },
   "providerConfig": {
     "actions": {
       "cancel": "Cancel",
@@ -512,5 +899,144 @@
       "keyTooLong": "The API key is too long.",
       "keyWhitespace": "The API key cannot contain spaces or line breaks."
     }
+  },
+  "report": {
+    "actions": {
+      "copy": "Copy Markdown",
+      "download": "Download .md",
+      "generate": "Generate report",
+      "preview": "Preview",
+      "regenerate": "Regenerate",
+      "source": "View source"
+    },
+    "description": "The report is assembled from this browser's meeting facts. Model wording is optional; costs and diagrams stay deterministic.",
+    "document": {
+      "chartData": "Chart data",
+      "charts": {
+        "allocation": "Person-time allocation",
+        "formation": "Outcome formation",
+        "from": "From",
+        "minute": "Minute",
+        "narrative": "Meeting narrative",
+        "outcome": "Outcome",
+        "personMinutes": "Person-minutes",
+        "start": "Start",
+        "timeline": "Outcome timeline",
+        "to": "To",
+        "unallocated": "Unallocated"
+      },
+      "empty": {
+        "modeFact": "No matching facts were recorded.",
+        "nextSteps": "No action outcome was recorded.",
+        "outcomes": "No formal outcomes were marked for this meeting.",
+        "parkingLot": "No parking lot items were recorded.",
+        "unknowns": "No unresolved brief items were recorded."
+      },
+      "estimatedFormationEffort": "Estimated formation effort (person-hours)",
+      "factDraftSummary": {
+        "one": "This {mode} meeting recorded {count} formal outcome.",
+        "other": "This {mode} meeting recorded {count} formal outcomes."
+      },
+      "headings": {
+        "diagrams": "Diagrams",
+        "executiveSummary": "Executive summary",
+        "meetingFacts": "Meeting facts",
+        "modeDetails": "Mode-specific details",
+        "nextSteps": "Next steps",
+        "outcomes": "Meeting outcomes",
+        "parkingLot": "Parking lot",
+        "unresolved": "Still unresolved"
+      },
+      "labels": {
+        "actualTime": "Actual time",
+        "attendees": "Actual attendees",
+        "dueDate": "Due date",
+        "kind": "Type",
+        "mode": "Meeting mode",
+        "note": "Note",
+        "objective": "Meeting objective",
+        "origin": "Origin",
+        "overtime": "Overtime (minutes)",
+        "owner": "Owner",
+        "plannedTime": "Planned time",
+        "reportLocale": "Report language",
+        "timezone": "Timezone",
+        "title": "Outcome",
+        "totalPersonHours": "Total person-hours",
+        "unallocatedPersonHours": "Unallocated person-hours"
+      },
+      "modeFacts": {
+        "brainstorm_assumptions": "Assumptions to validate",
+        "brainstorm_candidates": "Selected candidates",
+        "brainstorm_groups": "Idea groups",
+        "decision_outcomes": "Recorded decisions",
+        "decision_rationale": "Selection rationale",
+        "decision_rejected_options": "Rejected options",
+        "decision_risks": "Risks",
+        "retro_actions": "Improvement actions",
+        "retro_causes": "Cause chain",
+        "retro_differences": "Expected and actual differences",
+        "retro_insights": "Learnings"
+      },
+      "modes": {
+        "BRAINSTORM": "Brainstorm",
+        "DECISION": "Decision & Alignment",
+        "GENERAL": "General Discussion",
+        "RETRO": "Retrospective"
+      },
+      "noFormalOutcomesSummary": "No formal outcomes were marked for this meeting.",
+      "notSet": "Not set",
+      "origin": {
+        "live": "During meeting",
+        "postMeeting": "Post-meeting addition"
+      },
+      "outcomeKinds": {
+        "ACTION": "Action item",
+        "CANDIDATE_IDEA": "Candidate idea",
+        "DECISION": "Decision",
+        "INSIGHT": "Insight"
+      },
+      "reportTitle": "Meeting report"
+    },
+    "empty": {
+      "description": "Generate a local fact draft first. If model wording fails, the same report remains available.",
+      "title": "No report generated yet"
+    },
+    "errors": {
+      "copyFailed": "Markdown could not be copied. View the source and copy it manually.",
+      "downloadFailed": "The Markdown file could not be downloaded. View the source and save it manually.",
+      "generationFailed": "The new report could not be saved. The previous report is still available.",
+      "generationFailedEmpty": "The report could not be saved. Meeting facts are unchanged; try generating it again.",
+      "invalidMeeting": "A report is available only after the meeting has ended.",
+      "mermaidFailed": "This diagram could not be rendered. Its source and the same data table remain available."
+    },
+    "feedback": {
+      "copied": "Markdown copied.",
+      "factDraft": "Model wording was unavailable, so the deterministic fact draft was saved.",
+      "saved": "The new report was saved locally."
+    },
+    "labels": {
+      "diagram": "Meeting report diagram",
+      "language": "Report language",
+      "outcomes": "Formal outcomes",
+      "overtime": "Overtime",
+      "personHours": "Total person-hours",
+      "reportView": "Report view",
+      "reportSummary": "Report summary",
+      "scrollTable": "Scrollable report data table",
+      "source": "Markdown source"
+    },
+    "languages": {
+      "en-US": "English",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文"
+    },
+    "status": {
+      "generating": "Generating the new report",
+      "localOnly": "Saved in this browser",
+      "renderingDiagram": "Rendering report diagram",
+      "stale": "Meeting facts changed after this report. Regenerate to update it."
+    },
+    "title": "Meeting report"
   }
 }

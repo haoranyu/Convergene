@@ -6,6 +6,7 @@ import {
   preparationStages,
   readinessLevels,
   supportedLocales,
+  validateGrillHistory,
   validateMeeting,
 } from '@/modules/meeting-domain';
 import type { GrillTurn, Meeting, MeetingOutcome } from '@/modules/meeting-domain';
@@ -169,23 +170,6 @@ function validOutcomeShape(outcome: MeetingOutcome): boolean {
   );
 }
 
-function validGrillShape(turn: GrillTurn): boolean {
-  return (
-    nonEmptyString(turn.id) &&
-    nonEmptyString(turn.meetingId) &&
-    Number.isInteger(turn.index) &&
-    turn.index >= 0 &&
-    turn.index <= 9 &&
-    nonEmptyString(turn.question) &&
-    optionalString(turn.reason) &&
-    optionalString(turn.answer) &&
-    (turn.disposition === 'ANSWERED' ||
-      turn.disposition === 'UNKNOWN' ||
-      turn.disposition === 'SKIPPED') &&
-    typeof turn.createdAt === 'string'
-  );
-}
-
 function validOutcomeTime(outcome: MeetingOutcome, meeting: Meeting, exportedAt: string): boolean {
   if (outcome.origin === 'POST_MEETING') {
     return outcome.markedAt === undefined && meeting.status === 'ENDED';
@@ -238,10 +222,7 @@ function validReferences(snapshot: ConvergeneExportV1): boolean {
       );
     }) &&
     snapshot.grillTurns.every(
-      (turn) =>
-        validGrillShape(turn) &&
-        meetingIds.has(turn.meetingId) &&
-        isCanonicalUtcTimestamp(turn.createdAt),
+      (turn) => meetingIds.has(turn.meetingId) && isCanonicalUtcTimestamp(turn.createdAt),
     ) &&
     snapshot.meetings.every((meeting) => {
       const graph = {
@@ -251,6 +232,12 @@ function validReferences(snapshot: ConvergeneExportV1): boolean {
       };
       const meetingGrillTurns = snapshot.grillTurns.filter((turn) => turn.meetingId === meeting.id);
       if (meeting.preparationStage === 'DRAFT' && meetingGrillTurns.length > 0) {
+        return false;
+      }
+      if (
+        meetingGrillTurns.length > 0 &&
+        (meeting.mode === undefined || !validateGrillHistory(meetingGrillTurns, meeting.mode).ok)
+      ) {
         return false;
       }
       if (

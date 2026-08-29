@@ -1,14 +1,21 @@
-import { setRequestLocale } from 'next-intl/server';
+import type { Metadata } from 'next';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { MeetingSetupSummary } from '@/features/meeting-creation/meeting-setup-summary';
+import { PreparationWorkspace } from '@/features/preparation/preparation-workspace';
 import type { AppLocale } from '@/i18n/routing';
 
 interface PrepareMeetingPageProps {
   params: Promise<{ locale: AppLocale; meetingId: string }>;
 }
 
+export async function generateMetadata({ params }: PrepareMeetingPageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'preparation.metadata' });
+  return { description: t('description'), title: t('title') };
+}
+
 export default async function PrepareMeetingPage({ params }: PrepareMeetingPageProps) {
   const { locale, meetingId } = await params;
   setRequestLocale(locale);
-  return <MeetingSetupSummary meetingId={meetingId} />;
+  return <PreparationWorkspace meetingId={meetingId} />;
 }

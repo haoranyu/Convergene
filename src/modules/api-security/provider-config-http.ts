@@ -31,7 +31,15 @@ export function assertSameOrigin(request: Request): void {
   }
 
   try {
-    if (new URL(origin).origin !== new URL(request.url).origin) {
+    const originUrl = new URL(origin);
+    const requestUrl = new URL(request.url);
+    const forwardedHost = request.headers.get('x-forwarded-host')?.split(',', 1)[0]?.trim();
+    const publicHost = forwardedHost || request.headers.get('host');
+    const forwardedProtocol = request.headers.get('x-forwarded-proto')?.split(',', 1)[0]?.trim();
+    const publicProtocol = forwardedProtocol || requestUrl.protocol.slice(0, -1);
+    const publicOrigin = publicHost ? `${publicProtocol}://${publicHost}` : undefined;
+
+    if (originUrl.origin !== requestUrl.origin && originUrl.origin !== publicOrigin) {
       throw new ApiSecurityError('ORIGIN_INVALID');
     }
   } catch (error) {

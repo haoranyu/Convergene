@@ -7,6 +7,7 @@ import type {
   GraphSummary,
   MeetingGraph,
   MindMapEdge,
+  MindMapNode,
 } from './model';
 import { nodeKinds, strategyIds } from './model';
 
@@ -421,6 +422,93 @@ export function reparentNode(
 
   const validation = validateTree(reparented);
   return validation.ok ? { ok: true, value: reparented } : validation;
+}
+
+export function insertNode(
+  graph: MeetingGraph,
+  parentNodeId: string,
+  node: MindMapNode,
+  edgeId: string,
+): Result<MeetingGraph, GraphErrorCode> {
+  const tree = validateTree(graph);
+  if (!tree.ok) return tree;
+  if (
+    edgeId.trim() === '' ||
+    graph.edges.some((edge) => edge.id === edgeId) ||
+    graph.nodes.some((candidate) => candidate.id === node.id) ||
+    node.meetingId !== graph.meetingId ||
+    (node.source !== 'USER' && node.source !== 'QUICK_NOTE') ||
+    node.strategyId !== undefined
+  ) {
+    return failure('INVALID_INSERT');
+  }
+
+  const parent = graph.nodes.find((candidate) => candidate.id === parentNodeId);
+  if (parent === undefined) return failure('NODE_NOT_FOUND');
+  if (node.kind === 'TOPIC' && parentNodeId !== tree.value.rootNodeId) {
+    return failure('INVALID_TOPIC');
+  }
+
+  const topicOrder =
+    parentNodeId === tree.value.rootNodeId && node.kind === 'TOPIC'
+      ? tree.value.topicNodeIds.length
+      : undefined;
+  const inserted: MeetingGraph = {
+    edges: [
+      ...graph.edges,
+      {
+        id: edgeId,
+        kind: 'CONTAINS',
+        meetingId: graph.meetingId,
+        order: topicOrder,
+        sourceNodeId: parentNodeId,
+        targetNodeId: node.id,
+      },
+    ],
+    meetingId: graph.meetingId,
+    nodes: [...graph.nodes, node],
+  };
+  const validation = validateTree(inserted);
+  return validation.ok ? { ok: true, value: inserted } : validation;
+}
+
+export function deleteSubtree(
+  graph: MeetingGraph,
+  nodeId: string,
+): Result<MeetingGraph, GraphErrorCode> {
+  const tree = validateTree(graph);
+  if (!tree.ok) return tree;
+  if (nodeId === tree.value.rootNodeId) return failure('INVALID_DELETE');
+
+  const subtree = subtreeNodeIds(graph, nodeId);
+  if (!subtree.ok) return subtree;
+  const removedIds = new Set(subtree.value);
+  const remainingNodes = graph.nodes.filter((node) => !removedIds.has(node.id));
+  const remainingEdges = graph.edges.filter(
+    (edge) => !removedIds.has(edge.sourceNodeId) && !removedIds.has(edge.targetNodeId),
+  );
+  const remainingRootTopicEdges = remainingEdges
+    .filter(
+      (edge) =>
+        edge.sourceNodeId === tree.value.rootNodeId &&
+        remainingNodes.find((node) => node.id === edge.targetNodeId)?.kind === 'TOPIC',
+    )
+    .sort(
+      (left, right) =>
+        (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) ||
+        left.id.localeCompare(right.id),
+    );
+  const topicOrder = new Map(remainingRootTopicEdges.map((edge, index) => [edge.id, index]));
+  const value: MeetingGraph = {
+    edges: remainingEdges.map((edge) =>
+      topicOrder.has(edge.id) ? { ...edge, order: topicOrder.get(edge.id) } : { ...edge },
+    ),
+    meetingId: graph.meetingId,
+    nodes: remainingNodes,
+  };
+
+  const validation = validateTree(value);
+  return validation.ok ? { ok: true, value } : validation;
 }
 
 export function orderedTopicIds(graph: MeetingGraph): Result<string[], GraphErrorCode> {
