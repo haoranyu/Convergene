@@ -24,11 +24,15 @@ function readErrorCode(value: unknown): unknown {
 }
 
 type ProviderGateReason =
-  'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID' | 'PROVIDER_NOT_CONFIGURED';
+  | 'PROVIDER_AUTH_FAILED'
+  | 'PROVIDER_CAPABILITY_UNAVAILABLE'
+  | 'PROVIDER_CONFIG_INVALID'
+  | 'PROVIDER_NOT_CONFIGURED';
 
 export function providerConfigGateReason(value: unknown): ProviderGateReason | null {
   const code = readErrorCode(value);
   return code === 'PROVIDER_NOT_CONFIGURED' ||
+    code === 'PROVIDER_CAPABILITY_UNAVAILABLE' ||
     code === 'PROVIDER_CONFIG_INVALID' ||
     code === 'PROVIDER_AUTH_FAILED'
     ? code
@@ -49,13 +53,16 @@ interface ProviderConfigGateProps {
 export function ProviderConfigGate({ api, children, onConfigured }: ProviderConfigGateProps) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
-  const [reconfigurationErrorCode, setReconfigurationErrorCode] = useState<
-    'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID' | undefined
+  const [gateErrorCode, setGateErrorCode] = useState<
+    | 'PROVIDER_AUTH_FAILED'
+    | 'PROVIDER_CAPABILITY_UNAVAILABLE'
+    | 'PROVIDER_CONFIG_INVALID'
+    | undefined
   >();
   const [trigger, setTrigger] = useState<HTMLElement | null>(null);
 
   const openDialog = useCallback(() => {
-    setReconfigurationErrorCode(undefined);
+    setGateErrorCode(undefined);
     setTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setMounted(true);
     setOpen(true);
@@ -71,7 +78,7 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
       return false;
     }
 
-    setReconfigurationErrorCode(reason === 'PROVIDER_NOT_CONFIGURED' ? undefined : reason);
+    setGateErrorCode(reason === 'PROVIDER_NOT_CONFIGURED' ? undefined : reason);
     setTrigger(document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setMounted(true);
     setOpen(true);
@@ -84,10 +91,11 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
       {mounted ? (
         <ProviderConfigDialog
           api={api}
+          gateErrorCode={gateErrorCode}
           onAfterClose={() => {
             trigger?.focus();
             setTrigger(null);
-            setReconfigurationErrorCode(undefined);
+            setGateErrorCode(undefined);
             setMounted(false);
           }}
           onClose={closeDialog}
@@ -96,7 +104,6 @@ export function ProviderConfigGate({ api, children, onConfigured }: ProviderConf
             closeDialog();
           }}
           open={open}
-          reconfigurationErrorCode={reconfigurationErrorCode}
         />
       ) : null}
     </>

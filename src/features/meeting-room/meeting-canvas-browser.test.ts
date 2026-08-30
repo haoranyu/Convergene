@@ -13,12 +13,12 @@ async function openFixture(
   width: number,
   height: number,
   reducedMotion = false,
-  expansionFailure = false,
+  expansionFailure?: 'capability' | 'retryable',
 ): Promise<Page> {
   const page = await browser.newPage({ viewport: { height, width } });
   if (reducedMotion) await page.emulateMedia({ reducedMotion: 'reduce' });
   const url = new URL(fixtureUrl);
-  if (expansionFailure) url.searchParams.set('expansion', 'error');
+  if (expansionFailure) url.searchParams.set('expansion', expansionFailure);
   await page.goto(url.toString());
   await page.getByLabel('Meeting discussion canvas').waitFor({ state: 'visible' });
   if (width >= 768) {
@@ -218,7 +218,7 @@ describe('meeting canvas browser acceptance', () => {
   }, 20_000);
 
   it('exposes only safe AI failure metadata and keeps retry available', async () => {
-    const page = await openFixture(1_440, 900, false, true);
+    const page = await openFixture(1_440, 900, false, 'retryable');
     await page.locator('.react-flow__node[data-id="topic-criteria"]').click();
     const assistance = page.getByRole('group', {
       name: 'AI suggestions for Agree on measurable launch decision criteria',
@@ -229,6 +229,50 @@ describe('meeting canvas browser acceptance', () => {
     await pageExpect(error).toHaveAttribute('data-ai-error-code', 'OUTPUT_INVALID');
     await pageExpect(error).toHaveAttribute('data-ai-output-failure', 'SCHEMA_MISMATCH');
     await pageExpect(error.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    await pageExpect(page.locator('.react-flow__node[data-id^="expansion-skeleton-"]')).toHaveCount(
+      0,
+    );
+    await pageExpect(page.locator('.react-flow__node')).toHaveCount(12);
+    expect(await page.evaluate(() => window.__convergeneMeetingCanvasProbe?.storageStarted)).toBe(
+      false,
+    );
+    await page.close();
+  }, 20_000);
+
+  it('removes an impossible retry when the active provider lacks fast capability', async () => {
+    const page = await openFixture(1_440, 900, false, 'capability');
+    await page.locator('.react-flow__node[data-id="topic-criteria"]').click();
+    const assistance = page.getByRole('group', {
+      name: 'AI suggestions for Agree on measurable launch decision criteria',
+    });
+    await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+    const error = assistance.getByRole('alert');
+    await pageExpect(error).toHaveAttribute(
+      'data-ai-error-code',
+      'PROVIDER_CAPABILITY_UNAVAILABLE',
+    );
+    await pageExpect(error.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+    await pageExpect(error.getByRole('link', { name: 'Open model settings' })).toHaveAttribute(
+      'href',
+      /settings\/model$/u,
+    );
+    for (const action of [/^Add an option/u, /^Surface risk/u, /^Drive a choice/u]) {
+      await pageExpect(assistance.getByRole('button', { name: action })).toBeDisabled();
+    }
+    await page.locator('.react-flow__node[data-id="topic-options"]').click();
+    const otherAssistance = page.getByRole('group', {
+      name: 'AI suggestions for Compare feasible launch paths and constraints',
+    });
+    await pageExpect(
+      otherAssistance.getByRole('button', { name: /^Surface risk/u }),
+    ).toBeDisabled();
+    await pageExpect(
+      otherAssistance.getByRole('link', { name: 'Open model settings' }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(() => window.__convergeneMeetingCanvasProbe?.expansionRequests),
+    ).toBe(1);
     await pageExpect(page.locator('.react-flow__node[data-id^="expansion-skeleton-"]')).toHaveCount(
       0,
     );

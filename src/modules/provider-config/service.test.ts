@@ -129,7 +129,7 @@ function createMemorySession(initialValue?: string) {
 }
 
 const encryptionSecret = randomBytes(32).toString('base64');
-const input = { apiKey: 'test-only-provider-secret', provider: 'STEPFUN' as const };
+const input = { apiKey: 'test-only-provider-secret', provider: 'SILICONFLOW' as const };
 const fixedNow = new Date('2026-08-29T01:00:00.000Z');
 const providerModelMappings = {
   SILICONFLOW: {
@@ -144,88 +144,101 @@ const providerModelMappings = {
   },
 } as const;
 
+function storedCredential(apiKey: string, timestamp = fixedNow.toISOString()) {
+  return toEncryptedProviderCredential(encryptCredential(apiKey, encryptionSecret), timestamp);
+}
+
+function seedStoredProviders(
+  store: MemoryProviderConfigStore,
+  sessionId: string,
+  activeProvider: ProviderId,
+  providers: Partial<Record<ProviderId, string>>,
+) {
+  store.records.set(
+    providerConfigKey(sessionId),
+    toEncryptedProviderConfig(
+      activeProvider,
+      Object.fromEntries(
+        Object.entries(providers).map(([provider, apiKey]) => [provider, storedCredential(apiKey)]),
+      ),
+    ),
+  );
+}
+
 describe('provider configuration service', () => {
-  it('retains both provider credentials and resolves the explicitly selected provider', async () => {
+  it('keeps historical StepFun credentials for preparation but blocks live AI roles', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession();
+    const session = createMemorySession(sessionId);
+    seedStoredProviders(store, sessionId, 'STEPFUN', {
+      SILICONFLOW: 'siliconflow-secret',
+      STEPFUN: 'stepfun-secret',
+    });
     const service = createProviderConfigService({
-      createSessionId: () => sessionId,
       encryptionSecret,
       now: () => fixedNow,
       session,
       store,
-      testConnection: vi.fn().mockImplementation(({ provider }) =>
-        Promise.resolve({
-          models:
-            provider === 'STEPFUN'
-              ? {
-                  fast: 'step-3.7-flash',
-                  grill: 'step-3.5-flash-2603',
-                  report: 'step-3.5-flash-2603',
-                }
-              : {
-                  fast: 'Qwen/Qwen3.5-4B',
-                  grill: 'deepseek-ai/DeepSeek-V4-Flash',
-                  report: 'deepseek-ai/DeepSeek-V4-Flash',
-                },
-          provider,
-        }),
-      ),
+      testConnection: vi.fn(),
     });
 
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
-    await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
-
-    await service.setActiveProvider('STEPFUN');
-    await expect(service.resolve()).resolves.toMatchObject({
+    await expect(service.getStatus()).resolves.toMatchObject({
+      activeProvider: 'STEPFUN',
+      providers: {
+        SILICONFLOW: {
+          capabilities: { fast: 'AVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+        },
+        STEPFUN: {
+          capabilities: { fast: 'UNAVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+        },
+      },
+    });
+    store.touched.length = 0;
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    expect(store.touched).toHaveLength(0);
+    await expect(service.resolve('grill')).resolves.toMatchObject({
       apiKey: 'stepfun-secret',
       provider: 'STEPFUN',
     });
 
+    await expect(service.setActiveProvider('STEPFUN')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
     await service.setActiveProvider('SILICONFLOW');
-    await expect(service.resolve()).resolves.toMatchObject({
+    await expect(service.resolve('fast')).resolves.toMatchObject({
       apiKey: 'siliconflow-secret',
       provider: 'SILICONFLOW',
     });
   });
 
-  it('retains both providers when SiliconFlow is saved first and restores the active provider', async () => {
+  it('does not silently fall back when the active provider lacks the requested capability', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession();
+    const session = createMemorySession(sessionId);
+    seedStoredProviders(store, sessionId, 'STEPFUN', {
+      SILICONFLOW: 'siliconflow-secret',
+      STEPFUN: 'stepfun-secret',
+    });
     const service = createProviderConfigService({
-      createSessionId: () => sessionId,
       encryptionSecret,
       now: () => fixedNow,
       session,
       store,
-      testConnection: vi
-        .fn()
-        .mockImplementation(({ provider }) =>
-          Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
-        ),
+      testConnection: vi.fn(),
     });
 
-    await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
-    await service.setActiveProvider('SILICONFLOW');
-
-    await expect(service.getStatus()).resolves.toMatchObject({
-      activeProvider: 'SILICONFLOW',
-      configured: true,
-      providers: {
-        SILICONFLOW: { state: 'AVAILABLE' },
-        STEPFUN: { state: 'AVAILABLE' },
-      },
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
     });
-    await expect(service.resolve()).resolves.toMatchObject({
-      apiKey: 'siliconflow-secret',
-      provider: 'SILICONFLOW',
+    expect(store.touched).toHaveLength(0);
+    expect(store.records.get(providerConfigKey(sessionId))).toMatchObject({
+      activeProvider: 'STEPFUN',
     });
   });
 
-  it('does not alter either stored credential when a later connection test fails', async () => {
+  it('does not alter stored credentials when a later SiliconFlow connection test fails', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
     const session = createMemorySession();
@@ -241,14 +254,13 @@ describe('provider configuration service', () => {
       store,
       testConnection,
     });
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
     await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
     const key = providerConfigKey(sessionId);
     const before = structuredClone(store.records.get(key));
     testConnection.mockRejectedValueOnce(new ProviderConnectionError('PROVIDER_AUTH_FAILED'));
 
     await expect(
-      service.save({ apiKey: 'rejected-replacement', provider: 'STEPFUN' }),
+      service.save({ apiKey: 'rejected-replacement', provider: 'SILICONFLOW' }),
     ).rejects.toMatchObject({ code: 'PROVIDER_AUTH_FAILED' });
     expect(store.records.get(key)).toEqual(before);
   });
@@ -256,10 +268,13 @@ describe('provider configuration service', () => {
   it('reconfigures one provider without changing the other credential or creation timestamp', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession();
+    const session = createMemorySession(sessionId);
+    seedStoredProviders(store, sessionId, 'SILICONFLOW', {
+      SILICONFLOW: 'siliconflow-secret',
+      STEPFUN: 'stepfun-secret',
+    });
     let currentNow = fixedNow;
     const service = createProviderConfigService({
-      createSessionId: () => sessionId,
       encryptionSecret,
       now: () => currentNow,
       session,
@@ -270,9 +285,6 @@ describe('provider configuration service', () => {
           Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
         ),
     });
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
-    currentNow = new Date('2026-08-29T02:00:00.000Z');
-    await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
     const key = providerConfigKey(sessionId);
     const before = store.records.get(key);
     const stepFunBefore = before?.version === 2 ? structuredClone(before.providers.STEPFUN) : null;
@@ -284,80 +296,65 @@ describe('provider configuration service', () => {
     expect(after?.version).toBe(2);
     expect(after?.version === 2 ? after.providers.STEPFUN : null).toEqual(stepFunBefore);
     expect(after?.version === 2 ? after.providers.SILICONFLOW?.createdAt : undefined).toBe(
-      '2026-08-29T02:00:00.000Z',
+      fixedNow.toISOString(),
     );
   });
 
-  it('merges concurrent provider updates without losing either credential', async () => {
+  it('rejects new StepFun tests, saves, and selection before upstream calls or writes', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
     const session = createMemorySession();
-    const dependencies = {
-      createSessionId: () => sessionId,
-      encryptionSecret,
-      session,
-      store,
-      testConnection: vi
-        .fn()
-        .mockImplementation(({ provider }) =>
-          Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
-        ),
-    };
-    const firstService = createProviderConfigService(dependencies);
-    const secondService = createProviderConfigService(dependencies);
-    await firstService.save({ apiKey: 'original-stepfun-secret', provider: 'STEPFUN' });
-
-    const originalGet = store.get.bind(store);
-    let arrivals = 0;
-    let releaseBarrier!: () => void;
-    const barrier = new Promise<void>((resolve) => {
-      releaseBarrier = resolve;
-    });
-    const getSpy = vi.spyOn(store, 'get').mockImplementation(async (key) => {
-      const snapshot = structuredClone(await originalGet(key));
-      arrivals += 1;
-      if (arrivals === 2) releaseBarrier();
-      await barrier;
-      return snapshot;
-    });
-
-    await Promise.all([
-      firstService.save({ apiKey: 'replacement-stepfun-secret', provider: 'STEPFUN' }),
-      secondService.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' }),
-    ]);
-    getSpy.mockRestore();
-
-    await firstService.setActiveProvider('STEPFUN');
-    await expect(firstService.resolve()).resolves.toMatchObject({
-      apiKey: 'replacement-stepfun-secret',
-      provider: 'STEPFUN',
-    });
-    await firstService.setActiveProvider('SILICONFLOW');
-    await expect(firstService.resolve()).resolves.toMatchObject({
-      apiKey: 'siliconflow-secret',
+    const testConnection = vi.fn().mockResolvedValue({
+      models: providerModelMappings.SILICONFLOW,
       provider: 'SILICONFLOW',
     });
-  });
-
-  it('marks only the provider with a confirmed credential rejection', async () => {
-    const store = new MemoryProviderConfigStore();
-    const sessionId = createProviderSessionId();
-    const session = createMemorySession();
     const service = createProviderConfigService({
       createSessionId: () => sessionId,
       encryptionSecret,
+      now: () => fixedNow,
       session,
       store,
-      testConnection: vi
-        .fn()
-        .mockImplementation(({ provider }) =>
-          Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
-        ),
+      testConnection,
     });
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
     await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
+    const key = providerConfigKey(sessionId);
+    const before = structuredClone(store.records.get(key));
+    testConnection.mockClear();
 
-    const rejectedConfig = await service.resolve();
+    await expect(
+      service.test({ apiKey: 'stepfun-secret', provider: 'STEPFUN' }),
+    ).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    await expect(
+      service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' }),
+    ).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    await expect(service.setActiveProvider('STEPFUN')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+
+    expect(testConnection).not.toHaveBeenCalled();
+    expect(store.records.get(key)).toEqual(before);
+  });
+
+  it('marks only the supported active credential after a confirmed rejection', async () => {
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession(sessionId);
+    seedStoredProviders(store, sessionId, 'SILICONFLOW', {
+      SILICONFLOW: 'siliconflow-secret',
+      STEPFUN: 'stepfun-secret',
+    });
+    const service = createProviderConfigService({
+      encryptionSecret,
+      session,
+      store,
+      testConnection: vi.fn(),
+    });
+
+    const rejectedConfig = await service.resolve('fast');
     await service.markNeedsReconfiguration('SILICONFLOW', rejectedConfig.credentialRevision);
 
     await expect(service.getStatus()).resolves.toMatchObject({
@@ -367,15 +364,15 @@ describe('provider configuration service', () => {
         STEPFUN: { state: 'AVAILABLE' },
       },
     });
-    await expect(service.resolve()).rejects.toMatchObject({ code: 'PROVIDER_AUTH_FAILED' });
-    await service.setActiveProvider('STEPFUN');
-    await expect(service.resolve()).resolves.toMatchObject({
-      apiKey: 'stepfun-secret',
-      provider: 'STEPFUN',
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_AUTH_FAILED',
+    });
+    await expect(service.setActiveProvider('STEPFUN')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
     });
   });
 
-  it('ignores a late authentication rejection from a replaced credential', async () => {
+  it('ignores a late authentication rejection from a replaced SiliconFlow credential', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
     const session = createMemorySession();
@@ -390,21 +387,114 @@ describe('provider configuration service', () => {
           Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
         ),
     });
-    await service.save({ apiKey: 'old-stepfun-secret', provider: 'STEPFUN' });
-    const oldConfig = (await service.resolve()) as Awaited<ReturnType<typeof service.resolve>> & {
-      credentialRevision: string;
-    };
+    await service.save({ apiKey: 'old-siliconflow-secret', provider: 'SILICONFLOW' });
+    const oldConfig = await service.resolve('fast');
 
-    await service.save({ apiKey: 'new-stepfun-secret', provider: 'STEPFUN' });
-    await service.markNeedsReconfiguration('STEPFUN', oldConfig.credentialRevision);
+    await service.save({ apiKey: 'new-siliconflow-secret', provider: 'SILICONFLOW' });
+    await service.markNeedsReconfiguration('SILICONFLOW', oldConfig.credentialRevision);
 
     await expect(service.getStatus()).resolves.toMatchObject({
-      providers: { STEPFUN: { state: 'AVAILABLE' } },
+      providers: { SILICONFLOW: { state: 'AVAILABLE' } },
     });
-    await expect(service.resolve()).resolves.toMatchObject({
-      apiKey: 'new-stepfun-secret',
+    await expect(service.resolve('fast')).resolves.toMatchObject({
+      apiKey: 'new-siliconflow-secret',
+      provider: 'SILICONFLOW',
+    });
+  });
+
+  it('rejects an unsupported role before migrating a v1 StepFun record', async () => {
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession(sessionId);
+    const envelope = encryptCredential('legacy-stepfun-secret', encryptionSecret);
+    store.records.set(providerConfigKey(sessionId), {
+      authTag: envelope.authTag,
+      ciphertext: envelope.ciphertext,
+      createdAt: fixedNow.toISOString(),
+      iv: envelope.iv,
+      lastUsedAt: fixedNow.toISOString(),
       provider: 'STEPFUN',
+      version: 1,
     });
+    const before = structuredClone(store.records.get(providerConfigKey(sessionId)));
+    const service = createProviderConfigService({
+      encryptionSecret,
+      now: () => fixedNow,
+      session,
+      store,
+      testConnection: vi.fn(),
+    });
+
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    expect(store.records.get(providerConfigKey(sessionId))).toEqual(before);
+    expect(store.touched).toHaveLength(0);
+  });
+
+  it('rejects an unsupported role before rotating a previous-key StepFun record', async () => {
+    const previousSecret = randomBytes(32).toString('base64');
+    const currentSecret = randomBytes(32).toString('base64');
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession(sessionId);
+    store.records.set(
+      providerConfigKey(sessionId),
+      toEncryptedProviderConfig('STEPFUN', {
+        STEPFUN: toEncryptedProviderCredential(
+          encryptCredential('previous-key-stepfun-secret', previousSecret),
+          fixedNow.toISOString(),
+        ),
+      }),
+    );
+    const before = structuredClone(store.records.get(providerConfigKey(sessionId)));
+    const service = createProviderConfigService({
+      encryptionSecret: currentSecret,
+      now: () => fixedNow,
+      previousEncryptionSecrets: [previousSecret],
+      session,
+      store,
+      testConnection: vi.fn(),
+    });
+
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    expect(store.records.get(providerConfigKey(sessionId))).toEqual(before);
+    expect(store.touched).toHaveLength(0);
+  });
+
+  it('does not mark a damaged previous-key StepFun credential while rejecting its role', async () => {
+    const previousSecret = randomBytes(32).toString('base64');
+    const currentSecret = randomBytes(32).toString('base64');
+    const store = new MemoryProviderConfigStore();
+    const sessionId = createProviderSessionId();
+    const session = createMemorySession(sessionId);
+    const credential = toEncryptedProviderCredential(
+      encryptCredential('damaged-stepfun-secret', previousSecret),
+      fixedNow.toISOString(),
+    );
+    store.records.set(
+      providerConfigKey(sessionId),
+      toEncryptedProviderConfig('STEPFUN', {
+        STEPFUN: { ...credential, ciphertext: Buffer.from('tampered').toString('base64') },
+      }),
+    );
+    const before = structuredClone(store.records.get(providerConfigKey(sessionId)));
+    const service = createProviderConfigService({
+      encryptionSecret: currentSecret,
+      now: () => fixedNow,
+      previousEncryptionSecrets: [previousSecret],
+      session,
+      store,
+      testConnection: vi.fn(),
+    });
+
+    await expect(service.resolve('fast')).rejects.toMatchObject({
+      code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+    });
+    expect(store.records.get(providerConfigKey(sessionId))).toEqual(before);
+    expect(store.touched).toHaveLength(0);
   });
 
   it('migrates a valid v1 record without asking for the key again', async () => {
@@ -436,7 +526,7 @@ describe('provider configuration service', () => {
       activeProvider: 'STEPFUN',
       providers: { STEPFUN: { state: 'AVAILABLE' } },
     });
-    await expect(service.resolve()).resolves.toMatchObject({
+    await expect(service.resolve('grill')).resolves.toMatchObject({
       apiKey: 'legacy-stepfun-secret',
       provider: 'STEPFUN',
     });
@@ -477,7 +567,7 @@ describe('provider configuration service', () => {
       activeProvider: 'SILICONFLOW',
       providers: { SILICONFLOW: { state: 'AVAILABLE' } },
     });
-    await expect(service.resolve()).resolves.toMatchObject({
+    await expect(service.resolve('grill')).resolves.toMatchObject({
       apiKey: 'rotated-siliconflow-secret',
       provider: 'SILICONFLOW',
     });
@@ -516,11 +606,15 @@ describe('provider configuration service', () => {
     expect(JSON.stringify(savedRecord)).not.toContain(input.apiKey);
     expect(JSON.stringify(summary)).not.toContain(input.apiKey);
     expect(summary).toMatchObject({
-      activeProvider: 'STEPFUN',
+      activeProvider: 'SILICONFLOW',
       configured: true,
       providers: {
-        SILICONFLOW: null,
-        STEPFUN: { keyHint: '••••••••', provider: 'STEPFUN', state: 'AVAILABLE' },
+        SILICONFLOW: {
+          keyHint: '••••••••',
+          provider: 'SILICONFLOW',
+          state: 'AVAILABLE',
+        },
+        STEPFUN: null,
       },
     });
   });
@@ -597,15 +691,15 @@ describe('provider configuration service', () => {
     const summary = await service.getStatus();
 
     expect(summary).toMatchObject({
-      activeProvider: 'STEPFUN',
+      activeProvider: 'SILICONFLOW',
       configured: true,
-      providers: { STEPFUN: { keyHint: '••••••••' } },
+      providers: { SILICONFLOW: { keyHint: '••••••••' } },
     });
     expect(store.touched).toEqual([
       {
         key: providerConfigKey(sessionId),
         lastUsedAt: fixedNow.toISOString(),
-        provider: 'STEPFUN',
+        provider: 'SILICONFLOW',
         ttlSeconds: providerConfigTtlSeconds,
       },
     ]);
@@ -638,11 +732,11 @@ describe('provider configuration service', () => {
     });
 
     await expect(serviceWithRotatedSecret.getStatus()).resolves.toMatchObject({
-      activeProvider: 'STEPFUN',
+      activeProvider: 'SILICONFLOW',
       configured: true,
-      providers: { STEPFUN: { state: 'NEEDS_RECONFIGURATION' } },
+      providers: { SILICONFLOW: { state: 'NEEDS_RECONFIGURATION' } },
     });
-    await expect(serviceWithRotatedSecret.resolve()).rejects.toMatchObject({
+    await expect(serviceWithRotatedSecret.resolve('fast')).rejects.toMatchObject({
       code: 'PROVIDER_CONFIG_INVALID',
     });
   });
@@ -672,25 +766,25 @@ describe('provider configuration service', () => {
 
     const savedRecord = store.records.get(key);
     const credentialRevision =
-      savedRecord?.version === 2 ? savedRecord.providers.STEPFUN?.revision : undefined;
+      savedRecord?.version === 2 ? savedRecord.providers.SILICONFLOW?.revision : undefined;
     expect(credentialRevision).toBeDefined();
     await store.touch(key, {
       credentialRevision: credentialRevision!,
       lastUsedAt: laterTimestamp,
       nextRecordRevision: createProviderConfigRevision(),
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
       ttlSeconds: providerConfigTtlSeconds,
     });
     await store.touch(key, {
       credentialRevision: credentialRevision!,
       lastUsedAt: fixedNow.toISOString(),
       nextRecordRevision: createProviderConfigRevision(),
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
       ttlSeconds: providerConfigTtlSeconds,
     });
     const record = store.records.get(key);
     expect(record?.version).toBe(2);
-    expect(record?.version === 2 ? record.providers.STEPFUN?.lastUsedAt : undefined).toBe(
+    expect(record?.version === 2 ? record.providers.SILICONFLOW?.lastUsedAt : undefined).toBe(
       laterTimestamp,
     );
   });
@@ -728,9 +822,9 @@ describe('provider configuration service', () => {
     expect(store.touched).toHaveLength(0);
 
     await expect(service.save(input)).resolves.toMatchObject({
-      activeProvider: 'STEPFUN',
+      activeProvider: 'SILICONFLOW',
       configured: true,
-      providers: { STEPFUN: { provider: 'STEPFUN', state: 'AVAILABLE' } },
+      providers: { SILICONFLOW: { provider: 'SILICONFLOW', state: 'AVAILABLE' } },
     });
     expect(JSON.stringify(store.records.get(providerConfigKey(sessionId)))).not.toContain(
       input.apiKey,
@@ -758,15 +852,15 @@ describe('provider configuration service', () => {
     await service.save(input);
     store.touched.length = 0;
 
-    await expect(service.resolve()).resolves.toMatchObject({
+    await expect(service.resolve('fast')).resolves.toMatchObject({
       apiKey: input.apiKey,
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
     });
     expect(store.touched).toEqual([
       {
         key: providerConfigKey(sessionId),
         lastUsedAt: expect.any(String),
-        provider: 'STEPFUN',
+        provider: 'SILICONFLOW',
         ttlSeconds: providerConfigTtlSeconds,
       },
     ]);
@@ -783,8 +877,8 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: providerModelMappings.STEPFUN,
-        provider: 'STEPFUN',
+        models: providerModelMappings.SILICONFLOW,
+        provider: 'SILICONFLOW',
       }),
     });
     await service.save(input);
@@ -793,9 +887,9 @@ describe('provider configuration service', () => {
     const get = vi.spyOn(store, 'get');
     store.touched.length = 0;
 
-    await expect(service.resolve({ key, record })).resolves.toMatchObject({
+    await expect(service.resolve('fast', { key, record })).resolves.toMatchObject({
       apiKey: input.apiKey,
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
     });
 
     expect(get).not.toHaveBeenCalled();
@@ -813,21 +907,21 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: providerModelMappings.STEPFUN,
-        provider: 'STEPFUN',
+        models: providerModelMappings.SILICONFLOW,
+        provider: 'SILICONFLOW',
       }),
     });
     await service.save(input);
     const key = providerConfigKey(sessionId);
     const get = vi.spyOn(store, 'get');
 
-    await expect(service.resolve({ key, record: { version: 2 } })).resolves.toMatchObject({
+    await expect(service.resolve('fast', { key, record: { version: 2 } })).resolves.toMatchObject({
       apiKey: input.apiKey,
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
     });
-    await expect(service.resolve({ key, record: null })).resolves.toMatchObject({
+    await expect(service.resolve('fast', { key, record: null })).resolves.toMatchObject({
       apiKey: input.apiKey,
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
     });
 
     expect(get).toHaveBeenCalledTimes(2);
@@ -844,21 +938,23 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: providerModelMappings.STEPFUN,
-        provider: 'STEPFUN',
+        models: providerModelMappings.SILICONFLOW,
+        provider: 'SILICONFLOW',
       }),
     });
-    await service.save({ apiKey: 'old-stepfun-secret', provider: 'STEPFUN' });
-    const resolved = await service.resolve();
-    await service.markNeedsReconfiguration('STEPFUN', resolved.credentialRevision);
+    await service.save({ apiKey: 'old-siliconflow-secret', provider: 'SILICONFLOW' });
+    const resolved = await service.resolve('fast');
+    await service.markNeedsReconfiguration('SILICONFLOW', resolved.credentialRevision);
     const key = providerConfigKey(sessionId);
     const staleRejectedRecord = structuredClone(store.records.get(key));
-    await service.save({ apiKey: 'replacement-stepfun-secret', provider: 'STEPFUN' });
+    await service.save({ apiKey: 'replacement-siliconflow-secret', provider: 'SILICONFLOW' });
     const get = vi.spyOn(store, 'get');
 
-    await expect(service.resolve({ key, record: staleRejectedRecord })).resolves.toMatchObject({
-      apiKey: 'replacement-stepfun-secret',
-      provider: 'STEPFUN',
+    await expect(
+      service.resolve('fast', { key, record: staleRejectedRecord }),
+    ).resolves.toMatchObject({
+      apiKey: 'replacement-siliconflow-secret',
+      provider: 'SILICONFLOW',
     });
 
     expect(get).toHaveBeenCalledOnce();
@@ -875,54 +971,52 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: providerModelMappings.STEPFUN,
-        provider: 'STEPFUN',
+        models: providerModelMappings.SILICONFLOW,
+        provider: 'SILICONFLOW',
       }),
     });
     await service.save(input);
     const key = providerConfigKey(sessionId);
     const availablePreload = structuredClone(store.records.get(key));
-    const resolved = await service.resolve();
-    await service.markNeedsReconfiguration('STEPFUN', resolved.credentialRevision);
+    const resolved = await service.resolve('fast');
+    await service.markNeedsReconfiguration('SILICONFLOW', resolved.credentialRevision);
     const get = vi.spyOn(store, 'get');
 
-    await expect(service.resolve({ key, record: availablePreload })).rejects.toMatchObject({
+    await expect(service.resolve('fast', { key, record: availablePreload })).rejects.toMatchObject({
       code: 'PROVIDER_AUTH_FAILED',
     });
 
     expect(get).toHaveBeenCalledOnce();
   });
 
-  it('re-reads after a preloaded credential loses the active-provider race', async () => {
+  it('re-reads a capability-incompatible preload after the active-provider race', async () => {
     const store = new MemoryProviderConfigStore();
     const sessionId = createProviderSessionId();
-    const session = createMemorySession();
+    const session = createMemorySession(sessionId);
+    seedStoredProviders(store, sessionId, 'STEPFUN', {
+      SILICONFLOW: 'siliconflow-secret',
+      STEPFUN: 'stepfun-secret',
+    });
     const service = createProviderConfigService({
-      createSessionId: () => sessionId,
       encryptionSecret,
       now: () => fixedNow,
       session,
       store,
-      testConnection: vi
-        .fn()
-        .mockImplementation(({ provider }) =>
-          Promise.resolve({ models: providerModelMappings[provider as ProviderId], provider }),
-        ),
+      testConnection: vi.fn(),
     });
-    await service.save({ apiKey: 'stepfun-secret', provider: 'STEPFUN' });
     const key = providerConfigKey(sessionId);
     const staleRecord = structuredClone(store.records.get(key));
-    await service.save({ apiKey: 'siliconflow-secret', provider: 'SILICONFLOW' });
+    await service.setActiveProvider('SILICONFLOW');
     const get = vi.spyOn(store, 'get');
     store.touched.length = 0;
 
-    await expect(service.resolve({ key, record: staleRecord })).resolves.toMatchObject({
+    await expect(service.resolve('fast', { key, record: staleRecord })).resolves.toMatchObject({
       apiKey: 'siliconflow-secret',
       provider: 'SILICONFLOW',
     });
 
     expect(get).toHaveBeenCalledOnce();
-    expect(store.touched.map(({ provider }) => provider)).toEqual(['STEPFUN', 'SILICONFLOW']);
+    expect(store.touched.map(({ provider }) => provider)).toEqual(['SILICONFLOW']);
   });
 
   it('deletes provider state idempotently without receiving any meeting repository', async () => {
@@ -959,8 +1053,10 @@ describe('provider configuration service', () => {
       testConnection: vi.fn(),
     });
 
-    await expect(service.resolve()).rejects.toBeInstanceOf(ResolvedProviderConfigError);
-    await expect(service.resolve()).rejects.toMatchObject({ code: 'PROVIDER_NOT_CONFIGURED' });
+    await expect(service.resolve('grill')).rejects.toBeInstanceOf(ResolvedProviderConfigError);
+    await expect(service.resolve('grill')).rejects.toMatchObject({
+      code: 'PROVIDER_NOT_CONFIGURED',
+    });
 
     session.set(createProviderSessionId());
     vi.spyOn(store, 'get').mockRejectedValueOnce(new Error('raw Redis detail'));

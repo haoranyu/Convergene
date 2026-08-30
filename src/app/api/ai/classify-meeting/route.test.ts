@@ -76,9 +76,9 @@ describe('classify-meeting route', () => {
       60,
       'classify-meeting',
     );
-    expect(mocks.resolveProvider).toHaveBeenCalledWith(runtimeService, preloadedConfig);
+    expect(mocks.resolveProvider).toHaveBeenCalledWith(runtimeService, 'fast', preloadedConfig);
     expect(mocks.callProvider).toHaveBeenCalledWith(
-      expect.objectContaining({ role: 'fast', schemaName: 'ClassifyMeetingOutput' }),
+      expect.objectContaining({ schemaName: 'ClassifyMeetingOutput' }),
     );
   });
 });

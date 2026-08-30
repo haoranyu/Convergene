@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../../messages/en-US.json';
+import { providerCapabilities } from '../../modules/provider-config';
 import type { ProviderConfigClient } from './api-client';
 import { ProviderConfigPanel } from './provider-config-panel';
 
@@ -29,11 +30,12 @@ afterEach(cleanup);
 
 function renderPanel(
   api: ProviderConfigClient,
-  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID',
+  gateErrorCode?:
+    'PROVIDER_AUTH_FAILED' | 'PROVIDER_CAPABILITY_UNAVAILABLE' | 'PROVIDER_CONFIG_INVALID',
 ) {
   return render(
     <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
-      <ProviderConfigPanel api={api} reconfigurationErrorCode={reconfigurationErrorCode} />
+      <ProviderConfigPanel api={api} gateErrorCode={gateErrorCode} />
     </NextIntlClientProvider>,
   );
 }
@@ -47,22 +49,23 @@ describe('ProviderConfigPanel', () => {
       .mockResolvedValueOnce({
         ok: true,
         value: {
-          activeProvider: 'STEPFUN',
+          activeProvider: 'SILICONFLOW',
           configured: true,
           providers: {
-            SILICONFLOW: null,
-            STEPFUN: {
+            SILICONFLOW: {
+              capabilities: providerCapabilities.SILICONFLOW,
               createdAt: '2026-08-29T00:00:00.000Z',
               keyHint: '••••••••',
               lastUsedAt: '2026-08-29T00:00:00.000Z',
               models: {
-                fast: 'step-3.7-flash',
-                grill: 'step-3.5-flash-2603',
-                report: 'step-3.5-flash-2603',
+                fast: 'Qwen/Qwen3.5-4B',
+                grill: 'deepseek-ai/DeepSeek-V4-Flash',
+                report: 'deepseek-ai/DeepSeek-V4-Flash',
               },
-              provider: 'STEPFUN',
+              provider: 'SILICONFLOW',
               state: 'AVAILABLE',
             },
+            STEPFUN: null,
           },
         },
       });
@@ -70,11 +73,11 @@ describe('ProviderConfigPanel', () => {
       ok: true,
       value: {
         models: {
-          fast: 'step-3.7-flash',
-          grill: 'step-3.5-flash-2603',
-          report: 'step-3.5-flash-2603',
+          fast: 'Qwen/Qwen3.5-4B',
+          grill: 'deepseek-ai/DeepSeek-V4-Flash',
+          report: 'deepseek-ai/DeepSeek-V4-Flash',
         },
-        provider: 'STEPFUN',
+        provider: 'SILICONFLOW',
       },
     });
     const saveConfig = vi.fn<ProviderConfigClient['saveConfig']>().mockResolvedValue({
@@ -102,7 +105,7 @@ describe('ProviderConfigPanel', () => {
     await screen.findByText('Connection verified. You can save this configuration.');
     expect(testConnection).toHaveBeenCalledWith({
       apiKey: 'sk-test-secret',
-      provider: 'STEPFUN',
+      provider: 'SILICONFLOW',
     });
     expect(apiKey).toHaveValue('');
 
@@ -111,7 +114,7 @@ describe('ProviderConfigPanel', () => {
     await waitFor(() => {
       expect(saveConfig).toHaveBeenCalledWith({
         apiKey: 'sk-test-secret',
-        provider: 'STEPFUN',
+        provider: 'SILICONFLOW',
       });
     });
     expect(await screen.findByText('••••••••')).toBeVisible();
@@ -165,7 +168,7 @@ describe('ProviderConfigPanel', () => {
     ).toBeVisible();
   });
 
-  it('forces reconfiguration after an AI call discovers a rotated encryption secret', async () => {
+  it('routes an unusable historical StepFun key to SiliconFlow without offering StepFun reconfiguration', async () => {
     const api: ProviderConfigClient = {
       deleteConfig: vi.fn(),
       getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
@@ -176,6 +179,7 @@ describe('ProviderConfigPanel', () => {
           providers: {
             SILICONFLOW: null,
             STEPFUN: {
+              capabilities: providerCapabilities.STEPFUN,
               createdAt: '2026-08-29T00:00:00.000Z',
               keyHint: '••••••••',
               lastUsedAt: '2026-08-29T00:00:00.000Z',
@@ -185,7 +189,7 @@ describe('ProviderConfigPanel', () => {
                 report: 'step-3.5-flash-2603',
               },
               provider: 'STEPFUN',
-              state: 'AVAILABLE',
+              state: 'NEEDS_RECONFIGURATION',
             },
           },
         },
@@ -199,13 +203,24 @@ describe('ProviderConfigPanel', () => {
 
     expect(await screen.findByLabelText('API key')).toBeVisible();
     expect(
-      screen.getByText('The saved configuration can no longer be used. Enter the key again.'),
+      screen.getByText(
+        'The historical StepFun key cannot be used or reconnected. Connect or switch to SiliconFlow.',
+      ),
     ).toBeVisible();
+    expect(
+      screen.getByText(
+        'The historical StepFun key can no longer be used. Connect or switch to SiliconFlow, or clear the retained configuration.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByText('Historical key unavailable')).toBeVisible();
+    expect(screen.queryByText('Model needs a new key')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Use StepFun' })).not.toBeInTheDocument();
   });
 
-  it('shows both saved providers and switches without asking for another key', async () => {
+  it('keeps the StepFun key while requiring an explicit switch to SiliconFlow', async () => {
     const user = userEvent.setup();
     const credential = (provider: 'STEPFUN' | 'SILICONFLOW') => ({
+      capabilities: providerCapabilities[provider],
       createdAt: '2026-08-29T00:00:00.000Z',
       keyHint: '••••••••' as const,
       lastUsedAt: '2026-08-29T00:00:00.000Z',
@@ -245,13 +260,27 @@ describe('ProviderConfigPanel', () => {
 
     renderPanel(api);
 
-    expect(await screen.findByText('StepFun is selected for AI actions')).toBeVisible();
+    expect(
+      await screen.findByText(
+        'StepFun is still active for preparation. Classification and live node suggestions are disabled; switch to SiliconFlow.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByText('Active')).toBeVisible();
+    expect(screen.getByText('Live AI unavailable')).toBeVisible();
+    expect(screen.getAllByText('Not enabled')).toHaveLength(3);
+    expect(screen.queryByText('step-3.7-flash')).not.toBeInTheDocument();
     expect(screen.getByText('SiliconFlow is saved and ready to select')).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Use StepFun' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Use SiliconFlow' }));
 
     await waitFor(() => expect(selectProvider).toHaveBeenCalledWith('SILICONFLOW'));
     expect(await screen.findByText('SiliconFlow is selected for AI actions')).toBeVisible();
+    expect(
+      screen.getByText(
+        'StepFun key is retained for historical compatibility and cannot be selected for live AI.',
+      ),
+    ).toBeVisible();
     expect(screen.queryByLabelText('API key')).not.toBeInTheDocument();
   });
 });

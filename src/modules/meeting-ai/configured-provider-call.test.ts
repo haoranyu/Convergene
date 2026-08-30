@@ -55,12 +55,12 @@ describe('runConfiguredProviderCall', () => {
         markNeedsReconfiguration,
         resolve,
       },
+      'fast',
       preload,
     );
     const options = {
       fetch: () => Promise.resolve(new Response(null, { status: 401 })),
       prompt: 'Return status=ok.',
-      role: 'fast' as const,
       schema: outputSchema,
       schemaName: 'SafeTestOutput',
     };
@@ -73,7 +73,7 @@ describe('runConfiguredProviderCall', () => {
     );
 
     expect(resolve).toHaveBeenCalledOnce();
-    expect(resolve).toHaveBeenCalledWith(preload);
+    expect(resolve).toHaveBeenCalledWith('fast', preload);
     expect(markNeedsReconfiguration).toHaveBeenCalledTimes(2);
     expect(markNeedsReconfiguration).toHaveBeenNthCalledWith(
       1,

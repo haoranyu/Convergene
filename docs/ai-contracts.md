@@ -16,16 +16,22 @@
 - 输出失败时允许程序安全拒绝，不以“尽量展示”绕过 schema；
 - 不在服务端日志记录完整输入和输出。
 
-Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用已经通过 3/3
-产品展开验证的 `Qwen/Qwen3.5-4B`，并与复杂 role 一样显式发送
-`enable_thinking: false`；StepFun `fast` 使用 Step Plan 明确支持三档推理强度的
-`step-3.7-flash + reasoning_effort: low`，复杂 role 使用
-`step-3.5-flash-2603 + reasoning_effort: low`。
-所有任务都使用流式传输，但应用只在完整对象通过校验后消费结果：SiliconFlow fast 与复杂
-role 使用严格 `json_schema`；StepFun fast 使用 `json_object`、完整 Draft-7 system schema，
-复杂 role 使用严格 `json_schema`。两条路径都继续执行本地 Zod 和语言校验，且两家的专属字段
-不得互相发送。该策略不改变
-下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
+Provider request policy 由共享服务端 adapter 统一控制，但 preset 与凭证健康都不能替代运行时
+capability gate。每个任务先绑定 role，再按下面矩阵检查当前 Provider；只有 `AVAILABLE` 才能解密
+凭证、续期或调用上游：
+
+| Provider | `fast` | `grill` | `report` |
+|---|---|---|---|
+| `SILICONFLOW` | `AVAILABLE` | `AVAILABLE` | `UNAVAILABLE` |
+| `STEPFUN` | `UNAVAILABLE` | `AVAILABLE` | `UNAVAILABLE` |
+
+SiliconFlow `fast` 使用已经通过双语 3/3 产品展开验证的 `Qwen/Qwen3.5-4B`；它与 `grill` 一样
+使用流式严格 `json_schema` 并显式发送 `enable_thinking: false`。StepFun 只为升级前已经激活的
+历史配置保留 `grill`，使用 `step-3.5-flash-2603 + reasoning_effort: low` 与流式严格 schema；
+新的 test/save/activate 流程不能选择 StepFun。StepFun fast 的 JSON Mode 协议只作为历史探针与
+回归 fixture 保留，不进入产品 Route。所有获准调用仍只在完整对象通过本地 Zod、locale 与领域
+校验后消费结果，且两家的专属字段不得互相发送。该策略不移除 schema 校验、一次有界修复或
+确定性 fallback。
 
 共同 envelope：
 
@@ -64,6 +70,11 @@ ST-01 后，用户可在同一 Provider 内覆盖，不改变任务 schema。若
 部署：合并前必须通过完整本地门禁并确认账号可见模型，部署后立即跑真实 fast-role Route 与浏览器
 门禁，在结论产生前不得关闭 Issue；模型不可用时立即回滚，未达成功率或延迟目标时必须继续修正，
 不能把 canary 当成 passed。
+
+Role capability 与 credential health 是两个正交维度：`UNAVAILABLE` 表示产品契约、可靠性或延迟
+门禁未通过，并不表示 Key 失效。历史 StepFun 密文必须保留；只有原本已经激活 StepFun 的会话可
+继续执行 `grill`（Grill 与 initial-map），`fast`/`report` 都返回能力错误。即使同一配置中还有
+SiliconFlow 凭证，也不得自动 fallback；用户显式激活 SiliconFlow 后，新的请求才可走其 live path。
 
 ## 3. 剧本配置
 
@@ -327,8 +338,9 @@ interface ExpandNodeOutput {
 
 运行时契约：
 
-- 使用 `fast` role、调用方最多声明 384 output tokens（StepFun 由 adapter 提升到 512 安全下限），
-  并在 5 秒取消 Provider 调用；固定双候选和无 note 已缩短实际输出，同时避免推理型 StepFun 在正文完成前被截断；超时后立即回到
+- 使用 `fast` role；当前 live SiliconFlow 调用方最多声明 384 output tokens，并在 5 秒取消
+  Provider 调用。StepFun fast 的 512-token adapter 下限只服务历史 probe，不绕过 runtime
+  capability gate；固定双候选和无 note 已缩短实际输出；超时后立即回到
   可重试状态，不让一次交互继续占住画布；
 - Route 返回不含会议内容的 `Server-Timing`：始终包含 `expand` 总耗时，按固定名称追加已经开始的 `rate`、`config`、`provider` 阶段；正常进入 Provider 的请求包含四项。
 - 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；
@@ -461,6 +473,7 @@ type AIErrorCode =
   | 'PROVIDER_ACCESS_RESTRICTED'
   | 'PROVIDER_CONFIG_INVALID'
   | 'PROVIDER_CONFIG_UNAVAILABLE'
+  | 'PROVIDER_CAPABILITY_UNAVAILABLE'
   | 'PROVIDER_MODEL_NOT_FOUND'
   | 'PROVIDER_RATE_LIMITED'
   | 'PROVIDER_UNAVAILABLE'
@@ -487,8 +500,13 @@ type AIError =
 - 只有 HTTP 401 或供应商已验证的等价错误码映射为 `PROVIDER_AUTH_FAILED`，并只把本次使用的供应商槽标为需重配；
 - 通用 HTTP 403 映射为 `PROVIDER_ACCESS_RESTRICTED`，表示账号、模型或区域权限限制；它可由用户重试或显式切换供应商，但不能打开 Key 重配门禁；
 - 解密或 envelope 校验失败映射为 `PROVIDER_CONFIG_INVALID`；Redis、加密密钥或配置存储不可用映射为 `PROVIDER_CONFIG_UNAVAILABLE`；
+- 当前 Provider 不支持任务 role 时映射为 `PROVIDER_CAPABILITY_UNAVAILABLE` 和 HTTP 422；该错误
+  在解密、touch 和上游调用前产生，不计作凭证失败或可重试 Provider 5xx。画布移除骨架并保留
+  原图，但不显示会再次得到相同结果的“重试”动作；
 - 固定 preset model 被供应商拒绝为不存在时映射为 `PROVIDER_MODEL_NOT_FOUND`，不得退回调用任意 model；
 - 429 显示供应商限流，不自动切换另一个 Provider；403、429、timeout 和 5xx 都不得自动把会议内容发给另一家供应商；
+- capability 不可用时同样不得尝试记录中的另一家 Provider；只有用户显式切换后的新请求才能使用
+  新的 active Provider；
 - 5xx 可由用户重试；
 - schema 失败只对初始图自动修复一次；
 - 目标语言明显错误时允许用户重试，不能客户端自动翻译；

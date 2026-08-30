@@ -13,8 +13,9 @@ import type {
   ProviderConnectionResult,
   ProviderCredentialSummary,
   ProviderId,
+  ProviderModelRole,
 } from './model';
-import { providerIds } from './model';
+import { providerCapabilities, providerIds, providerSupportsRole } from './model';
 import { providerPresets } from './presets';
 import {
   createProviderSessionId,
@@ -52,6 +53,7 @@ export class ResolvedProviderConfigError extends Error {
   constructor(
     readonly code:
       | 'PROVIDER_AUTH_FAILED'
+      | 'PROVIDER_CAPABILITY_UNAVAILABLE'
       | 'PROVIDER_CONFIG_INVALID'
       | 'PROVIDER_CONFIG_UNAVAILABLE'
       | 'PROVIDER_NOT_CONFIGURED',
@@ -86,6 +88,13 @@ interface NormalizedRecord {
   record: EncryptedProviderConfigV2;
 }
 
+class ProviderRoleUnavailableBeforeNormalizationError extends Error {
+  constructor() {
+    super('PROVIDER_CAPABILITY_UNAVAILABLE');
+    this.name = 'ProviderRoleUnavailableBeforeNormalizationError';
+  }
+}
+
 function unavailable(): ProviderConfigServiceError {
   return new ProviderConfigServiceError('PROVIDER_CONFIG_UNAVAILABLE');
 }
@@ -112,6 +121,7 @@ function availableSummary(
         provider,
         credential
           ? {
+              capabilities: providerCapabilities[provider],
               createdAt: credential.createdAt,
               keyHint: constantKeyHint,
               lastUsedAt: credential.lastUsedAt,
@@ -330,6 +340,7 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
   async function readNormalizedRecord(
     sessionId: string,
     preload?: ProviderConfigPreload,
+    role?: ProviderModelRole,
   ): Promise<EncryptedProviderConfigV2 | null> {
     const key = providerConfigKey(sessionId);
     let pendingPreload = preload?.key === key && preload.record !== null ? preload : undefined;
@@ -340,6 +351,12 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         ? parseStoredRecord(currentPreload.record)
         : await readRecord(store, sessionId);
       if (!storedRecord) return null;
+
+      const storedProvider =
+        storedRecord.version === 1 ? storedRecord.provider : storedRecord.activeProvider;
+      if (role && !providerSupportsRole(storedProvider, role)) {
+        throw new ProviderRoleUnavailableBeforeNormalizationError();
+      }
 
       const normalized = normalizeRecord(storedRecord, keyring);
       if (!normalized.changed) {
@@ -465,7 +482,10 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       session.set(sessionId);
     },
 
-    async resolve(preload?: ProviderConfigPreload): Promise<ResolvedStoredProviderConfig> {
+    async resolve(
+      role: ProviderModelRole,
+      preload?: ProviderConfigPreload,
+    ): Promise<ResolvedStoredProviderConfig> {
       const sessionId = parseProviderSessionId(session.get());
       if (!sessionId) {
         throw new ResolvedProviderConfigError('PROVIDER_NOT_CONFIGURED');
@@ -479,8 +499,14 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         const preloadWasUsed = currentPreload?.key === configKey && currentPreload.record !== null;
         pendingPreload = undefined;
         try {
-          record = await readNormalizedRecord(sessionId, currentPreload);
+          record = await readNormalizedRecord(sessionId, currentPreload, role);
         } catch (error) {
+          if (error instanceof ProviderRoleUnavailableBeforeNormalizationError) {
+            if (preloadWasUsed) {
+              continue;
+            }
+            throw new ResolvedProviderConfigError('PROVIDER_CAPABILITY_UNAVAILABLE');
+          }
           if (
             error instanceof ProviderConfigServiceError &&
             error.code === 'PROVIDER_CONFIG_INVALID'
@@ -501,6 +527,12 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         const credential = record.providers[provider];
         if (!credential) {
           throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
+        }
+        if (!providerSupportsRole(provider, role)) {
+          if (preloadWasUsed) {
+            continue;
+          }
+          throw new ResolvedProviderConfigError('PROVIDER_CAPABILITY_UNAVAILABLE');
         }
         if (credential.health === 'AUTH_REJECTED') {
           if (preloadWasUsed) {
@@ -582,6 +614,9 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
     },
 
     async save(input: ProviderConfigInput, signal?: AbortSignal): Promise<ProviderConfigSummary> {
+      if (!providerSupportsRole(input.provider, 'fast')) {
+        throw new ProviderConfigServiceError('PROVIDER_CAPABILITY_UNAVAILABLE');
+      }
       await testConnection(input, signal);
 
       const existingSessionId = parseProviderSessionId(session.get());
@@ -649,6 +684,9 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       if (!sessionId) {
         throw new ProviderConfigServiceError('PROVIDER_CONFIG_INVALID');
       }
+      if (!providerSupportsRole(provider, 'fast')) {
+        throw new ProviderConfigServiceError('PROVIDER_CAPABILITY_UNAVAILABLE');
+      }
 
       const updated = await updateRecord(sessionId, (record) => {
         const credential = record?.providers[provider];
@@ -667,7 +705,13 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       return availableSummary(updated, keyring);
     },
 
-    test(input: ProviderConfigInput, signal?: AbortSignal): Promise<ProviderConnectionResult> {
+    async test(
+      input: ProviderConfigInput,
+      signal?: AbortSignal,
+    ): Promise<ProviderConnectionResult> {
+      if (!providerSupportsRole(input.provider, 'fast')) {
+        throw new ProviderConfigServiceError('PROVIDER_CAPABILITY_UNAVAILABLE');
+      }
       return testConnection(input, signal);
     },
   };

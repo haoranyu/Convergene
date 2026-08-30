@@ -28,6 +28,19 @@ describe('meeting AI public error contract', () => {
     ).toEqual({ error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false });
   });
 
+  it('accepts capability failures while stripping private detail and output diagnostics', () => {
+    expect(
+      meetingAIErrorResponseSchema.parse({
+        error: {
+          code: 'PROVIDER_CAPABILITY_UNAVAILABLE',
+          detail: 'private runtime detail',
+          outputFailure: 'SCHEMA_MISMATCH',
+        },
+        ok: false,
+      }),
+    ).toEqual({ error: { code: 'PROVIDER_CAPABILITY_UNAVAILABLE' }, ok: false });
+  });
+
   it('rejects output failure values outside the public allowlist', () => {
     expect(() =>
       meetingAIErrorResponseSchema.parse({

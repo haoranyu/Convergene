@@ -24,14 +24,13 @@ export async function POST(request: Request): Promise<Response> {
     const envelope = await readJsonInput(request, grillRequestSchema, grillMaximumRequestBodyBytes);
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 20, 60, 'grill');
-    const callProvider = await resolveConfiguredProviderCaller(service);
+    const callProvider = await resolveConfiguredProviderCaller(service, 'grill');
     const output = await runReliableGrillCall({
       callProvider: (prompt) =>
         callProvider({
           abortSignal: request.signal,
           maxOutputTokens: 4_096,
           prompt,
-          role: 'grill',
           schema: providerGrillOutputSchema,
           schemaName: 'GrillOutput',
           timeoutMs: 45_000,

@@ -55,7 +55,7 @@ export async function POST(request: Request): Promise<Response> {
       enforceProviderConfigRateLimit(request, store, 20, 60, 'expand-node'),
     );
     const callProvider = await measure('config', timings, () =>
-      resolveConfiguredProviderCaller(service, rateLimitGrant.config),
+      resolveConfiguredProviderCaller(service, 'fast', rateLimitGrant.config),
     );
     const output = await measure('provider', timings, () =>
       runExpandNodeProviderTask(callProvider, envelope, request.signal),

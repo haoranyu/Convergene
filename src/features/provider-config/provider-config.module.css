@@ -54,6 +54,10 @@
   justify-content: space-between;
 }
 
+.statusTags {
+  justify-content: flex-end;
+}
+
 .statusTitle,
 .formTitle {
   margin: 0 !important;
@@ -103,10 +107,21 @@
 
 .modelRow dd {
   color: var(--color-foreground);
-  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
   font-size: 12px;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.modelValue {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.modelValue code {
+  color: var(--color-foreground);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
 
 .statusActions,
@@ -171,6 +186,10 @@
   .presetHeading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .statusTags {
+    justify-content: flex-start;
   }
 
   .modelRow {

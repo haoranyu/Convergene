@@ -34,11 +34,14 @@ export async function POST(request: Request): Promise<Response> {
       60,
       'classify-meeting',
     );
-    const callProvider = await resolveConfiguredProviderCaller(service, rateLimitGrant.config);
+    const callProvider = await resolveConfiguredProviderCaller(
+      service,
+      'fast',
+      rateLimitGrant.config,
+    );
     const output = await callProvider({
       abortSignal: request.signal,
       prompt: buildClassifyMeetingPrompt(envelope.input, envelope.outputLocale),
-      role: 'fast',
       schema: classifyMeetingOutputSchema,
       schemaName: 'ClassifyMeetingOutput',
     });

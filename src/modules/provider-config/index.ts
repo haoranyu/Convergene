@@ -4,13 +4,19 @@ export {
   providerConfigInputSchema,
   providerConfigSummarySchema,
   providerConnectionResultSchema,
+  providerCapabilityStateSchema,
+  providerCapabilityStates,
+  providerCapabilities,
   providerIdSchema,
   providerIds,
   providerModelPresets,
   providerModelMappingSchema,
+  providerRoleCapabilitiesSchema,
   providerSelectionInputSchema,
+  providerSupportsRole,
 } from './model';
 export type {
+  ProviderCapabilityState,
   ProviderConfigApiResponse,
   ProviderConfigErrorCode,
   ProviderConfigInput,
@@ -19,5 +25,7 @@ export type {
   ProviderCredentialSummary,
   ProviderId,
   ProviderModelMapping,
+  ProviderModelRole,
+  ProviderRoleCapabilities,
   ProviderSelectionInput,
 } from './model';

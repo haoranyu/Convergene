@@ -23,6 +23,7 @@ export interface MeetingCanvasCommandProbe {
 
 export interface MeetingCanvasBrowserProbe {
   commandLog: MeetingCanvasCommandProbe[];
+  expansionRequests: number;
   releaseExpansionStorage?: () => void;
   storageStarted: boolean;
 }
@@ -34,7 +35,11 @@ declare global {
 }
 
 const commandLog: MeetingCanvasCommandProbe[] = [];
-const browserProbe: MeetingCanvasBrowserProbe = { commandLog, storageStarted: false };
+const browserProbe: MeetingCanvasBrowserProbe = {
+  commandLog,
+  expansionRequests: 0,
+  storageStarted: false,
+};
 window.__convergeneMeetingCanvasProbe = browserProbe;
 
 function success(): Promise<CanvasCommandResult> {
@@ -43,7 +48,7 @@ function success(): Promise<CanvasCommandResult> {
 
 function MeetingCanvasBrowserFixture() {
   const [aggregate, setAggregate] = useState(createMeetingCanvasTestFixture);
-  const expansionFails = new URLSearchParams(window.location.search).get('expansion') === 'error';
+  const expansionFailure = new URLSearchParams(window.location.search).get('expansion');
   const commands = useMemo<CanvasCommands>(
     () => ({
       applyExpansion: () => {
@@ -169,7 +174,14 @@ function MeetingCanvasBrowserFixture() {
             aggregate={aggregate}
             commands={commands}
             expandNode={async (_request: ExpandNodeRequest) => {
-              if (expansionFails) {
+              browserProbe.expansionRequests += 1;
+              if (expansionFailure === 'capability') {
+                return {
+                  error: { code: 'PROVIDER_CAPABILITY_UNAVAILABLE' },
+                  ok: false,
+                } as const;
+              }
+              if (expansionFailure === 'retryable') {
                 return {
                   error: { code: 'OUTPUT_INVALID', outputFailure: 'SCHEMA_MISMATCH' },
                   ok: false,

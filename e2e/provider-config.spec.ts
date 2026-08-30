@@ -1,22 +1,56 @@
 import { expect, test } from '@playwright/test';
 
+const siliconFlowCredential = {
+  capabilities: {
+    fast: 'AVAILABLE',
+    grill: 'AVAILABLE',
+    report: 'UNAVAILABLE',
+  },
+  createdAt: '2026-08-29T00:00:00.000Z',
+  keyHint: '••••••••',
+  lastUsedAt: '2026-08-29T00:00:00.000Z',
+  models: {
+    fast: 'Qwen/Qwen3.5-4B',
+    grill: 'deepseek-ai/DeepSeek-V4-Flash',
+    report: 'deepseek-ai/DeepSeek-V4-Flash',
+  },
+  provider: 'SILICONFLOW',
+  state: 'AVAILABLE',
+} as const;
+
+const stepFunCredential = {
+  capabilities: {
+    fast: 'UNAVAILABLE',
+    grill: 'AVAILABLE',
+    report: 'UNAVAILABLE',
+  },
+  createdAt: '2026-08-28T00:00:00.000Z',
+  keyHint: '••••••••',
+  lastUsedAt: '2026-08-28T00:00:00.000Z',
+  models: {
+    fast: 'step-3.7-flash',
+    grill: 'step-3.5-flash-2603',
+    report: 'step-3.5-flash-2603',
+  },
+  provider: 'STEPFUN',
+  state: 'AVAILABLE',
+} as const;
+
 const availableSummary = {
+  activeProvider: 'SILICONFLOW',
+  configured: true,
+  providers: {
+    SILICONFLOW: siliconFlowCredential,
+    STEPFUN: null,
+  },
+} as const;
+
+const historicalStepSummary = {
   activeProvider: 'STEPFUN',
   configured: true,
   providers: {
-    SILICONFLOW: null,
-    STEPFUN: {
-      createdAt: '2026-08-29T00:00:00.000Z',
-      keyHint: '••••••••',
-      lastUsedAt: '2026-08-29T00:00:00.000Z',
-      models: {
-        fast: 'step-3.7-flash',
-        grill: 'step-3.5-flash-2603',
-        report: 'step-3.5-flash-2603',
-      },
-      provider: 'STEPFUN',
-      state: 'AVAILABLE',
-    },
+    SILICONFLOW: siliconFlowCredential,
+    STEPFUN: stepFunCredential,
   },
 } as const;
 
@@ -38,7 +72,10 @@ test('tests and saves a key without echoing or retaining it in the form', async 
     await route.fulfill({
       json: {
         ok: true,
-        value: { models: availableSummary.providers.STEPFUN.models, provider: 'STEPFUN' },
+        value: {
+          models: availableSummary.providers.SILICONFLOW.models,
+          provider: 'SILICONFLOW',
+        },
       },
     });
   });
@@ -64,51 +101,80 @@ test('tests and saves a key without echoing or retaining it in the form', async 
     page.getByText('Connection verified. You can save this configuration.'),
   ).toBeVisible();
   await expect(apiKey).toHaveValue('');
-  expect(testedBody).toEqual({ apiKey: 'sk-browser-only-secret', provider: 'STEPFUN' });
+  expect(testedBody).toEqual({ apiKey: 'sk-browser-only-secret', provider: 'SILICONFLOW' });
 
   await page.getByRole('button', { name: 'Save configuration' }).click();
 
   await expect(page.getByText('••••••••')).toBeVisible();
-  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
-  await expect(page.getByText('step-3.7-flash').first()).toBeVisible();
+  await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
+  await expect(page.getByText('Qwen/Qwen3.5-4B').first()).toBeVisible();
   await expect(
     page.getByText('Model configuration saved. The API key is hidden from now on.'),
   ).toBeVisible();
   await expect(page.locator('body')).not.toContainText('sk-browser-only-secret');
-  expect(savedBody).toEqual({ apiKey: 'sk-browser-only-secret', provider: 'STEPFUN' });
+  expect(savedBody).toEqual({ apiKey: 'sk-browser-only-secret', provider: 'SILICONFLOW' });
   expect(await page.evaluate(() => window.localStorage.length)).toBe(0);
 });
 
-test('restores both providers and switches repeatedly without requesting either key', async ({
+test('keeps a historical StepFun key limited until the user explicitly selects SiliconFlow', async ({
   page,
 }) => {
+  let activeProvider: 'SILICONFLOW' | 'STEPFUN' = 'STEPFUN';
+  const selections: unknown[] = [];
+
+  await page.route('**/api/provider-config/status', async (route) => {
+    await route.fulfill({
+      json: {
+        ok: true,
+        value: { ...historicalStepSummary, activeProvider },
+      },
+    });
+  });
+  await page.route('**/api/provider-config', async (route) => {
+    if (route.request().method() !== 'PATCH') {
+      await route.fallback();
+      return;
+    }
+
+    const body = route.request().postDataJSON();
+    selections.push(body);
+    activeProvider = 'SILICONFLOW';
+    await route.fulfill({
+      json: {
+        ok: true,
+        value: { ...historicalStepSummary, activeProvider },
+      },
+    });
+  });
+
   await page.goto('/en-US/settings/model');
-  await page.getByLabel('API key').fill('e2e-stepfun-placeholder');
-  await page.getByRole('button', { name: 'Test connection' }).click();
-  await expect(
-    page.getByText('Connection verified. You can save this configuration.'),
-  ).toBeVisible();
-  await page.getByRole('button', { name: 'Save configuration' }).click();
-  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Add another provider' }).click();
-  await page.getByLabel('API key').fill('e2e-siliconflow-placeholder');
-  await page.getByRole('button', { name: 'Test connection' }).click();
   await expect(
-    page.getByText('Connection verified. You can save this configuration.'),
+    page.getByText(
+      'StepFun is still active for preparation. Classification and live node suggestions are disabled; switch to SiliconFlow.',
+    ),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Save configuration' }).click();
-  await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
-  await expect(page.getByText('StepFun is saved and ready to select')).toBeVisible();
+  await expect(page.getByText('Active', { exact: true })).toBeVisible();
+  await expect(page.getByText('Live AI unavailable')).toBeVisible();
+  await expect(page.getByText('Not enabled')).toHaveCount(3);
+  await expect(page.getByText('step-3.7-flash')).toHaveCount(0);
   await expect(page.getByLabel('API key')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Use StepFun' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Replace configuration' })).toHaveCount(1);
+  expect(selections).toEqual([]);
 
-  await page.getByRole('button', { name: 'Use StepFun' }).click();
-  await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
   await page.getByRole('button', { name: 'Use SiliconFlow' }).click();
+  expect(selections).toEqual([{ activeProvider: 'SILICONFLOW' }]);
+  await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
   await page.reload();
 
   await expect(page.getByText('SiliconFlow is selected for AI actions')).toBeVisible();
-  await expect(page.getByText('StepFun is saved and ready to select')).toBeVisible();
+  await expect(
+    page.getByText(
+      'StepFun key is retained for historical compatibility and cannot be selected for live AI.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Use StepFun' })).toHaveCount(0);
   await expect(page.getByLabel('API key')).toHaveCount(0);
 });
 
@@ -131,9 +197,8 @@ test('validates locally and renders only safe provider error copy', async ({ pag
   await page.goto('/en-US/settings/model');
 
   const provider = page.getByRole('combobox', { name: 'Provider' });
-  await expect(provider).toContainText('StepFun');
-  await provider.click();
-  await page.getByRole('option', { name: 'SiliconFlow' }).click();
+  await expect(provider).toContainText('SiliconFlow');
+  await expect(provider).toContainText('Live AI');
   await expect(page.getByText('Qwen/Qwen3.5-4B').first()).toBeVisible();
   await expect(page.getByText('deepseek-ai/DeepSeek-V4-Flash').first()).toBeVisible();
 

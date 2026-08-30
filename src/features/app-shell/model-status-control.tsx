@@ -46,7 +46,32 @@ export function ModelStatusControl() {
 
   const activeCredential = status?.configured ? status.providers[status.activeProvider] : null;
 
-  if (status?.configured && activeCredential?.state === 'AVAILABLE') {
+  if (status?.configured && activeCredential?.state === 'NEEDS_RECONFIGURATION') {
+    return (
+      <ProviderConfigGate onConfigured={setStatus}>
+        {({ open }) => (
+          <Button
+            className={styles.modelNeedsAttention}
+            icon={<IconExclamationCircleFill aria-hidden="true" />}
+            onClick={open}
+            status="warning"
+          >
+            {providerT(
+              status.activeProvider === 'STEPFUN'
+                ? 'status.retainedUnavailable'
+                : 'status.needsReconfiguration',
+            )}
+          </Button>
+        )}
+      </ProviderConfigGate>
+    );
+  }
+
+  if (
+    status?.configured &&
+    activeCredential?.state === 'AVAILABLE' &&
+    activeCredential.capabilities.fast === 'AVAILABLE'
+  ) {
     const provider = providerT(
       status.activeProvider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name',
     );
@@ -58,7 +83,7 @@ export function ModelStatusControl() {
     );
   }
 
-  if (status?.configured && activeCredential?.state === 'NEEDS_RECONFIGURATION') {
+  if (status?.configured && activeCredential?.capabilities.fast === 'UNAVAILABLE') {
     return (
       <ProviderConfigGate onConfigured={setStatus}>
         {({ open }) => (
@@ -68,7 +93,7 @@ export function ModelStatusControl() {
             onClick={open}
             status="warning"
           >
-            {providerT('status.needsReconfiguration')}
+            {providerT('status.capabilityUnavailable')}
           </Button>
         )}
       </ProviderConfigGate>

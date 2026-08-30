@@ -100,7 +100,7 @@ describe('expand-node route timing stages', () => {
       60,
       'expand-node',
     );
-    expect(mocks.resolveProvider).toHaveBeenCalledWith(runtimeService, preloadedConfig);
+    expect(mocks.resolveProvider).toHaveBeenCalledWith(runtimeService, 'fast', preloadedConfig);
   });
 
   it.each([

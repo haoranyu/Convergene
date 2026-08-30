@@ -107,6 +107,7 @@ function statusForErrorCode(code: ProviderConfigErrorCode): number {
       return 401;
     case 'PROVIDER_CONFIG_INVALID':
     case 'PROVIDER_MODEL_NOT_FOUND':
+    case 'PROVIDER_CAPABILITY_UNAVAILABLE':
       return 422;
     case 'PROVIDER_RATE_LIMITED':
     case 'RATE_LIMITED':
@@ -140,6 +141,7 @@ export function providerConfigErrorResponse(error: unknown): Response {
             'ORIGIN_INVALID',
             'PROVIDER_AUTH_FAILED',
             'PROVIDER_ACCESS_RESTRICTED',
+            'PROVIDER_CAPABILITY_UNAVAILABLE',
             'PROVIDER_CONFIG_INVALID',
             'PROVIDER_CONFIG_UNAVAILABLE',
             'PROVIDER_MODEL_NOT_FOUND',

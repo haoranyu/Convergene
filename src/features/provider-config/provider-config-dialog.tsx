@@ -11,20 +11,21 @@ import styles from './provider-config-settings.module.css';
 
 interface ProviderConfigDialogProps {
   api?: ProviderConfigClient;
+  gateErrorCode?:
+    'PROVIDER_AUTH_FAILED' | 'PROVIDER_CAPABILITY_UNAVAILABLE' | 'PROVIDER_CONFIG_INVALID';
   onAfterClose?: () => void;
   onClose: () => void;
   onConfigured?: (summary: ProviderConfigSummary) => void;
   open: boolean;
-  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID';
 }
 
 export function ProviderConfigDialog({
   api,
+  gateErrorCode,
   onAfterClose,
   onClose,
   onConfigured,
   open,
-  reconfigurationErrorCode,
 }: ProviderConfigDialogProps) {
   const t = useTranslations('providerConfig');
 
@@ -48,8 +49,8 @@ export function ProviderConfigDialog({
       <ProviderConfigPanel
         api={api}
         compact
+        gateErrorCode={gateErrorCode}
         onConfigured={onConfigured}
-        reconfigurationErrorCode={reconfigurationErrorCode}
       />
     </Modal>
   );

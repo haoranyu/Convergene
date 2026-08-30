@@ -14,6 +14,12 @@ describe('ProviderConfigGate', () => {
       'PROVIDER_AUTH_FAILED',
     );
     expect(
+      providerConfigGateReason({
+        error: { code: 'PROVIDER_CAPABILITY_UNAVAILABLE' },
+        ok: false,
+      }),
+    ).toBe('PROVIDER_CAPABILITY_UNAVAILABLE');
+    expect(
       providerConfigGateReason({ error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false }),
     ).toBeNull();
     expect(
