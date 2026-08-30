@@ -46,7 +46,11 @@ function createStreamingResponse(provider: ValidationProvider, modelId: string):
   );
 }
 
-function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, modelId: string) {
+function createOpenAICompatibleStreamingFetch(
+  provider: ValidationProvider,
+  modelId: string,
+  expectedReasoningEffort: 'low' | null = provider === 'STEPFUN' ? 'low' : null,
+) {
   return async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const requestBody = JSON.parse(String(init?.body)) as {
       enable_thinking?: boolean;
@@ -64,7 +68,7 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
       `${providerValidationDefinitions[provider].baseURL}/chat/completions`,
     );
     expect(requestBody.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
-    expect(requestBody.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
+    expect(requestBody.reasoning_effort).toBe(expectedReasoningEffort ?? undefined);
     expect(requestBody.max_tokens).toBe(512);
     expect(requestBody.response_format?.type).toBe(
       provider === 'STEPFUN' ? 'json_object' : 'json_schema',
@@ -88,7 +92,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)(
   '%s OpenAI-compatible adapter validation',
   (provider) => {
     it('streams the provider output mode and returns only safe latency metadata', async () => {
-      const modelId = 'test-model';
+      const modelId = provider === 'STEPFUN' ? 'step-3.7-flash' : 'test-model';
       const timestamps = [100, 112, 145];
       const result = await runProviderStructuredOutputProbe({
         apiKey: 'test-only-placeholder-key',
@@ -167,3 +171,24 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)(
     });
   },
 );
+
+describe('StepFun probe request policy', () => {
+  it.each([
+    ['step-3.5-flash-2603', 'low'],
+    ['step-3.5-flash', null],
+  ] as const)(
+    'sends only the reasoning effort supported by %s',
+    async (modelId, reasoningEffort) => {
+      const timestamps = [100, 112, 145];
+      const result = await runProviderStructuredOutputProbe({
+        apiKey: 'test-only-placeholder-key',
+        fetch: createOpenAICompatibleStreamingFetch('STEPFUN', modelId, reasoningEffort),
+        modelId,
+        now: () => timestamps.shift()!,
+        provider: 'STEPFUN',
+      });
+
+      expect(result).toMatchObject({ modelId, outputValidated: true, provider: 'STEPFUN' });
+    },
+  );
+});

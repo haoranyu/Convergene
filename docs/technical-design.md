@@ -378,7 +378,7 @@ const providerPresets = {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
     defaultModels: {
       grill: 'step-3.5-flash-2603',
-      fast: 'step-3.5-flash-2603',
+      fast: 'step-3.7-flash',
       report: 'step-3.5-flash-2603'
     }
   },
@@ -396,9 +396,10 @@ const providerPresets = {
 2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
 SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
 实时节点展开的 `fast` preset。`step-3.7-flash` 曾在当前 Step Plan 账号通过生产 JSON Mode
-分类调用，但官方 Chat Completions 文档只对 `step-3.5-flash-2603` 声明支持
-`reasoning_effort`；PR #46 证明移除该字段后 3.7 的双语分类和展开仍不能满足交互边界。fast 因而
-改测 Step Plan 明确支持、且官方允许 `reasoning_effort: low` 的 `step-3.5-flash-2603`。
+分类调用；PR #46 在当时文档未声明支持时移除 `reasoning_effort`，但 3.7 的双语分类和展开仍
+不能满足交互边界；PR #47 随后证明 `hkg1 + step-3.5-flash-2603 + low` 的分类基线超过 5 秒，
+英文展开 0/3、简中 1/3。2026-08-31 的 StepFun live 文档已经明确将 3.7 加入 Step Plan，并声明
+其支持 `low/medium/high`，因此 fast 改测此前未覆盖的 `hkg1 + step-3.7-flash + low`。
 `step-1o-turbo-vision` 只在标准 API 有官方示例，不能假设 sponsor 的 `/step_plan/v1` endpoint 和
 额度支持它。PR #43 的后续生产门禁证明
 `Qwen/Qwen3.5-4B` 虽然 3/3 成功，但 4,604ms 中位耗时仍未达到 3 秒门槛；PR #44 又证明
@@ -726,7 +727,7 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 创建 Upstash Redis Free 实例，并用临时注入的服务端环境变量验证加密 set/get/续期/delete；
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
-- [ ] 用 sponsor Key 分别重跑 StepFun `step-3.5-flash-2603` 的 fast minimal/classification/expansion、
+- [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
   `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Qwen/Qwen3.5-4B`
   的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家英文与简中
   expansion 都必须 3/3 成功且中位数不超过 3 秒；

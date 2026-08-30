@@ -21,10 +21,20 @@ export const providerValidationDefinitions = {
 
 export type ValidationProvider = keyof typeof providerValidationDefinitions;
 
-const providerProbeRequestPolicies = {
-  SILICONFLOW: { siliconflowValidation: { enable_thinking: false } },
-  STEPFUN: { stepfunValidation: { reasoningEffort: 'low' } },
-} as const satisfies Record<ValidationProvider, Record<string, Record<string, boolean | string>>>;
+function providerProbeRequestPolicy(
+  provider: ValidationProvider,
+  modelId: string,
+): Record<string, Record<string, boolean | string>> {
+  if (provider === 'SILICONFLOW') {
+    return { siliconflowValidation: { enable_thinking: false } };
+  }
+  return {
+    stepfunValidation:
+      modelId === 'step-3.7-flash' || modelId === 'step-3.5-flash-2603'
+        ? { reasoningEffort: 'low' }
+        : {},
+  };
+}
 
 const structuredProbeSchema = z.object({
   provider: z.enum(['STEPFUN', 'SILICONFLOW']),
@@ -123,7 +133,7 @@ export async function runProviderStructuredOutputProbe({
         schema: structuredProbeSchema,
       }),
       prompt: `Return only this JSON object with no extra keys: {"provider":"${provider}","status":"ok","value":7}.`,
-      providerOptions: providerProbeRequestPolicies[provider],
+      providerOptions: providerProbeRequestPolicy(provider, modelId),
       ...(provider === 'STEPFUN'
         ? {
             system: [

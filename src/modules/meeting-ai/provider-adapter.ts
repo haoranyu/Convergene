@@ -35,7 +35,9 @@ function providerRequestPolicy(
   modelId: string,
 ): Record<string, boolean | string> {
   if (provider === 'SILICONFLOW') return { enable_thinking: false };
-  return modelId === 'step-3.5-flash-2603' ? { reasoningEffort: 'low' } : {};
+  return modelId === 'step-3.7-flash' || modelId === 'step-3.5-flash-2603'
+    ? { reasoningEffort: 'low' }
+    : {};
 }
 
 function jsonObjectSystemInstruction(schemaName: string, schema: z.ZodType): string {
