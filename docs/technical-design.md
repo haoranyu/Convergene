@@ -376,7 +376,11 @@ interface EncryptedProviderConfigV2 {
 const providerPresets = {
   STEPFUN: {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
-    defaultModels: { grill: 'step-3.7-flash', fast: 'step-3.7-flash', report: 'step-3.7-flash' }
+    defaultModels: {
+      grill: 'step-3.5-flash-2603',
+      fast: 'step-3.5-flash-2603',
+      report: 'step-3.5-flash-2603'
+    }
   },
   SILICONFLOW: {
     baseURL: 'https://api.siliconflow.cn/v1',
@@ -389,7 +393,18 @@ const providerPresets = {
 } as const
 ```
 
-2026-08-29 的真实 sponsor probe 已验证 StepFun 的 `step-3.7-flash` 与硅基流动的 `deepseek-ai/DeepSeek-V4-Flash`：二者均通过 streaming、JSON Schema、1ms 取消与无效模型错误归一化，因此批准为 P0 preset。共享 OpenAI-compatible adapter 必须显式声明 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON schema。所有产品结构化请求（包括配置连接测试）必须在以 preset `name` 为 key 的 `providerOptions` 中使用该供应商最低推理策略：硅基流动发送 `enable_thinking: false` 完全关闭 thinking；StepFun `step-3.7-flash` 没有关闭档，只支持 `low`、`medium`、`high`，因此发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担可靠性边界。
+2026-08-29 的真实 sponsor probe 曾验证 StepFun `step-3.7-flash` 的最小结构化输出；但
+2026-08-30 的产品级节点展开暴露无效结构后，官方 Chat Completion 文档确认 `json_schema` 只由
+`step-3.5-flash` 与 `step-3.5-flash-2603` 支持。因此当前 P0 preset 改为后者；该模型同时是
+Step Plan 当前支持、针对高频 Agent 与低推理延迟优化的模型。硅基流动继续使用已验证的
+`deepseek-ai/DeepSeek-V4-Flash`。共享 OpenAI-compatible adapter 必须显式声明
+`supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON
+schema。所有产品结构化请求（包括配置连接测试）必须在以 preset `name` 为 key 的
+`providerOptions` 中使用该供应商最低推理策略：硅基流动发送 `enable_thinking: false`，StepFun
+`step-3.5-flash-2603` 发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务
+需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
+可靠性边界；新 preset 仍须通过 credential-gated 产品 Route 与生产浏览器门禁，不能借用历史
+最小 schema 的样本宣称通过。
 
 StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免 StepFun 在稍复杂的分类中发出 JSON 前耗尽 reasoning budget。probe 使用与产品一致的双方最低推理策略和 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
@@ -685,7 +700,8 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 
 - [x] 创建 Upstash Redis Free 实例，并用临时注入的服务端环境变量验证加密 set/get/续期/delete；
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
-- [x] 用 sponsor Key 验证两个 Provider 的 Base URL、模型 id、streaming、结构化输出、timeout 和错误格式；六个 live case 均通过；
+- [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
+- [ ] 用 sponsor Key 重跑当前 StepFun `step-3.5-flash-2603` 的 minimal、Grill 与 initial-map 复杂契约，并完成两家 Provider 的窄 expansion Route 三样本门禁；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；
 - [x] 在 test-only Vite page 用真实 Chromium 验证 12 节点长文本 DOM 尺寸/换行、Dagre LR、subtree bounds/viewport 和 React Flow instance 显式 `fitView`；
 - [x] 验证 Mermaid flowchart、受控 period label 的 timeline 和 pie；时钟冒号 timeline 降级为 flowchart/table；

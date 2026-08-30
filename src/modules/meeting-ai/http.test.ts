@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { MeetingAIContractError } from './classify-meeting';
 import { meetingAIErrorResponse } from './http';
+import { ProviderGatewayError } from './provider-adapter';
 
 describe('meeting AI HTTP errors', () => {
   it('keeps unexpected failures distinct from provider configuration failures', async () => {
@@ -20,6 +21,16 @@ describe('meeting AI HTTP errors', () => {
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({
       error: { code: 'OUTPUT_LANGUAGE_MISMATCH' },
+      ok: false,
+    });
+  });
+
+  it('maps provider schema failures to the public retryable output category', async () => {
+    const response = meetingAIErrorResponse(new ProviderGatewayError('OUTPUT_INVALID'));
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: 'OUTPUT_INVALID' },
       ok: false,
     });
   });

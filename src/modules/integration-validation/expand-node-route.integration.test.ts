@@ -102,8 +102,10 @@ async function runExpansionRoute(requestId: string): Promise<number> {
   const body = expandNodeResponseSchema.parse(await response.json());
   expect(body.requestId).toBe(requestId);
   expect(body.task).toBe('expand-node');
-  expect(body.output.children.length).toBeGreaterThanOrEqual(2);
-  expect(body.output.children.length).toBeLessThanOrEqual(4);
+  expect(body.output.children).toHaveLength(2);
+  for (const child of body.output.children) {
+    expect(Object.keys(child).sort()).toEqual(['kind', 'title']);
+  }
   expect(expandNodeOutputMatchesLocale(body.output, 'en-US')).toBe(true);
   return Number(serverTiming!.slice('expand;dur='.length));
 }
@@ -145,31 +147,33 @@ describe('live expand-node route validation', () => {
     );
   }
 
-  const stepFunApiKey = process.env.STEPFUN_API_KEY;
-  const stepFunModelId = process.env.STEPFUN_VALIDATION_MODEL;
-  const performanceTest = stepFunApiKey && stepFunModelId ? it : it.skip;
-  performanceTest(
-    'STEPFUN keeps the median of three production-route expansions within the interaction target',
-    async () => {
-      expect(stepFunModelId).toBe(providerPresets.STEPFUN.models.fast);
-      await configureProvider('STEPFUN', stepFunApiKey!);
-      const durations: number[] = [];
+  for (const [providerIndex, probeCase] of liveProviderCases.entries()) {
+    const apiKey = process.env[probeCase.apiKeyEnvironmentVariable];
+    const modelId = process.env[probeCase.modelEnvironmentVariable];
+    const performanceTest = apiKey && modelId ? it : it.skip;
+    performanceTest(
+      `${probeCase.provider} keeps the median of three production-route expansions within the interaction target`,
+      async () => {
+        expect(modelId).toBe(providerPresets[probeCase.provider].models.fast);
+        await configureProvider(probeCase.provider, apiKey!);
+        const durations: number[] = [];
 
-      try {
-        for (const requestId of [
-          '00000000-0000-4000-8000-000000000001',
-          '00000000-0000-4000-8000-000000000002',
-          '00000000-0000-4000-8000-000000000003',
-        ]) {
-          durations.push(await runExpansionRoute(requestId));
+        try {
+          for (const sample of [1, 2, 3]) {
+            durations.push(
+              await runExpansionRoute(
+                `00000000-0000-4000-8${providerIndex}00-${String(sample).padStart(12, '0')}`,
+              ),
+            );
+          }
+        } finally {
+          await clearProvider();
         }
-      } finally {
-        await clearProvider();
-      }
 
-      const medianDurationMs = [...durations].sort((left, right) => left - right)[1]!;
-      expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
-    },
-    55_000,
-  );
+        const medianDurationMs = [...durations].sort((left, right) => left - right)[1]!;
+        expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
+      },
+      55_000,
+    );
+  }
 });

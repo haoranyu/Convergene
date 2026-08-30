@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   expandNodeOutputSchema,
+  expandNodeProviderOutputSchema,
   expandNodeRequestSchema,
   expandNodeResponseSchema,
   strategyIdsForMode,
@@ -85,14 +86,29 @@ describe('expand-node contract', () => {
     ).toThrow();
   });
 
-  it('publishes the 48-character title bound in the provider JSON Schema', () => {
-    const schema = z.toJSONSchema(expandNodeOutputSchema) as unknown as {
+  it('publishes a narrow provider JSON Schema for the interactive task', () => {
+    const schema = z.toJSONSchema(expandNodeProviderOutputSchema) as unknown as {
       properties: {
-        children: { items: { properties: { title: { maxLength?: number } } } };
+        children: {
+          items: {
+            additionalProperties?: boolean;
+            properties: {
+              title: { maxLength?: number };
+            };
+            required?: string[];
+          };
+          maxItems?: number;
+          minItems?: number;
+        };
       };
     };
 
     expect(schema.properties.children.items.properties.title.maxLength).toBe(48);
+    expect(schema.properties.children.items.required).toEqual(['kind', 'title']);
+    expect(schema.properties.children.items.additionalProperties).toBe(false);
+    expect(schema.properties.children.items.properties).not.toHaveProperty('note');
+    expect(schema.properties.children.minItems).toBe(2);
+    expect(schema.properties.children.maxItems).toBe(2);
   });
 
   it('keeps the runtime title limit grapheme-aware for astral Unicode', () => {
@@ -106,6 +122,22 @@ describe('expand-node contract', () => {
     ).not.toThrow();
     expect(() =>
       expandNodeOutputSchema.parse({
+        children: [
+          { kind: 'IDEA', title: '😀'.repeat(49) },
+          { kind: 'IDEA', title: 'Valid title' },
+        ],
+      }),
+    ).toThrow();
+    expect(() =>
+      expandNodeProviderOutputSchema.parse({
+        children: [
+          { kind: 'IDEA', title: '😀'.repeat(30) },
+          { kind: 'IDEA', title: 'Valid title' },
+        ],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      expandNodeProviderOutputSchema.parse({
         children: [
           { kind: 'IDEA', title: '😀'.repeat(49) },
           { kind: 'IDEA', title: 'Valid title' },

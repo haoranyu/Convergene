@@ -13,7 +13,7 @@ const liveProviderCases: Array<{
 }> = [
   {
     apiKeyEnvironmentVariable: 'STEPFUN_API_KEY',
-    approvedModelId: 'step-3.7-flash',
+    approvedModelId: 'step-3.5-flash-2603',
     modelEnvironmentVariable: 'STEPFUN_VALIDATION_MODEL',
     provider: 'STEPFUN',
   },

@@ -273,7 +273,7 @@ Then 只显示该模式对应的三个 Strategy action，未选中节点不常�
 
 Given 用户打出一张 Strategy  
 When 模型成功返回  
-Then 立即显示可见且尺寸稳定的骨架；只新增 2–4 个直接子节点，保存 `source` 和 `strategyId`，不修改已有节点；刷新后新增节点仍存在，默认 Chromium UUID 路径不抛错。
+Then 立即显示 2 个可见且尺寸稳定的骨架；当前快速任务新增恰好 2 个直接子节点（领域边界仍接受 2–4 个），保存 `source` 和 `strategyId`，不修改已有节点；刷新后新增节点仍存在，默认 Chromium UUID 路径不抛错。
 
 ### AT-062 展开失败
 

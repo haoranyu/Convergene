@@ -370,7 +370,7 @@ test('persists a successful AI node expansion through the real browser canvas', 
   await expect(assistance.getByRole('button', { name: /^Drive a choice/u })).toBeDisabled();
   expect(requestCount).toBe(1);
   const skeletons = page.locator('.react-flow__node[data-id^="expansion-skeleton-"]');
-  await expect(skeletons).toHaveCount(3);
+  await expect(skeletons).toHaveCount(2);
   await expect(skeletons.first()).toBeVisible();
   await expect(
     page
@@ -559,7 +559,7 @@ test('discards a cancelled AI node expansion even when its response arrives late
   await assistance.getByRole('button', { name: /^Surface risk/u }).click();
 
   const skeletons = page.locator('.react-flow__node[data-id^="expansion-skeleton-"]');
-  await expect(skeletons).toHaveCount(3);
+  await expect(skeletons).toHaveCount(2);
   await assistance.getByRole('button', { name: 'Cancel' }).click();
   await expect(skeletons).toHaveCount(0);
   expect(releaseResponse).toBeDefined();

@@ -56,9 +56,9 @@ describe('ProviderConfigPanel', () => {
               keyHint: '••••••••',
               lastUsedAt: '2026-08-29T00:00:00.000Z',
               models: {
-                fast: 'step-3.7-flash',
-                grill: 'step-3.7-flash',
-                report: 'step-3.7-flash',
+                fast: 'step-3.5-flash-2603',
+                grill: 'step-3.5-flash-2603',
+                report: 'step-3.5-flash-2603',
               },
               provider: 'STEPFUN',
               state: 'AVAILABLE',
@@ -70,9 +70,9 @@ describe('ProviderConfigPanel', () => {
       ok: true,
       value: {
         models: {
-          fast: 'step-3.7-flash',
-          grill: 'step-3.7-flash',
-          report: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
         },
         provider: 'STEPFUN',
       },
@@ -180,9 +180,9 @@ describe('ProviderConfigPanel', () => {
               keyHint: '••••••••',
               lastUsedAt: '2026-08-29T00:00:00.000Z',
               models: {
-                fast: 'step-3.7-flash',
-                grill: 'step-3.7-flash',
-                report: 'step-3.7-flash',
+                fast: 'step-3.5-flash-2603',
+                grill: 'step-3.5-flash-2603',
+                report: 'step-3.5-flash-2603',
               },
               provider: 'STEPFUN',
               state: 'AVAILABLE',
@@ -212,9 +212,9 @@ describe('ProviderConfigPanel', () => {
       models:
         provider === 'STEPFUN'
           ? {
-              fast: 'step-3.7-flash',
-              grill: 'step-3.7-flash',
-              report: 'step-3.7-flash',
+              fast: 'step-3.5-flash-2603',
+              grill: 'step-3.5-flash-2603',
+              report: 'step-3.5-flash-2603',
             }
           : {
               fast: 'deepseek-ai/DeepSeek-V4-Flash',

@@ -25,7 +25,13 @@
 
 ## 3. 风险优先 Spike（0–1.5 小时）
 
-状态（2026-08-29）：R1–R3 已完成。StepFun `step-3.7-flash`、硅基流动 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case 已通过；免费 Upstash 上的加密 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见 [高风险集成验证记录](./integration-validation.md)。
+状态（2026-08-30）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
+`deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case
+已通过；产品级验证后，StepFun preset 已纠正为官方明确支持 `json_schema` 与低推理档的
+`step-3.5-flash-2603`，并保留独立的 credential-gated 回归门禁。免费 Upstash 上的加密
+set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium
+browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
+[高风险集成验证记录](./integration-validation.md)。
 
 ### R1：Provider 合约
 
@@ -232,10 +238,10 @@
 - 12 个 Strategy ID 配置；
 - 选中节点旁三卡；
 - 最小近邻上下文；
-- 2–4 骨架节点；
+- 与快速任务固定双候选契约一致的 2 个骨架节点；
 - request id、取消、失败和重试；
 - 绑定安全的浏览器 UUID、固定骨架几何与完整 `try/catch/finally` 清理；
-- `fast` role 的 1,024-token / 15-second 有界调用、Provider 可见 48 字符 schema 与安全 `Server-Timing`；
+- `fast` role 的 1,024-token / 15-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限，以及安全 `Server-Timing`；
 - 成功事务写图。
 
 ### P0-19 主持人小抄

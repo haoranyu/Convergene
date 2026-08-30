@@ -125,9 +125,9 @@ const providerModelMappings = {
     report: 'deepseek-ai/DeepSeek-V4-Flash',
   },
   STEPFUN: {
-    fast: 'step-3.7-flash',
-    grill: 'step-3.7-flash',
-    report: 'step-3.7-flash',
+    fast: 'step-3.5-flash-2603',
+    grill: 'step-3.5-flash-2603',
+    report: 'step-3.5-flash-2603',
   },
 } as const;
 
@@ -147,9 +147,9 @@ describe('provider configuration service', () => {
           models:
             provider === 'STEPFUN'
               ? {
-                  fast: 'step-3.7-flash',
-                  grill: 'step-3.7-flash',
-                  report: 'step-3.7-flash',
+                  fast: 'step-3.5-flash-2603',
+                  grill: 'step-3.5-flash-2603',
+                  report: 'step-3.5-flash-2603',
                 }
               : {
                   fast: 'deepseek-ai/DeepSeek-V4-Flash',
@@ -478,7 +478,11 @@ describe('provider configuration service', () => {
     const session = createMemorySession();
     const sessionId = createProviderSessionId();
     const testConnection = vi.fn().mockResolvedValue({
-      models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+      models: {
+        fast: 'step-3.5-flash-2603',
+        grill: 'step-3.5-flash-2603',
+        report: 'step-3.5-flash-2603',
+      },
       provider: 'STEPFUN',
     });
     const service = createProviderConfigService({
@@ -519,7 +523,11 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        models: {
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
+        },
         provider: 'STEPFUN',
       }),
     });
@@ -600,7 +608,11 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        models: {
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
+        },
         provider: 'STEPFUN',
       }),
     });
@@ -633,7 +645,11 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        models: {
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
+        },
         provider: 'STEPFUN',
       }),
     });
@@ -684,7 +700,11 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        models: {
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
+        },
         provider: 'STEPFUN',
       }),
     });
@@ -714,7 +734,11 @@ describe('provider configuration service', () => {
       session,
       store,
       testConnection: vi.fn().mockResolvedValue({
-        models: { fast: 'step-3.7-flash', grill: 'step-3.7-flash', report: 'step-3.7-flash' },
+        models: {
+          fast: 'step-3.5-flash-2603',
+          grill: 'step-3.5-flash-2603',
+          report: 'step-3.5-flash-2603',
+        },
         provider: 'STEPFUN',
       }),
     });

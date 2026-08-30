@@ -17,8 +17,9 @@
 - 不在服务端日志记录完整输入和输出。
 
 Provider request policy 由共享服务端 adapter 统一控制：硅基流动的所有产品结构化调用必须显式
-发送 `enable_thinking: false`，完全关闭供应商的 thinking；StepFun `step-3.7-flash` 没有关闭档，
-所以必须发送其最低受支持强度 `reasoning_effort: low`。两家的专属字段不得互相发送。该策略不改变
+发送 `enable_thinking: false`，完全关闭供应商的 thinking；StepFun 使用官方明确支持
+`json_schema` 与低推理档的 `step-3.5-flash-2603`，并发送 `reasoning_effort: low`。两家的专属字段
+不得互相发送。该策略不改变
 下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
 
 共同 envelope：
@@ -286,7 +287,10 @@ interface ExpandNodeInput {
 }
 ```
 
-`siblings` 和 `children` 各最多 8 个；只发送 id、kind、title 和必要 note 摘要。
+共享请求契约保留 `briefSummary` 最多 2,400 字符、`siblings` 和 `children` 各最多 8 个；
+浏览器交互路径实际投影为最多 1,200 字符且同时保留 objective / desired outcome 的 brief、各 8 个
+近邻标题，以及最多 160 字符的选中节点 note。发送给 Provider 前再移除节点 id、parent / siblings /
+children 的 note，在不损失去重覆盖的前提下缩短实时请求。
 
 ### 输出
 
@@ -302,8 +306,9 @@ interface ExpandNodeOutput {
 
 约束：
 
-- 恰好 2–4 个候选；
+- 领域响应接受 2–4 个候选；交互式 Provider schema 固定请求 2 个候选，以缩短生成路径；
 - 每个标题最多 48 个字素；该上限必须直接出现在发送给 Provider 的 JSON Schema 中，不能只依赖返回后的本地 refine；
+- 领域响应仍兼容可选 note；实时 Provider schema 只生成 `kind` 与 `title`，减少严格结构的分支和输出长度；
 - 不返回 parent id、坐标或产出标记；
 - 避免与已有 siblings/children 同义重复；
 - `BRAINSTORM_CONVERGE` 可以返回筛选问题或组合候选，但不能删除已有节点；
@@ -312,10 +317,11 @@ interface ExpandNodeOutput {
 
 运行时契约：
 
-- 使用 `fast` role、最多 1,024 output tokens，并在 15 秒取消 Provider 调用；
+- 使用 `fast` role、最多 1,024 output tokens，并在 15 秒取消 Provider 调用；固定双候选和无 note
+  已缩短实际输出，但保留 token 余量，避免推理型 Provider 在正文完成前被截断；
 - Route 返回不含会议内容的 `Server-Timing: expand;dur=<milliseconds>`，只用于观察整段服务端耗时；
 - 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；
-- pending 立即显示三个与真实节点共享固定几何尺寸的骨架节点，避免 React Flow 在测量前把反馈隐藏；
+- pending 立即显示两个与真实节点共享固定几何尺寸的骨架节点，避免 React Flow 在测量前把反馈隐藏；
 - 只有 Provider 输出、locale 和领域约束全部通过后，才在一个 IndexedDB transaction 中写入节点、边和 meeting revision；
 - 等待 Provider 时允许取消；原子 IndexedDB transaction 开始后进入不可取消的短提交阶段，避免界面声称取消但 transaction 已提交；
 - 失败、取消、持久化异常或迟到响应都移除骨架且不写部分图；可恢复失败在原节点附近保留一次明确的重试动作；

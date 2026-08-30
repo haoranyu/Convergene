@@ -15,9 +15,10 @@
 |---|---|---|---|
 | AES-256-GCM | passed | `aes-gcm.test.ts` | 32-byte base64 secret、每次新 96-bit IV、round-trip、错误密钥、被修改 ciphertext/auth tag 均已覆盖 |
 | Redis 编排 | live passed | `redis-lifecycle*.test.ts` | 免费 Upstash 实例上的加密 set/get/decrypt/expire/renew/delete 全生命周期通过，测试后目标 key 已删除 |
-| StepFun structured output | live passed | `provider-structured-output*.test.ts` | `step-3.7-flash` 真实 streaming、JSON Schema、1ms 取消和 invalid-model 脱敏错误均通过 |
+| StepFun structured output | credential-gated after preset correction | `provider-structured-output*.test.ts` | 历史 `step-3.7-flash` 最小 schema suite 通过；当前 `step-3.5-flash-2603` 是官方明确支持 `json_schema` 与低推理档的 preset，必须重新运行 live suite，不能继承历史通过状态 |
+| StepFun preparation contracts | credential-gated after preset correction | `provider-preparation-contracts.integration.test.ts` | 使用当前 preset 直接运行正式 Grill 与 initial-map Prompt、复杂 Provider schema 及领域 parse；无凭据时明确 skipped，不能以最小 schema 代替 |
 | SiliconFlow structured output | live passed | `provider-structured-output*.test.ts` | `deepseek-ai/DeepSeek-V4-Flash` 真实 streaming、JSON Schema、1ms 取消和 invalid-model 脱敏错误均通过 |
-| Expand-node 产品 Route | credential-gated | `expand-node-route.integration.test.ts` | 直接运行产品 `POST` Route、Prompt、1,024-token/15-second 调用和真实 48-character expansion schema；StepFun 另以三个产品 Route 样本验证 median ≤3,000ms；缺少对应 Provider Key/model 环境变量时明确 skipped，不能记为 live passed |
+| Expand-node 产品 Route | credential-gated | `expand-node-route.integration.test.ts` | 直接运行产品 `POST` Route、Prompt、1,024-token/15-second 调用和固定 2 个 `{kind,title}` 候选的窄 expansion schema（title 48）；两家 Provider 各以三个产品 Route 样本验证 median ≤3,000ms；缺少对应 Provider Key/model 环境变量时明确 skipped，不能记为 live passed |
 | Dagre LR | passed | `dagre-layout.test.ts` | 12 个长英文节点无重叠、边不变、所有边从左向右、一级议题顺序和重复布局稳定 |
 | Active Topic subtree focus | passed | `subtree-focus.test.ts`、`canvas-browser-probe.test.ts` | Vite test-only page 在真实 Chromium 渲染/测量 12 节点，并通过 React Flow instance 对目标三节点子树显式调用 `fitView` |
 | Mermaid flowchart | passed | `mermaid-renderer.test.ts` | `securityLevel: 'strict'` 下生成 SVG |
@@ -105,29 +106,31 @@ Spike 延迟失真。成功结果只返回 Provider、model id、first-chunk/tot
 覆盖 AI SDK 默认 `onError`，避免它把完整 `APICallError` 写入 stderr；fixture test 监听
 `console.error` 和 `process.stderr.write`，确认 non-2xx 路径没有输出原始 detail 或 Key。
 
-### 已验证 preset 映射
+### 当前 preset 映射与历史证据
 
 | Provider | 固定 Base URL | fast | grill | report | 状态 |
 |---|---|---|---|---|---|
-| StepFun | `https://api.stepfun.com/step_plan/v1` | `step-3.7-flash` | `step-3.7-flash` | `step-3.7-flash` | 3 次成功样本 first chunk 平均 1,390ms、total 平均 1,478ms；schema/stream/timeout/error 通过 |
+| StepFun | `https://api.stepfun.com/step_plan/v1` | `step-3.5-flash-2603` | `step-3.5-flash-2603` | `step-3.5-flash-2603` | 官方明确支持 `json_schema`、`reasoning_effort: low` 和 Step Plan；新 preset 的 live suite 与产品 Route 门禁待重跑 |
 | SiliconFlow | `https://api.siliconflow.cn/v1` | `deepseek-ai/DeepSeek-V4-Flash` | `deepseek-ai/DeepSeek-V4-Flash` | `deepseek-ai/DeepSeek-V4-Flash` | 3 次成功样本 first chunk 平均 8,886ms、total 平均 9,031ms；schema/stream/timeout/error 通过 |
 
-三个 role 在 P0 先共享每个 Provider 已验证的单一模型，减少配置矩阵和供应商差异；ST-01 才允许
-白名单内覆盖。SiliconFlow 三个样本中有一个 total latency 为 21,702ms，因此交互态必须保留
+三个 role 在 P0 先共享每个 Provider 的单一受控模型，减少配置矩阵和供应商差异；ST-01 才允许
+白名单内覆盖。历史 `step-3.7-flash` 最小 probe 的三个成功样本 first chunk 平均 1,390ms、total
+平均 1,478ms，只证明当时简单 schema 的实际响应，不能作为当前 preset 或产品 expansion 的通过
+证据。SiliconFlow 三个样本中有一个 total latency 为 21,702ms，因此交互态必须保留
 15 秒产品超时与重试/切换 Provider 路径，report route 的平台 duration 仍需随 P0-26 部署验证。
 StepFun 会把 reasoning token 计入输出上限；128/256 token 在实测中可能在 JSON 发出前耗尽，
 probe 使用 512 token 后稳定通过。后续产品任务应按各任务 schema 另行设置足够但有界的预算。
 
 上表的延迟样本采集于双方最低推理策略落地之前，不把它们冒充优化后的性能结果。自 #37 起，
 产品共享 adapter 与独立 structured-output probe 都通过各自配置的 provider name 发送供应商专属
-参数：SiliconFlow 使用 `enable_thinking: false` 完全关闭 thinking；StepFun `step-3.7-flash`
-没有关闭档，使用最低受支持的 `reasoning_effort: low`。fixture test 直接检查最终 HTTP JSON body，
+参数：SiliconFlow 使用 `enable_thinking: false` 完全关闭 thinking；StepFun
+`step-3.5-flash-2603` 使用其最低受支持的 `reasoning_effort: low`。fixture test 直接检查最终 HTTP JSON body，
 并确认两家字段互不泄漏。后续具备临时凭据时应重跑 credential-gated suite 并另记低推理延迟样本。
 
-官方资料（访问于 2026-08-29）：
+官方资料（2026-08-30 复核）：
 
-- [Step Plan 快速开始](https://platform.stepfun.com/docs/zh/step-plan/quick-start)：OpenAI-compatible Base URL 和推荐验证模型 `step-3.7-flash`。
-- [StepFun Chat Completions API](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create)：Step Plan endpoint、`response_format` 和当前模型示例。
+- [Step Plan 推理模型接入](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)：OpenAI-compatible Base URL 与当前 Step Plan 支持的 `step-3.5-flash-2603`。
+- [StepFun Chat Completions API](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create)：`json_schema` 只支持 `step-3.5-flash` / `step-3.5-flash-2603`，且只有后者支持 `reasoning_effort: low`。
 - [SiliconFlow Chat Completions API](https://docs.siliconflow.cn/docs/api/chat-completions-post)：固定 chat endpoint、`response_format=json_schema` Structured Outputs 说明和 `deepseek-ai/DeepSeek-V4-Flash` 示例。
 - [SiliconFlow 模型广场](https://cloud.siliconflow.cn/me/models?types=chat)：当前账号可见的 chat model catalog；内容会随 Provider 更新。
 
@@ -139,8 +142,16 @@ probe 使用 512 token 后稳定通过。后续产品任务应按各任务 schem
 
 ```bash
 STEPFUN_API_KEY=... \
-STEPFUN_VALIDATION_MODEL=step-3.7-flash \
+STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
 pnpm exec vitest run src/modules/integration-validation/provider-structured-output.integration.test.ts
+```
+
+同一组 StepFun 变量还可直接验证准备阶段实际使用的两个复杂契约；该测试不返回或记录生成正文：
+
+```bash
+STEPFUN_API_KEY=... \
+STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
+pnpm exec vitest run src/modules/integration-validation/provider-preparation-contracts.integration.test.ts
 ```
 
 SiliconFlow 使用 `SILICONFLOW_API_KEY` 和 `SILICONFLOW_VALIDATION_MODEL`。测试不会把这些值
@@ -149,27 +160,35 @@ failure kind/elapsed time，不记录 response body。
 
 节点展开需要单独运行产品级 route probe；它不使用最小替代 schema，而是直接调用
 `POST /api/ai/expand-node` 的 Route Handler，经共享 configured-provider adapter、正式 Prompt、
-locale 校验和 `ExpandNodeOutput` schema 返回 2–4 个候选。测试用虚构会议数据，断言安全的
+locale 校验和窄 Provider schema 返回恰好 2 个候选，再由领域 `ExpandNodeOutput` schema 验证。
+领域边界仍接受 2–4 个候选。测试用虚构会议数据，断言安全的
 `Server-Timing` 存在，既不输出返回正文，也不写 Redis 或 IndexedDB。Provider 的 Key 与 model
 变量命名沿用上面的 credential-gated suite：
 
 ```bash
 STEPFUN_API_KEY=... \
-STEPFUN_VALIDATION_MODEL=step-3.7-flash \
+STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
 pnpm exec vitest run src/modules/integration-validation/expand-node-route.integration.test.ts
 ```
 
 SiliconFlow 对应使用 `SILICONFLOW_API_KEY` 与 `SILICONFLOW_VALIDATION_MODEL`。没有临时凭据时，
-这两个 case 必须显示为 skipped；浏览器拦截测试只能证明客户端生命周期，不能替代这项真实调用。
-同一文件在 StepFun 两个变量均存在时还会顺序运行三个独立 request id，解析安全的
-`Server-Timing` 并断言中位数不超过 3,000ms；该性能 case 未真实运行前，产品延迟目标仍只能记为
-待验证，不能由最小 schema 的历史样本推断。
+两家 Provider 各自的功能与三样本性能 case（共四个 case）必须显示为 skipped；浏览器拦截测试
+只能证明客户端生命周期，不能替代这项真实调用。同一文件会对每个凭据齐全的 Provider 顺序运行
+三个独立 request id，解析安全的 `Server-Timing` 并断言中位数不超过 3,000ms；性能 case 未真实
+运行前，产品延迟目标仍只能记为待验证，不能由最小 schema 的历史样本推断。
 
-每个 Provider 的 credential-gated suite 有三个独立 case，Vitest timeout 都是 35 秒，大于
-probe 的 30 秒硬上限：真实候选模型成功 streaming/schema、同一模型 1ms 强制取消，以及明确
-不存在的 model id 返回脱敏 `PROVIDER_ERROR`。六个 live case 均已通过：StepFun 的一次最终
-回归约为 2,008ms / 4ms / 50ms，SiliconFlow 的一次回归约为 2,605ms / 2ms / 39ms；这里记录的是
-Vitest case elapsed，三样本 first-chunk/total 平均值以映射表为准。
+2026-08-30 的 PR #41 生产门禁确认浏览器、Route、Provider、IndexedDB 与重载链路可以完成，
+同时捕获到原 2–4 候选 / 1,024-token 契约仍不满足 P0：SiliconFlow 两次成功分别为 6,101ms
+和 4,211ms，第三次在 15 秒边界失败；StepFun 一次在 13,357ms 返回无效结构。所有失败均为
+0 写入并保留重试。后续窄契约不能沿用这些结果宣称通过，必须部署后重新完成三次真实采样。
+
+2026-08-29 的历史 credential-gated suite 为每个 Provider 各运行三个 case，Vitest timeout 都是
+35 秒，大于 probe 的 30 秒硬上限：当时的候选模型成功 streaming/schema、同一模型 1ms 强制
+取消，以及明确不存在的 model id 返回脱敏 `PROVIDER_ERROR`。历史六个 live case 均已通过：
+StepFun `step-3.7-flash` 的一次最终回归约为 2,008ms / 4ms / 50ms，SiliconFlow 的一次回归约为
+2,605ms / 2ms / 39ms；这里记录的是 Vitest case elapsed，三样本 first-chunk/total 平均值以
+历史映射记录为准。这些结果不代表当前 StepFun preset、准备阶段复杂契约或窄 expansion Route
+门禁已经通过。
 
 ## 4. Dagre 与 subtree focus
 
@@ -210,7 +229,9 @@ Mermaid renderer。测试环境仅补齐 jsdom 缺少、但现代浏览器提供
 
 ## 6. 后续验证边界
 
-- 外部集成 Spike 没有遗留 blocker：两个 Provider 与真实 Redis 的本 Issue 完成标准均已满足。
+- 2026-08-29 的基础外部集成 Spike 已证明两个 Provider endpoint 与真实 Redis 可用；但当前
+  `step-3.5-flash-2603` 的 minimal / preparation 复测，以及两家 Provider 的窄 expansion Route
+  三样本门禁仍未运行，继续作为 #39 blocker，不能沿用历史结果关闭。
 - Vercel 当前只有 scaffold 且没有报告 route；最慢报告请求的 Hobby Function duration 必须随
   P0-26 的真实 route 和部署环境验证，不能由本 Spike 伪造。
 - P0-07/P0-08 已实现匿名会话、配置 API、同源检查、原子限流和共享 Provider adapter，并通过

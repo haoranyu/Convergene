@@ -10,9 +10,9 @@ const availableSummary = {
       keyHint: '••••••••',
       lastUsedAt: '2026-08-29T00:00:00.000Z',
       models: {
-        fast: 'step-3.7-flash',
-        grill: 'step-3.7-flash',
-        report: 'step-3.7-flash',
+        fast: 'step-3.5-flash-2603',
+        grill: 'step-3.5-flash-2603',
+        report: 'step-3.5-flash-2603',
       },
       provider: 'STEPFUN',
       state: 'AVAILABLE',

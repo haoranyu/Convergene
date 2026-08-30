@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { providerConfigInputSchema } from './model';
+import { providerConfigInputSchema, providerModelPresets } from './model';
 
 describe('provider configuration input', () => {
+  it('keeps every StepFun structured-output role on the schema-capable preset', () => {
+    expect(providerModelPresets.STEPFUN).toEqual({
+      fast: 'step-3.5-flash-2603',
+      grill: 'step-3.5-flash-2603',
+      report: 'step-3.5-flash-2603',
+    });
+  });
+
   it.each(['STEPFUN', 'SILICONFLOW'])('accepts the %s preset without a base URL', (provider) => {
     expect(
       providerConfigInputSchema.parse({
