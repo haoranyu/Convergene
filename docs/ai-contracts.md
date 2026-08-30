@@ -16,11 +16,13 @@
 - 输出失败时允许程序安全拒绝，不以“尽量展示”绕过 schema；
 - 不在服务端日志记录完整输入和输出。
 
-Provider request policy 由共享服务端 adapter 统一控制：硅基流动的所有产品结构化调用必须显式
-发送 `enable_thinking: false`，完全关闭供应商的 thinking；StepFun 的 `fast` role 使用官方面向
-实时/高频场景的 `step-3.7-flash`，`grill/report` 暂保留 `step-3.5-flash-2603`，所有角色都发送
-`reasoning_effort: low`。双方均继续使用 `json_schema`，并在本地再次执行 Zod 校验；两家的专属
-字段不得互相发送。该策略不改变
+Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用非推理
+`inclusionAI/Ling-mini-2.0` 且不发送 thinking 参数，复杂 role 继续对 DeepSeek 显式发送
+`enable_thinking: false`；StepFun 的 `fast` role 使用官方面向实时/高频场景的
+`step-3.7-flash`，`grill/report` 暂保留 `step-3.5-flash-2603`，所有角色都发送
+`reasoning_effort: low`。StepFun fast 按官方 JSON Mode 使用 `json_object`，Prompt 明确对象字段；
+其余任务继续使用 `json_schema`。所有结果都在本地再次执行 Zod 和语言校验，两家的专属字段不得
+互相发送。该策略不改变
 下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
 
 共同 envelope：
@@ -326,7 +328,7 @@ interface ExpandNodeOutput {
 - 使用 `fast` role、最多 1,024 output tokens，并在 5 秒取消 Provider 调用；固定双候选和无 note
   已缩短实际输出，但保留 token 余量，避免推理型 Provider 在正文完成前被截断；超时后立即回到
   可重试状态，不让一次交互继续占住画布；
-- Route 返回不含会议内容的 `Server-Timing: expand;dur=<milliseconds>`，只用于观察整段服务端耗时；
+- Route 返回不含会议内容的 `Server-Timing`：始终包含 `expand` 总耗时，按固定名称追加已经开始的 `rate`、`config`、`provider` 阶段；正常进入 Provider 的请求包含四项。
 - 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；
 - pending 立即显示两个与真实节点共享固定几何尺寸的骨架节点，避免 React Flow 在测量前把反馈隐藏；
 - 只有 Provider 输出、locale 和领域约束全部通过后，才在一个 IndexedDB transaction 中写入节点、边和 meeting revision；

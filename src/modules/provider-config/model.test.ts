@@ -11,6 +11,14 @@ describe('provider configuration input', () => {
     });
   });
 
+  it('keeps SiliconFlow fast work on the non-reasoning low-activation preset', () => {
+    expect(providerModelPresets.SILICONFLOW).toEqual({
+      fast: 'inclusionAI/Ling-mini-2.0',
+      grill: 'deepseek-ai/DeepSeek-V4-Flash',
+      report: 'deepseek-ai/DeepSeek-V4-Flash',
+    });
+  });
+
   it.each(['STEPFUN', 'SILICONFLOW'])('accepts the %s preset without a base URL', (provider) => {
     expect(
       providerConfigInputSchema.parse({

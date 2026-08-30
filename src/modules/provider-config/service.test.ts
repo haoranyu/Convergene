@@ -120,7 +120,7 @@ const input = { apiKey: 'test-only-provider-secret', provider: 'STEPFUN' as cons
 const fixedNow = new Date('2026-08-29T01:00:00.000Z');
 const providerModelMappings = {
   SILICONFLOW: {
-    fast: 'Qwen/Qwen3.5-4B',
+    fast: 'inclusionAI/Ling-mini-2.0',
     grill: 'deepseek-ai/DeepSeek-V4-Flash',
     report: 'deepseek-ai/DeepSeek-V4-Flash',
   },
@@ -152,7 +152,7 @@ describe('provider configuration service', () => {
                   report: 'step-3.5-flash-2603',
                 }
               : {
-                  fast: 'Qwen/Qwen3.5-4B',
+                  fast: 'inclusionAI/Ling-mini-2.0',
                   grill: 'deepseek-ai/DeepSeek-V4-Flash',
                   report: 'deepseek-ai/DeepSeek-V4-Flash',
                 },

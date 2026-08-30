@@ -217,7 +217,7 @@ describe('ProviderConfigPanel', () => {
               report: 'step-3.5-flash-2603',
             }
           : {
-              fast: 'Qwen/Qwen3.5-4B',
+              fast: 'inclusionAI/Ling-mini-2.0',
               grill: 'deepseek-ai/DeepSeek-V4-Flash',
               report: 'deepseek-ai/DeepSeek-V4-Flash',
             },

@@ -134,7 +134,7 @@ test('validates locally and renders only safe provider error copy', async ({ pag
   await expect(provider).toContainText('StepFun');
   await provider.click();
   await page.getByRole('option', { name: 'SiliconFlow' }).click();
-  await expect(page.getByText('Qwen/Qwen3.5-4B').first()).toBeVisible();
+  await expect(page.getByText('inclusionAI/Ling-mini-2.0').first()).toBeVisible();
   await expect(page.getByText('deepseek-ai/DeepSeek-V4-Flash').first()).toBeVisible();
 
   const apiKey = page.getByLabel('API key');

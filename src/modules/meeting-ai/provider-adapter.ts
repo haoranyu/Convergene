@@ -8,7 +8,7 @@ import {
   Output,
   streamText,
 } from 'ai';
-import type { z } from 'zod';
+import { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
 import type { ProviderModelMapping } from '../provider-config';
@@ -20,17 +20,27 @@ const maximumTimeoutMs = 60_000;
 const defaultMaxOutputTokens = 2_048;
 const minimumMaxOutputTokens = 512;
 
-const providerRequestPolicies = {
-  SILICONFLOW: { enable_thinking: false },
-  STEPFUN: { reasoningEffort: 'low' },
-} as const satisfies Record<ProviderId, Record<string, boolean | string>>;
-
 const providerStructuredOutputPolicies = {
-  SILICONFLOW: true,
-  STEPFUN: true,
-} as const satisfies Record<ProviderId, boolean>;
+  SILICONFLOW: { fast: true, grill: true, report: true },
+  STEPFUN: { fast: false, grill: true, report: true },
+} as const satisfies Record<ProviderId, Record<ProviderTaskRole, boolean>>;
 
 export type ProviderTaskRole = keyof ProviderModelMapping;
+
+function providerRequestPolicy(
+  provider: ProviderId,
+  role: ProviderTaskRole,
+): Record<string, boolean | string> {
+  if (provider === 'STEPFUN') return { reasoningEffort: 'low' };
+  return role === 'fast' ? {} : { enable_thinking: false };
+}
+
+function jsonObjectSystemInstruction(schemaName: string, schema: z.ZodType): string {
+  return [
+    `Return only one JSON object matching the ${schemaName} JSON Schema. Do not add prose or Markdown.`,
+    JSON.stringify(z.toJSONSchema(schema, { target: 'draft-7' })),
+  ].join('\n');
+}
 
 export type ProviderGatewayErrorCode =
   | 'OUTPUT_INVALID'
@@ -294,7 +304,11 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       baseURL: preset.baseURL,
       fetch,
       name: preset.name,
-      supportsStructuredOutputs: providerStructuredOutputPolicies[config.provider],
+      supportsStructuredOutputs: true,
+      transformRequestBody: (body) =>
+        providerStructuredOutputPolicies[config.provider][role]
+          ? body
+          : { ...body, response_format: { type: 'json_object' } },
     });
     const result = streamText({
       abortSignal: combinedSignal,
@@ -306,8 +320,11 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       },
       output: Output.object({ name: schemaName, schema }),
       prompt,
-      providerOptions: { [preset.name]: providerRequestPolicies[config.provider] },
+      providerOptions: { [preset.name]: providerRequestPolicy(config.provider, role) },
       temperature: 0,
+      ...(providerStructuredOutputPolicies[config.provider][role]
+        ? {}
+        : { system: jsonObjectSystemInstruction(schemaName, schema) }),
     });
 
     return schema.parse(await result.output);

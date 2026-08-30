@@ -27,9 +27,11 @@
 
 状态（2026-08-30）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case
-已通过；两轮产品节点展开验证没有通过成功率/延迟门禁，因此当前只把 fast role 校准为 StepFun
-`step-3.7-flash` 与 SiliconFlow `Qwen/Qwen3.5-4B`，复杂 role 保留原模型，并增加不读取模型正文的
-安全输出失败分型。新 fast preset 仍保留独立的 credential-gated 回归门禁。免费 Upstash 上的加密
+已通过；三轮产品节点展开验证没有同时通过成功率/延迟门禁，因此当前保留 StepFun
+`step-3.7-flash`，并把 SiliconFlow fast role 校准为官方标记“快速响应”的非推理模型
+`inclusionAI/Ling-mini-2.0`。StepFun fast role 按官方 JSON Mode 发送 `json_object`，复杂 role 仍用
+严格 JSON Schema；所有结果继续在本地执行 Zod/locale 校验和原子写入。新 fast preset 仍保留独立的
+credential-gated 回归门禁。免费 Upstash 上的加密
 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium
 browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
 [高风险集成验证记录](./integration-validation.md)。
@@ -137,7 +139,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - status/test/save/delete；
 - 已配置供应商之间显式切换，保存/重配一家不覆盖另一家；
 - StepFun / 硅基流动预设；
-- 硅基流动结构化请求固定使用 `enable_thinking: false`，StepFun 固定使用最低受支持的 `reasoning_effort: low`，且两家字段互不发送；
+- 硅基流动 fast 的非推理模型不发送 thinking 参数，复杂 role 固定使用 `enable_thinking: false`；StepFun 使用模型页声明的 `reasoning_effort: low`，且两家字段互不发送；
 - Key password input；
 - 保存后不回显；
 - 认证、权限限制、限流、未知模型和 Redis 错误；只有确认的认证拒绝标记目标供应商需重配。

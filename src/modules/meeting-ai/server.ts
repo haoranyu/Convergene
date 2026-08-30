@@ -1,6 +1,7 @@
 import 'server-only';
 
 export { buildClassifyMeetingPrompt } from './classify-prompt';
+export { formatExpandServerTiming, type ExpandTimingStage } from './expand-node-timing';
 export {
   classifyMeetingInputSchema,
   classifyMeetingMaximumRequestBodyBytes,

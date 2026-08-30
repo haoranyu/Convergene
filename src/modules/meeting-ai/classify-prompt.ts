@@ -16,8 +16,9 @@ export function buildClassifyMeetingPrompt(
 ): string {
   return [
     'You classify one meeting request. Do not start the meeting and do not ask questions.',
+    'Return only one JSON object with exactly confidence, reason, recommendedMode, and suggestedTitle.',
     'Choose DECISION for making a concrete choice, BRAINSTORM for generating possibilities, RETRO for learning from past work, or GENERAL otherwise.',
-    'If confidence is LOW, recommendedMode must be GENERAL.',
+    'Use HIGH, MEDIUM, or LOW for confidence. If confidence is LOW, recommendedMode must be GENERAL.',
     localeInstructions[outputLocale],
     'Preserve quoted user wording, proper nouns, and numbers without translating them.',
     'A Chinese title must be at most 24 characters. An English title must be at most 10 words.',
