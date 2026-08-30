@@ -11,9 +11,9 @@ describe('provider configuration input', () => {
     });
   });
 
-  it('uses the paid low-latency SiliconFlow preset for fast structured output', () => {
+  it('uses the production-validated SiliconFlow preset for fast structured output', () => {
     expect(providerModelPresets.SILICONFLOW).toEqual({
-      fast: 'Pro/Qwen/Qwen2.5-7B-Instruct',
+      fast: 'Qwen/Qwen3.5-4B',
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
       report: 'deepseek-ai/DeepSeek-V4-Flash',
     });

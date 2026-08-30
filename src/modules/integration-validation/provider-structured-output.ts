@@ -22,8 +22,8 @@ export const providerValidationDefinitions = {
 export type ValidationProvider = keyof typeof providerValidationDefinitions;
 
 const providerProbeRequestPolicies = {
-  SILICONFLOW: { siliconflowValidation: {} },
-  STEPFUN: { stepfunValidation: { reasoningEffort: 'low' } },
+  SILICONFLOW: { siliconflowValidation: { enable_thinking: false } },
+  STEPFUN: { stepfunValidation: {} },
 } as const satisfies Record<ValidationProvider, Record<string, Record<string, boolean | string>>>;
 
 const structuredProbeSchema = z.object({
@@ -90,10 +90,8 @@ export async function runProviderStructuredOutputProbe({
     fetch,
     name: definition.name,
     supportsStructuredOutputs: definition.supportsStructuredOutputs,
-    transformRequestBody: (body) => ({
-      ...body,
-      response_format: { type: 'json_object' },
-    }),
+    transformRequestBody: (body) =>
+      provider === 'STEPFUN' ? { ...body, response_format: { type: 'json_object' } } : body,
   });
   const startedAt = now();
   const timeoutController = new AbortController();
@@ -126,10 +124,14 @@ export async function runProviderStructuredOutputProbe({
       }),
       prompt: `Return only this JSON object with no extra keys: {"provider":"${provider}","status":"ok","value":7}.`,
       providerOptions: providerProbeRequestPolicies[provider],
-      system: [
-        'Return only one JSON object matching this JSON Schema. Do not add prose or Markdown.',
-        JSON.stringify(z.toJSONSchema(structuredProbeSchema, { target: 'draft-7' })),
-      ].join('\n'),
+      ...(provider === 'STEPFUN'
+        ? {
+            system: [
+              'Return only one JSON object matching this JSON Schema. Do not add prose or Markdown.',
+              JSON.stringify(z.toJSONSchema(structuredProbeSchema, { target: 'draft-7' })),
+            ].join('\n'),
+          }
+        : {}),
       temperature: 0,
     });
     const output = await result.output;

@@ -161,7 +161,7 @@
 
 Spike 失败时优先降级为已有依赖能稳定完成的方案，不马上引入第二套大型框架。
 
-2026-08-29 验证结论及后续产品采样见 [高风险集成验证记录](./integration-validation.md)：现有依赖已通过 AES-256-GCM、真实 Upstash 加密 set/get/续期/delete、12 节点 Dagre LR、真实 Chromium 长英文 DOM 尺寸/换行测量、React Flow subtree bounds/viewport 纯计算和 instance 显式 `fitView`，以及 Mermaid strict flowchart/timeline/pie，不需要替换依赖。Mermaid timeline 的 period 不接受 `10:00` 这类时钟冒号，使用受控 `Minute 15` label 或降级为 flowchart/table。历史 StepFun `step-3.7-flash` 最小 probe 与硅基流动 `deepseek-ai/DeepSeek-V4-Flash` 均通过真实 streaming、JSON Schema、bounded timeout 和 invalid-model 脱敏错误测试；后续产品门禁证明模型映射和串行 Redis 路径而非 SDK 本身仍需校准。当前 fast role 候选为 Step Plan 明确支持的 `step-3.7-flash` 与 SiliconFlow `Pro/Qwen/Qwen2.5-7B-Instruct`。两个 fast role 使用非流式 JSON Mode、完整 system schema 与本地 Zod；复杂 role 继续使用流式严格 schema。StepFun 的 fast 请求仍为 reasoning token 保留 512 token 安全下限。
+2026-08-29 验证结论及后续产品采样见 [高风险集成验证记录](./integration-validation.md)：现有依赖已通过 AES-256-GCM、真实 Upstash 加密 set/get/续期/delete、12 节点 Dagre LR、真实 Chromium 长英文 DOM 尺寸/换行测量、React Flow subtree bounds/viewport 纯计算和 instance 显式 `fitView`，以及 Mermaid strict flowchart/timeline/pie，不需要替换依赖。Mermaid timeline 的 period 不接受 `10:00` 这类时钟冒号，使用受控 `Minute 15` label 或降级为 flowchart/table。历史 StepFun `step-3.7-flash` 最小 probe 与硅基流动 `deepseek-ai/DeepSeek-V4-Flash` 均通过真实 streaming、JSON Schema、bounded timeout 和 invalid-model 脱敏错误测试；后续产品门禁证明模型映射和串行 Redis 路径而非 SDK 本身仍需校准。当前 fast role 候选为已有产品验证的 `step-3.7-flash` 与 SiliconFlow `Qwen/Qwen3.5-4B`。两条 fast 路径都使用 streaming；StepFun 保留 JSON Mode、完整 system schema 与本地 Zod，且不向 3.7 发送官方未声明支持的 `reasoning_effort`；SiliconFlow 使用严格 schema、关闭 thinking 与本地 Zod；复杂 role 继续使用流式严格 schema。StepFun fast 保留 512-token 的已验证安全下限。
 
 ## 11. 给 Coding Agent 的决策检查
 

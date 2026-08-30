@@ -12,7 +12,7 @@ import {
   meetingAIErrorResponse,
   meetingAIJson,
   MeetingAIContractError,
-  runConfiguredProviderCall,
+  resolveConfiguredProviderCaller,
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 
@@ -27,14 +27,20 @@ export async function POST(request: Request): Promise<Response> {
       classifyMeetingMaximumRequestBodyBytes,
     );
     const { service, store } = await createProviderConfigRuntime();
-    await enforceProviderConfigRateLimit(request, store, 20, 60, 'classify-meeting');
-    const output = await runConfiguredProviderCall({
+    const rateLimitGrant = await enforceProviderConfigRateLimit(
+      request,
+      store,
+      20,
+      60,
+      'classify-meeting',
+    );
+    const callProvider = await resolveConfiguredProviderCaller(service, rateLimitGrant.config);
+    const output = await callProvider({
       abortSignal: request.signal,
       prompt: buildClassifyMeetingPrompt(envelope.input, envelope.outputLocale),
       role: 'fast',
       schema: classifyMeetingOutputSchema,
       schemaName: 'ClassifyMeetingOutput',
-      service,
     });
     if (!classifyMeetingOutputMatchesLocale(output, envelope.outputLocale)) {
       throw new MeetingAIContractError();

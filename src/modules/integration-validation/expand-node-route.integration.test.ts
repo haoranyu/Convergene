@@ -83,10 +83,11 @@ async function clearProvider(): Promise<void> {
 }
 
 type ExpansionRouteSample =
-  | { durationMs: number; ok: true; sample: number; status: number }
+  | { durationMs: number; locale: SupportedLocale; ok: true; sample: number; status: number }
   | {
       code: string;
       durationMs: number;
+      locale: SupportedLocale;
       ok: false;
       outputFailure?: string;
       sample: number;
@@ -152,22 +153,29 @@ async function runClassificationRoute(
   return { locale, ok: true, status: response.status };
 }
 
-async function runExpansionRoute(requestId: string, sample: number): Promise<ExpansionRouteSample> {
+async function runExpansionRoute(
+  locale: SupportedLocale,
+  requestId: string,
+  sample: number,
+): Promise<ExpansionRouteSample> {
+  const isEnglish = locale === 'en-US';
   const response = await expandNode(
     request('/api/ai/expand-node', 'POST', {
       input: {
-        briefSummary: 'Choose one fictional launch plan for a training exercise.',
+        briefSummary: isEnglish
+          ? 'Choose one fictional launch plan for a training exercise.'
+          : '为一次虚构培训演练选择一个发布方案。',
         children: [],
         mode: 'DECISION',
         selectedNode: {
           id: 'fictional-topic-options',
           kind: 'TOPIC',
-          title: 'Compare fictional launch options',
+          title: isEnglish ? 'Compare fictional launch options' : '比较虚构的发布方案',
         },
         siblings: [],
         strategyId: 'DECISION_SURFACE_RISK',
       },
-      outputLocale: 'en-US',
+      outputLocale: locale,
       requestId,
       task: 'expand-node',
     }),
@@ -184,6 +192,7 @@ async function runExpansionRoute(requestId: string, sample: number): Promise<Exp
     return {
       code: failure.success ? failure.data.error.code : 'UNKNOWN',
       durationMs,
+      locale,
       ok: false,
       ...(failure.success &&
       failure.data.error.code === 'OUTPUT_INVALID' &&
@@ -205,19 +214,27 @@ async function runExpansionRoute(requestId: string, sample: number): Promise<Exp
       (child) => Object.keys(child).sort().join(',') === 'kind,title',
     )
   ) {
-    return { code: 'OUTPUT_INVALID', durationMs, ok: false, sample, status: response.status };
+    return {
+      code: 'OUTPUT_INVALID',
+      durationMs,
+      locale,
+      ok: false,
+      sample,
+      status: response.status,
+    };
   }
-  if (!expandNodeOutputMatchesLocale(body.data.output, 'en-US')) {
+  if (!expandNodeOutputMatchesLocale(body.data.output, locale)) {
     return {
       code: 'OUTPUT_LANGUAGE_MISMATCH',
       durationMs,
+      locale,
       ok: false,
       sample,
       status: response.status,
     };
   }
 
-  return { durationMs, ok: true, sample, status: response.status };
+  return { durationMs, locale, ok: true, sample, status: response.status };
 }
 
 beforeEach(() => {
@@ -240,7 +257,7 @@ describe('live fast-role route validation', () => {
     const liveTest = apiKey && modelId ? it : it.skip;
 
     liveTest(
-      `${probeCase.provider} completes classifications and three expansions with the production fast role`,
+      `${probeCase.provider} completes classifications and three expansions per locale with the production fast role`,
       async () => {
         expect(modelId).toBe(providerPresets[probeCase.provider].models.fast);
         await configureProvider(probeCase.provider, apiKey!);
@@ -258,13 +275,16 @@ describe('live fast-role route validation', () => {
               `10000000-0000-4000-8${providerIndex}00-000000000002`,
             ),
           );
-          for (const sample of [1, 2, 3]) {
-            samples.push(
-              await runExpansionRoute(
-                `00000000-0000-4000-8${providerIndex}00-${String(sample).padStart(12, '0')}`,
-                sample,
-              ),
-            );
+          for (const [localeIndex, locale] of (['en-US', 'zh-CN'] as const).entries()) {
+            for (const sample of [1, 2, 3]) {
+              samples.push(
+                await runExpansionRoute(
+                  locale,
+                  `00000000-0000-4000-8${providerIndex}${localeIndex}0-${String(sample).padStart(12, '0')}`,
+                  sample,
+                ),
+              );
+            }
           }
         } finally {
           await clearProvider();
@@ -276,17 +296,23 @@ describe('live fast-role route validation', () => {
           { locale: 'zh-CN', ok: true, status: 200 },
         ]);
         expect(samples).toEqual(
-          [1, 2, 3].map((sample) => ({
-            durationMs: expect.any(Number),
-            ok: true,
-            sample,
-            status: 200,
-          })),
+          (['en-US', 'zh-CN'] as const).flatMap((locale) =>
+            [1, 2, 3].map((sample) => ({
+              durationMs: expect.any(Number),
+              locale,
+              ok: true,
+              sample,
+              status: 200,
+            })),
+          ),
         );
-        const medianDurationMs = samples
-          .map(({ durationMs }) => durationMs)
-          .sort((left, right) => left - right)[1]!;
-        expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
+        for (const locale of ['en-US', 'zh-CN'] as const) {
+          const medianDurationMs = samples
+            .filter((sample) => sample.locale === locale)
+            .map(({ durationMs }) => durationMs)
+            .sort((left, right) => left - right)[1]!;
+          expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
+        }
       },
       80_000,
     );

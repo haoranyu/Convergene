@@ -27,12 +27,13 @@
 
 状态（2026-08-31）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case
-已通过；四轮产品节点展开验证没有同时通过成功率/延迟门禁。当前保留 Step Plan 明确支持的
-`step-3.7-flash`，并把 SiliconFlow fast role 改测付费
-`Pro/Qwen/Qwen2.5-7B-Instruct`。两个 fast role 都以非流式 JSON Mode 发送 `json_object` 和完整
-system schema，复杂 role 仍用流式严格 JSON Schema；所有结果继续在本地执行 Zod/locale 校验和
-原子写入。AI Route 的限流与配置预读也合并为一次 Redis 原子操作。新 fast preset 仍保留独立的
-credential-gated 回归门禁。免费 Upstash 上的加密
+已通过；五轮产品节点展开验证没有同时通过成功率/延迟门禁。当前保留已有产品验证的
+`step-3.7-flash`，并把 SiliconFlow fast role 恢复为唯一已有 3/3 产品成功证据的
+`Qwen/Qwen3.5-4B`。两家 fast 都恢复流式传输：SiliconFlow 使用严格 JSON Schema 并关闭 thinking，
+StepFun 使用 JSON Mode 与完整 system schema，不向 3.7 发送官方未声明支持的推理档位；所有结果继续在本地执行 Zod/locale 校验和
+原子写入。AI Route 的限流与配置预读也合并为一次 Redis 原子操作，Vercel Function 固定部署到
+`hkg1` 以消除中国 Provider 与默认 `iad1` 之间的跨洲路径。新组合仍保留独立的
+credential-gated 与生产浏览器门禁。免费 Upstash 上的加密
 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium
 browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
 [高风险集成验证记录](./integration-validation.md)。
@@ -140,7 +141,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - status/test/save/delete；
 - 已配置供应商之间显式切换，保存/重配一家不覆盖另一家；
 - StepFun / 硅基流动预设；
-- 硅基流动 fast 的非推理模型不发送 thinking 参数，复杂 role 固定使用 `enable_thinking: false`；StepFun 使用模型页声明的 `reasoning_effort: low`，且两家字段互不发送；
+- 硅基流动所有 role 固定使用 `enable_thinking: false`；StepFun fast 不发送 `reasoning_effort`，只有使用 3.5-2603 的复杂 role 固定使用 `reasoning_effort: low`，且两家字段互不发送；
 - Key password input；
 - 保存后不回显；
 - 认证、权限限制、限流、未知模型和 Redis 错误；只有确认的认证拒绝标记目标供应商需重配。
