@@ -174,8 +174,10 @@ async function runExpansionRoute(requestId: string, sample: number): Promise<Exp
   );
 
   const serverTiming = response.headers.get('server-timing');
-  expect(serverTiming).toMatch(/^expand;dur=\d+(?:\.\d)?$/u);
-  const durationMs = Number(serverTiming!.slice('expand;dur='.length));
+  expect(serverTiming).toMatch(
+    /^expand;dur=\d+(?:\.\d)?, rate;dur=\d+(?:\.\d)?, config;dur=\d+(?:\.\d)?, provider;dur=\d+(?:\.\d)?$/u,
+  );
+  const durationMs = Number(serverTiming!.match(/(?:^|, )expand;dur=(\d+(?:\.\d)?)/u)![1]);
   const rawBody = (await response.json()) as unknown;
   if (!response.ok) {
     const failure = meetingAIErrorResponseSchema.safeParse(rawBody);

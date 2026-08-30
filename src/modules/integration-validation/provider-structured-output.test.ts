@@ -51,6 +51,7 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
     const requestBody = JSON.parse(String(init?.body)) as {
       enable_thinking?: boolean;
       max_tokens?: number;
+      messages?: Array<{ content?: string; role?: string }>;
       reasoning_effort?: string;
       response_format?: { type?: string };
       stream?: boolean;
@@ -59,10 +60,18 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
     expect(String(input)).toBe(
       `${providerValidationDefinitions[provider].baseURL}/chat/completions`,
     );
-    expect(requestBody.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+    expect(requestBody.enable_thinking).toBeUndefined();
     expect(requestBody.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
     expect(requestBody.max_tokens).toBe(512);
-    expect(requestBody.response_format?.type).toBe('json_schema');
+    expect(requestBody.response_format?.type).toBe(
+      provider === 'STEPFUN' ? 'json_object' : 'json_schema',
+    );
+    if (provider === 'STEPFUN') {
+      expect(requestBody.messages?.[0]).toMatchObject({ role: 'system' });
+      expect(requestBody.messages?.[0]?.content).toContain('"additionalProperties":false');
+    } else {
+      expect(requestBody.messages?.[0]?.role).toBe('user');
+    }
     expect(requestBody.stream).toBe(true);
 
     return createStreamingResponse(provider, modelId);
@@ -87,7 +96,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)(
         firstChunkLatencyMs: 12,
         modelId,
         provider,
-        schemaAccepted: true,
+        outputValidated: true,
         streamChunkCount: 2,
         totalLatencyMs: 45,
       });

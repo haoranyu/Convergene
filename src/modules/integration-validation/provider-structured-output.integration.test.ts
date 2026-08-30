@@ -19,7 +19,7 @@ const liveProviderCases: Array<{
   },
   {
     apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
-    approvedModelId: 'Qwen/Qwen3.5-4B',
+    approvedModelId: 'inclusionAI/Ling-mini-2.0',
     modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
     provider: 'SILICONFLOW',
   },
@@ -44,7 +44,7 @@ describe('live provider structured-output validation', () => {
           provider: probeCase.provider,
         });
 
-        expect(result.schemaAccepted).toBe(true);
+        expect(result.outputValidated).toBe(true);
         expect(result.modelId).toBe(probeCase.approvedModelId);
         expect(result.streamChunkCount).toBeGreaterThan(0);
         expect(result.firstChunkLatencyMs).toBeGreaterThan(0);

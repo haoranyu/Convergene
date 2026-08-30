@@ -386,7 +386,7 @@ const providerPresets = {
     baseURL: 'https://api.siliconflow.cn/v1',
     defaultModels: {
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
-      fast: 'Qwen/Qwen3.5-4B',
+      fast: 'inclusionAI/Ling-mini-2.0',
       report: 'deepseek-ai/DeepSeek-V4-Flash'
     }
   }
@@ -395,15 +395,19 @@ const providerPresets = {
 
 2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
 SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
-实时节点展开的 `fast` preset。当天再次复核官方文档后，Step Plan 仍明确推荐
-`step-3.7-flash`，Chat Completion 也已把 `json_schema` 与低推理档列为其当前能力；因此只把
-StepFun 的 `fast` role 切回 `step-3.7-flash`，不把未完成的生产门禁外推到 `grill/report`。
-SiliconFlow 的 `fast` role 改为可关闭 thinking 的 `Qwen/Qwen3.5-4B` 低延迟候选，复杂角色仍用
-`deepseek-ai/DeepSeek-V4-Flash`。共享 OpenAI-compatible adapter 必须显式声明
-`supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON
-schema。所有产品结构化请求（包括配置连接测试）必须在以 preset `name` 为 key 的
-`providerOptions` 中使用该供应商最低推理策略：硅基流动发送 `enable_thinking: false`，StepFun
-发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务
+实时节点展开的 `fast` preset。当天再次复核官方文档后，Step 3.7 的模型页仍把
+`step-3.7-flash` 定位为低延迟、高吞吐模型并列出低推理档；因此只把 StepFun 的 `fast` role
+切回 `step-3.7-flash`，不把未完成的生产门禁外推到 `grill/report`。当前 Chat Completion API
+总表只为 3.5 系列声明严格 `json_schema`，所以 3.7 fast 改用官方通用 `json_object`。
+PR #43 的后续生产门禁证明 `Qwen/Qwen3.5-4B` 虽然 3/3 成功，但 4,604ms 中位耗时仍未达到
+3 秒门槛；因此 SiliconFlow 的 `fast` role 改为官方标记“快速响应”的非推理模型
+`inclusionAI/Ling-mini-2.0`，复杂角色仍用 `deepseek-ai/DeepSeek-V4-Flash`。共享
+OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`；SiliconFlow 与复杂任务继续
+发送严格 schema，StepFun fast 则在最终请求体中受控改写为官方 `json_object`，并依赖 Prompt
+字段约束与本地 Zod/locale 校验。所有产品结构化请求（包括配置连接测试）必须在以 preset
+`name` 为 key 的 `providerOptions` 中使用供应商策略：SiliconFlow fast 的非推理模型不发送
+thinking 参数，复杂角色发送 `enable_thinking: false`，StepFun 发送 `reasoning_effort: low`。
+两家的专属字段不得互相发送。这批交互任务
 需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
 可靠性边界；Provider 输出失败还必须只用固定 allowlist 区分截断、JSON 解析、schema 不匹配、
 内容过滤和上游拒绝，绝不保留原始模型文本。新 fast preset 仍须通过 credential-gated 产品
@@ -705,7 +709,7 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
 - [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
-  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Qwen/Qwen3.5-4B`
+  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `inclusionAI/Ling-mini-2.0`
   的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家 expansion 必须
   3/3 成功且中位数不超过 3 秒；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；

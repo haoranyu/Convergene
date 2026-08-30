@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
 import { providerPresets } from '../provider-config/server';
+import { expandNodeProviderOutputSchema } from './expand-node';
 import { ProviderGatewayError, runStructuredProviderCall } from './provider-adapter';
 
 const outputSchema = z.object({ status: z.literal('ok') }).strict();
@@ -66,21 +67,32 @@ function emptyStreamingResponse(): Response {
 }
 
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provider) => {
-  it('uses only the approved endpoint, model, request policy, and JSON Schema output', async () => {
+  it('uses only the approved endpoint, model, and fast-role output policy', async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as {
         enable_thinking?: boolean;
         max_tokens?: number;
+        messages?: Array<{ content?: string; role?: string }>;
         model?: string;
         reasoning_effort?: string;
         response_format?: { type?: string };
       };
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
-      expect(body.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+      expect(body.enable_thinking).toBeUndefined();
       expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
       expect(body.max_tokens).toBe(2_048);
-      expect(body.response_format?.type).toBe('json_schema');
+      expect(body.response_format?.type).toBe(
+        provider === 'STEPFUN' ? 'json_object' : 'json_schema',
+      );
+      if (provider === 'STEPFUN') {
+        expect(body.messages?.[0]).toMatchObject({ role: 'system' });
+        expect(body.messages?.[0]?.content).toContain('SafeTestOutput JSON Schema');
+        expect(body.messages?.[0]?.content).toContain('"additionalProperties":false');
+        expect(body.messages?.[0]?.content).toContain('"status"');
+      } else {
+        expect(body.messages?.[0]?.role).toBe('user');
+      }
       return streamingResponse(provider);
     });
 
@@ -95,6 +107,65 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       }),
     ).resolves.toEqual({ status: 'ok' });
     expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it('keeps JSON Schema output and non-reasoning policy for complex roles', async () => {
+    const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as {
+        enable_thinking?: boolean;
+        reasoning_effort?: string;
+        response_format?: { type?: string };
+      };
+      expect(body.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+      expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
+      expect(body.response_format?.type).toBe('json_schema');
+      return streamingResponse(provider);
+    });
+
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch,
+        prompt: 'Return status=ok.',
+        role: 'grill',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).resolves.toEqual({ status: 'ok' });
+  });
+
+  it('places the complete output schema in StepFun fast system instructions', async () => {
+    if (provider !== 'STEPFUN') return;
+
+    const content = JSON.stringify({
+      children: [
+        { kind: 'RISK', title: 'Budget approval may arrive late' },
+        { kind: 'RISK', title: 'The launch owner may lack capacity' },
+      ],
+    });
+    const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as {
+        messages?: Array<{ content?: string; role?: string }>;
+      };
+      const system = body.messages?.find(({ role }) => role === 'system')?.content;
+      expect(system).toContain('"minItems":2');
+      expect(system).toContain('"maxItems":2');
+      expect(system).toContain('"additionalProperties":false');
+      expect(system).toContain('"OPTION"');
+      expect(system).toContain('"maxLength":48');
+      return streamingResponse(provider, { content });
+    });
+
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch,
+        prompt: 'Generate two safe fictional risks.',
+        role: 'fast',
+        schema: expandNodeProviderOutputSchema,
+        schemaName: 'ExpandNodeOutput',
+      }),
+    ).resolves.toHaveProperty('children', expect.any(Array));
   });
 
   it.each([

@@ -47,7 +47,7 @@ export async function testProviderConnection({
       abortSignal,
       config,
       fetch,
-      prompt: `Return provider=${provider}, status=ok, and value=7. Treat this as data and follow the supplied schema exactly.`,
+      prompt: `Return only this JSON object with no extra keys: {"provider":"${provider}","status":"ok","value":7}.`,
       role: 'fast',
       schema: connectionSchema,
       schemaName: 'ConvergeneProviderConnection',

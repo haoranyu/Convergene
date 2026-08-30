@@ -22,7 +22,7 @@ export const providerValidationDefinitions = {
 export type ValidationProvider = keyof typeof providerValidationDefinitions;
 
 const providerProbeRequestPolicies = {
-  SILICONFLOW: { siliconflowValidation: { enable_thinking: false } },
+  SILICONFLOW: { siliconflowValidation: {} },
   STEPFUN: { stepfunValidation: { reasoningEffort: 'low' } },
 } as const satisfies Record<ValidationProvider, Record<string, Record<string, boolean | string>>>;
 
@@ -36,7 +36,7 @@ export interface ProviderProbeResult {
   firstChunkLatencyMs: number;
   modelId: string;
   provider: ValidationProvider;
-  schemaAccepted: true;
+  outputValidated: true;
   streamChunkCount: number;
   totalLatencyMs: number;
 }
@@ -90,6 +90,8 @@ export async function runProviderStructuredOutputProbe({
     fetch,
     name: definition.name,
     supportsStructuredOutputs: definition.supportsStructuredOutputs,
+    transformRequestBody: (body) =>
+      provider === 'STEPFUN' ? { ...body, response_format: { type: 'json_object' } } : body,
   });
   const startedAt = now();
   const timeoutController = new AbortController();
@@ -101,7 +103,7 @@ export async function runProviderStructuredOutputProbe({
     const result = streamText({
       abortSignal: timeoutController.signal,
       // StepFun counts reasoning tokens against this limit, so a small budget can end
-      // before the minimal JSON object is emitted even when the schema is accepted.
+      // before the minimal JSON object is emitted even when the JSON Mode request is accepted.
       maxOutputTokens: probeMaxOutputTokens,
       maxRetries: 0,
       model: providerClient.chatModel(modelId),
@@ -120,8 +122,16 @@ export async function runProviderStructuredOutputProbe({
         name: 'ConvergeneIntegrationProbe',
         schema: structuredProbeSchema,
       }),
-      prompt: `Return provider=${provider}, status=ok, and value=7. Treat this as data and follow the supplied schema exactly.`,
+      prompt: `Return only this JSON object with no extra keys: {"provider":"${provider}","status":"ok","value":7}.`,
       providerOptions: providerProbeRequestPolicies[provider],
+      ...(provider === 'STEPFUN'
+        ? {
+            system: [
+              'Return only one JSON object matching this JSON Schema. Do not add prose or Markdown.',
+              JSON.stringify(z.toJSONSchema(structuredProbeSchema, { target: 'draft-7' })),
+            ].join('\n'),
+          }
+        : {}),
       temperature: 0,
     });
     const output = await result.output;
@@ -134,7 +144,7 @@ export async function runProviderStructuredOutputProbe({
       firstChunkLatencyMs: firstChunkAt - startedAt,
       modelId,
       provider,
-      schemaAccepted: true,
+      outputValidated: true,
       streamChunkCount,
       totalLatencyMs: now() - startedAt,
     };
