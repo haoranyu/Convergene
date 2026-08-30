@@ -27,8 +27,9 @@
 
 状态（2026-08-30）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case
-已通过；产品级验证后，StepFun preset 已纠正为官方明确支持 `json_schema` 与低推理档的
-`step-3.5-flash-2603`，并保留独立的 credential-gated 回归门禁。免费 Upstash 上的加密
+已通过；两轮产品节点展开验证没有通过成功率/延迟门禁，因此当前只把 fast role 校准为 StepFun
+`step-3.7-flash` 与 SiliconFlow `Qwen/Qwen3.5-4B`，复杂 role 保留原模型，并增加不读取模型正文的
+安全输出失败分型。新 fast preset 仍保留独立的 credential-gated 回归门禁。免费 Upstash 上的加密
 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium
 browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
 [高风险集成验证记录](./integration-validation.md)。
@@ -241,7 +242,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - 与快速任务固定双候选契约一致的 2 个骨架节点；
 - request id、取消、失败和重试；
 - 绑定安全的浏览器 UUID、固定骨架几何与完整 `try/catch/finally` 清理；
-- `fast` role 的 1,024-token / 15-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限，以及安全 `Server-Timing`；
+- `fast` role 的 1,024-token / 5-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限、安全 `Server-Timing` 和 allowlist 输出失败分型；
 - 成功事务写图。
 
 ### P0-19 主持人小抄

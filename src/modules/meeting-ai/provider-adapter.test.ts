@@ -15,13 +15,19 @@ function config(provider: ProviderId) {
   };
 }
 
-function streamingResponse(provider: ProviderId): Response {
+function streamingResponse(
+  provider: ProviderId,
+  {
+    content = JSON.stringify({ status: 'ok' }),
+    finishReason = 'stop',
+  }: { content?: string; finishReason?: string } = {},
+): Response {
   const encoder = new TextEncoder();
   const model = providerPresets[provider].models.fast;
   const event = {
     choices: [
       {
-        delta: { content: JSON.stringify({ status: 'ok' }), role: 'assistant' },
+        delta: { content, role: 'assistant' },
         finish_reason: null,
         index: 0,
       },
@@ -32,7 +38,7 @@ function streamingResponse(provider: ProviderId): Response {
     object: 'chat.completion.chunk',
   };
   const end = {
-    choices: [{ delta: {}, finish_reason: 'stop', index: 0 }],
+    choices: [{ delta: {}, finish_reason: finishReason, index: 0 }],
     created: 1_788_000_000,
     id: 'safe-test-id',
     model,
@@ -50,6 +56,13 @@ function streamingResponse(provider: ProviderId): Response {
     }),
     { headers: { 'content-type': 'text/event-stream' }, status: 200 },
   );
+}
+
+function emptyStreamingResponse(): Response {
+  return new Response('data: [DONE]\n\n', {
+    headers: { 'content-type': 'text/event-stream' },
+    status: 200,
+  });
 }
 
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provider) => {
@@ -85,45 +98,91 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
   });
 
   it.each([
-    [401, 'PROVIDER_AUTH_FAILED'],
-    [403, 'PROVIDER_ACCESS_RESTRICTED'],
-    [400, 'OUTPUT_INVALID'],
-    [429, 'PROVIDER_RATE_LIMITED'],
-    [503, 'PROVIDER_UNAVAILABLE'],
-  ] as const)('normalizes HTTP %s without raw provider detail', async (status, code) => {
-    const rawDetail = 'raw-provider-response-with-sensitive-detail';
-    const onConfirmedAuthFailure = vi.fn().mockResolvedValue(undefined);
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    [401, 'PROVIDER_AUTH_FAILED', undefined],
+    [403, 'PROVIDER_ACCESS_RESTRICTED', undefined],
+    [400, 'OUTPUT_INVALID', 'UPSTREAM_REJECTED'],
+    [429, 'PROVIDER_RATE_LIMITED', undefined],
+    [503, 'PROVIDER_UNAVAILABLE', undefined],
+  ] as const)(
+    'normalizes HTTP %s without raw provider detail',
+    async (status, code, outputFailure) => {
+      const rawDetail = 'raw-provider-response-with-sensitive-detail';
+      const onConfirmedAuthFailure = vi.fn().mockResolvedValue(undefined);
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
-    try {
+      try {
+        const promise = runStructuredProviderCall({
+          config: config(provider),
+          fetch: () =>
+            Promise.resolve(new Response(JSON.stringify({ detail: rawDetail }), { status })),
+          onConfirmedAuthFailure,
+          prompt: 'Return status=ok.',
+          role: 'fast',
+          schema: outputSchema,
+          schemaName: 'SafeTestOutput',
+        });
+
+        await expect(promise).rejects.toEqual(new ProviderGatewayError(code, outputFailure));
+        await expect(promise).rejects.not.toHaveProperty('cause');
+        await expect(promise).rejects.not.toHaveProperty(
+          'message',
+          expect.stringContaining(rawDetail),
+        );
+        expect(consoleError).not.toHaveBeenCalled();
+        expect(stderrWrite).not.toHaveBeenCalled();
+        expect(onConfirmedAuthFailure).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
+        if (status === 401) {
+          expect(onConfirmedAuthFailure).toHaveBeenCalledWith(provider);
+        }
+      } finally {
+        consoleError.mockRestore();
+        stderrWrite.mockRestore();
+      }
+    },
+  );
+
+  it.each([
+    ['truncated output', '{"status":', 'length', 'TRUNCATED'],
+    ['content-filtered output', '{"status":"blocked"}', 'content_filter', 'CONTENT_FILTERED'],
+    ['invalid JSON', 'not-json', 'stop', 'JSON_PARSE'],
+    ['schema mismatch', '{"status":"not-ok"}', 'stop', 'SCHEMA_MISMATCH'],
+  ] as const)(
+    'classifies %s without retaining generated text',
+    async (_name, content, finishReason, outputFailure) => {
+      const generatedText = content;
       const promise = runStructuredProviderCall({
         config: config(provider),
         fetch: () =>
-          Promise.resolve(new Response(JSON.stringify({ detail: rawDetail }), { status })),
-        onConfirmedAuthFailure,
+          Promise.resolve(streamingResponse(provider, { content: generatedText, finishReason })),
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,
         schemaName: 'SafeTestOutput',
       });
 
-      await expect(promise).rejects.toEqual(new ProviderGatewayError(code));
+      await expect(promise).rejects.toEqual(
+        new ProviderGatewayError('OUTPUT_INVALID', outputFailure),
+      );
       await expect(promise).rejects.not.toHaveProperty('cause');
       await expect(promise).rejects.not.toHaveProperty(
         'message',
-        expect.stringContaining(rawDetail),
+        expect.stringContaining(generatedText),
       );
-      expect(consoleError).not.toHaveBeenCalled();
-      expect(stderrWrite).not.toHaveBeenCalled();
-      expect(onConfirmedAuthFailure).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
-      if (status === 401) {
-        expect(onConfirmedAuthFailure).toHaveBeenCalledWith(provider);
-      }
-    } finally {
-      consoleError.mockRestore();
-      stderrWrite.mockRestore();
-    }
+    },
+  );
+
+  it('classifies an empty completed stream without inspecting generated text', async () => {
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch: () => Promise.resolve(emptyStreamingResponse()),
+        prompt: 'Return status=ok.',
+        role: 'fast',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).rejects.toEqual(new ProviderGatewayError('OUTPUT_INVALID', 'JSON_PARSE'));
   });
 
   it('classifies HTTP 404 as a missing model only for the verified StepFun endpoint', async () => {
@@ -139,6 +198,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     ).rejects.toEqual(
       new ProviderGatewayError(
         provider === 'STEPFUN' ? 'PROVIDER_MODEL_NOT_FOUND' : 'OUTPUT_INVALID',
+        provider === 'STEPFUN' ? undefined : 'UPSTREAM_REJECTED',
       ),
     );
   });

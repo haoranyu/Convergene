@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { SupportedLocale } from '@/modules/meeting-domain';
 import type { ProviderId } from '@/modules/provider-config';
 
 const cookieState = vi.hoisted(() => new Map<string, string>());
@@ -17,14 +18,20 @@ vi.mock('next/headers', () => ({
   }),
 }));
 
+import { POST as classifyMeeting } from '@/app/api/ai/classify-meeting/route';
 import { POST as expandNode } from '@/app/api/ai/expand-node/route';
 import {
   DELETE as deleteProviderConfig,
   PUT as saveProviderConfig,
 } from '@/app/api/provider-config/route';
 import {
+  classifyMeetingOutputMatchesLocale,
+  classifyMeetingResponseSchema,
+} from '@/modules/meeting-ai/classify-meeting';
+import {
   expandNodeOutputMatchesLocale,
   expandNodeResponseSchema,
+  meetingAIErrorResponseSchema,
 } from '@/modules/meeting-ai/expand-node';
 import { providerPresets, providerSessionCookieName } from '@/modules/provider-config/server';
 
@@ -75,7 +82,77 @@ async function clearProvider(): Promise<void> {
   expect(response.status).toBe(200);
 }
 
-async function runExpansionRoute(requestId: string): Promise<number> {
+type ExpansionRouteSample =
+  | { durationMs: number; ok: true; sample: number; status: number }
+  | {
+      code: string;
+      durationMs: number;
+      ok: false;
+      outputFailure?: string;
+      sample: number;
+      status: number;
+    };
+
+type ClassificationRouteSample =
+  | { locale: SupportedLocale; ok: true; status: number }
+  | {
+      code: string;
+      locale: SupportedLocale;
+      ok: false;
+      outputFailure?: string;
+      status: number;
+    };
+
+async function runClassificationRoute(
+  locale: SupportedLocale,
+  requestId: string,
+): Promise<ClassificationRouteSample> {
+  const response = await classifyMeeting(
+    request('/api/ai/classify-meeting', 'POST', {
+      input: {
+        rawRequest:
+          locale === 'en-US'
+            ? 'Choose one fictional launch plan for a training exercise.'
+            : '为一次虚构培训演练选择一个发布方案。',
+      },
+      outputLocale: locale,
+      requestId,
+      task: 'classify-meeting',
+    }),
+  );
+  const rawBody = (await response.json()) as unknown;
+  if (!response.ok) {
+    const failure = meetingAIErrorResponseSchema.safeParse(rawBody);
+    return {
+      code: failure.success ? failure.data.error.code : 'UNKNOWN',
+      locale,
+      ok: false,
+      ...(failure.success &&
+      failure.data.error.code === 'OUTPUT_INVALID' &&
+      failure.data.error.outputFailure !== undefined
+        ? { outputFailure: failure.data.error.outputFailure }
+        : {}),
+      status: response.status,
+    };
+  }
+
+  const body = classifyMeetingResponseSchema.safeParse(rawBody);
+  if (
+    !body.success ||
+    body.data.requestId !== requestId ||
+    body.data.task !== 'classify-meeting' ||
+    body.data.output.recommendedMode !== 'DECISION'
+  ) {
+    return { code: 'OUTPUT_INVALID', locale, ok: false, status: response.status };
+  }
+  if (!classifyMeetingOutputMatchesLocale(body.data.output, locale)) {
+    return { code: 'OUTPUT_LANGUAGE_MISMATCH', locale, ok: false, status: response.status };
+  }
+
+  return { locale, ok: true, status: response.status };
+}
+
+async function runExpansionRoute(requestId: string, sample: number): Promise<ExpansionRouteSample> {
   const response = await expandNode(
     request('/api/ai/expand-node', 'POST', {
       input: {
@@ -96,18 +173,49 @@ async function runExpansionRoute(requestId: string): Promise<number> {
     }),
   );
 
-  expect(response.status).toBe(200);
   const serverTiming = response.headers.get('server-timing');
   expect(serverTiming).toMatch(/^expand;dur=\d+(?:\.\d)?$/u);
-  const body = expandNodeResponseSchema.parse(await response.json());
-  expect(body.requestId).toBe(requestId);
-  expect(body.task).toBe('expand-node');
-  expect(body.output.children).toHaveLength(2);
-  for (const child of body.output.children) {
-    expect(Object.keys(child).sort()).toEqual(['kind', 'title']);
+  const durationMs = Number(serverTiming!.slice('expand;dur='.length));
+  const rawBody = (await response.json()) as unknown;
+  if (!response.ok) {
+    const failure = meetingAIErrorResponseSchema.safeParse(rawBody);
+    return {
+      code: failure.success ? failure.data.error.code : 'UNKNOWN',
+      durationMs,
+      ok: false,
+      ...(failure.success &&
+      failure.data.error.code === 'OUTPUT_INVALID' &&
+      failure.data.error.outputFailure !== undefined
+        ? { outputFailure: failure.data.error.outputFailure }
+        : {}),
+      sample,
+      status: response.status,
+    };
   }
-  expect(expandNodeOutputMatchesLocale(body.output, 'en-US')).toBe(true);
-  return Number(serverTiming!.slice('expand;dur='.length));
+
+  const body = expandNodeResponseSchema.safeParse(rawBody);
+  if (
+    !body.success ||
+    body.data.requestId !== requestId ||
+    body.data.task !== 'expand-node' ||
+    body.data.output.children.length !== 2 ||
+    !body.data.output.children.every(
+      (child) => Object.keys(child).sort().join(',') === 'kind,title',
+    )
+  ) {
+    return { code: 'OUTPUT_INVALID', durationMs, ok: false, sample, status: response.status };
+  }
+  if (!expandNodeOutputMatchesLocale(body.data.output, 'en-US')) {
+    return {
+      code: 'OUTPUT_LANGUAGE_MISMATCH',
+      durationMs,
+      ok: false,
+      sample,
+      status: response.status,
+    };
+  }
+
+  return { durationMs, ok: true, sample, status: response.status };
 }
 
 beforeEach(() => {
@@ -123,46 +231,36 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe('live expand-node route validation', () => {
-  for (const probeCase of liveProviderCases) {
+describe('live fast-role route validation', () => {
+  for (const [providerIndex, probeCase] of liveProviderCases.entries()) {
     const apiKey = process.env[probeCase.apiKeyEnvironmentVariable];
     const modelId = process.env[probeCase.modelEnvironmentVariable];
     const liveTest = apiKey && modelId ? it : it.skip;
 
     liveTest(
-      `${probeCase.provider} completes configured-provider and expansion routes with the production schema`,
+      `${probeCase.provider} completes classifications and three expansions with the production fast role`,
       async () => {
         expect(modelId).toBe(providerPresets[probeCase.provider].models.fast);
         await configureProvider(probeCase.provider, apiKey!);
+        const classifications: ClassificationRouteSample[] = [];
+        const samples: ExpansionRouteSample[] = [];
 
         try {
-          await runExpansionRoute('11111111-1111-4111-8111-111111111111');
-        } finally {
-          await clearProvider();
-        }
-
-        expect(cookieState.get(providerSessionCookieName)).toBeUndefined();
-      },
-      25_000,
-    );
-  }
-
-  for (const [providerIndex, probeCase] of liveProviderCases.entries()) {
-    const apiKey = process.env[probeCase.apiKeyEnvironmentVariable];
-    const modelId = process.env[probeCase.modelEnvironmentVariable];
-    const performanceTest = apiKey && modelId ? it : it.skip;
-    performanceTest(
-      `${probeCase.provider} keeps the median of three production-route expansions within the interaction target`,
-      async () => {
-        expect(modelId).toBe(providerPresets[probeCase.provider].models.fast);
-        await configureProvider(probeCase.provider, apiKey!);
-        const durations: number[] = [];
-
-        try {
+          classifications.push(
+            await runClassificationRoute(
+              'en-US',
+              `10000000-0000-4000-8${providerIndex}00-000000000001`,
+            ),
+            await runClassificationRoute(
+              'zh-CN',
+              `10000000-0000-4000-8${providerIndex}00-000000000002`,
+            ),
+          );
           for (const sample of [1, 2, 3]) {
-            durations.push(
+            samples.push(
               await runExpansionRoute(
                 `00000000-0000-4000-8${providerIndex}00-${String(sample).padStart(12, '0')}`,
+                sample,
               ),
             );
           }
@@ -170,10 +268,25 @@ describe('live expand-node route validation', () => {
           await clearProvider();
         }
 
-        const medianDurationMs = [...durations].sort((left, right) => left - right)[1]!;
+        expect(cookieState.get(providerSessionCookieName)).toBeUndefined();
+        expect(classifications).toEqual([
+          { locale: 'en-US', ok: true, status: 200 },
+          { locale: 'zh-CN', ok: true, status: 200 },
+        ]);
+        expect(samples).toEqual(
+          [1, 2, 3].map((sample) => ({
+            durationMs: expect.any(Number),
+            ok: true,
+            sample,
+            status: 200,
+          })),
+        );
+        const medianDurationMs = samples
+          .map(({ durationMs }) => durationMs)
+          .sort((left, right) => left - right)[1]!;
         expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
       },
-      55_000,
+      80_000,
     );
   }
 });

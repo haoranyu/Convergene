@@ -10,7 +10,7 @@ const availableSummary = {
       keyHint: '••••••••',
       lastUsedAt: '2026-08-29T00:00:00.000Z',
       models: {
-        fast: 'step-3.5-flash-2603',
+        fast: 'step-3.7-flash',
         grill: 'step-3.5-flash-2603',
         report: 'step-3.5-flash-2603',
       },
@@ -70,6 +70,7 @@ test('tests and saves a key without echoing or retaining it in the form', async 
 
   await expect(page.getByText('••••••••')).toBeVisible();
   await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
+  await expect(page.getByText('step-3.7-flash').first()).toBeVisible();
   await expect(
     page.getByText('Model configuration saved. The API key is hidden from now on.'),
   ).toBeVisible();
@@ -133,6 +134,7 @@ test('validates locally and renders only safe provider error copy', async ({ pag
   await expect(provider).toContainText('StepFun');
   await provider.click();
   await page.getByRole('option', { name: 'SiliconFlow' }).click();
+  await expect(page.getByText('Qwen/Qwen3.5-4B').first()).toBeVisible();
   await expect(page.getByText('deepseek-ai/DeepSeek-V4-Flash').first()).toBeVisible();
 
   const apiKey = page.getByLabel('API key');

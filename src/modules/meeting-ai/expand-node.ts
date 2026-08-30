@@ -3,35 +3,19 @@ import { z } from 'zod';
 import { meetingModes, supportedLocales, type MeetingMode } from '@/modules/meeting-domain';
 import { nodeKinds, strategyIds, type NodeKind, type StrategyId } from '@/modules/mind-map-domain';
 
+export {
+  meetingAIErrorCodeSchema,
+  meetingAIErrorCodes,
+  meetingAIErrorResponseSchema,
+  type MeetingAIError,
+  type MeetingAIErrorCode,
+  type MeetingAIResult,
+} from './error-contract';
+
 export const expandNodeTask = 'expand-node' as const;
 export const expandNodeMaximumRequestBodyBytes = 32_768;
 
-export const meetingAIErrorCodes = [
-  'INPUT_INVALID',
-  'ORIGIN_INVALID',
-  'OUTPUT_INVALID',
-  'OUTPUT_LANGUAGE_MISMATCH',
-  'PROVIDER_ACCESS_RESTRICTED',
-  'PROVIDER_AUTH_FAILED',
-  'PROVIDER_CONFIG_INVALID',
-  'PROVIDER_CONFIG_UNAVAILABLE',
-  'PROVIDER_MODEL_NOT_FOUND',
-  'PROVIDER_NOT_CONFIGURED',
-  'PROVIDER_RATE_LIMITED',
-  'PROVIDER_UNAVAILABLE',
-  'RATE_LIMITED',
-  'REQUEST_CANCELLED',
-  'UNKNOWN',
-] as const;
-export type MeetingAIErrorCode = (typeof meetingAIErrorCodes)[number];
-
-export type MeetingAIResult<Value> =
-  { ok: true; value: Value } | { error: { code: MeetingAIErrorCode }; ok: false };
-
-export const meetingAIErrorResponseSchema = z.object({
-  error: z.object({ code: z.enum(meetingAIErrorCodes) }),
-  ok: z.literal(false),
-});
+export type { ProviderOutputFailure } from './provider-output-failure';
 
 export const strategyIdsForMode = {
   BRAINSTORM: ['BRAINSTORM_GO_WILDER', 'BRAINSTORM_CHANGE_LENS', 'BRAINSTORM_CONVERGE'],

@@ -15,7 +15,7 @@ const available = {
         keyHint: '••••••••',
         lastUsedAt: '2026-08-29T00:00:00.000Z',
         models: {
-          fast: 'step-3.5-flash-2603',
+          fast: 'step-3.7-flash',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },
@@ -392,6 +392,7 @@ test('exports and clears meetings without deleting provider configuration', asyn
   expect(path).toBeTruthy();
   const exported = JSON.parse(await readFile(path!, 'utf8')) as Record<string, unknown>;
   expect(exported).toMatchObject({ format: 'convergene-export', version: 1 });
+  expect(JSON.stringify(exported)).not.toContain('step-3.7-flash');
   expect(JSON.stringify(exported)).not.toContain('step-3.5-flash-2603');
   expect(JSON.stringify(exported).toLowerCase()).not.toContain('apikey');
 

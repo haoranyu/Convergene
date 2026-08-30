@@ -9,10 +9,17 @@ let browser: Browser;
 let fixtureUrl: string;
 let viteServer: ViteDevServer;
 
-async function openFixture(width: number, height: number, reducedMotion = false): Promise<Page> {
+async function openFixture(
+  width: number,
+  height: number,
+  reducedMotion = false,
+  expansionFailure = false,
+): Promise<Page> {
   const page = await browser.newPage({ viewport: { height, width } });
   if (reducedMotion) await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(fixtureUrl);
+  const url = new URL(fixtureUrl);
+  if (expansionFailure) url.searchParams.set('expansion', 'error');
+  await page.goto(url.toString());
   await page.getByLabel('Meeting discussion canvas').waitFor({ state: 'visible' });
   if (width >= 768) {
     await page.locator('.react-flow__node').first().waitFor({ state: 'visible' });
@@ -207,6 +214,28 @@ describe('meeting canvas browser acceptance', () => {
 
     await page.evaluate(() => window.__convergeneMeetingCanvasProbe?.releaseExpansionStorage?.());
     await pageExpect(assistance.getByRole('button', { name: /^Surface risk/u })).toBeEnabled();
+    await page.close();
+  }, 20_000);
+
+  it('exposes only safe AI failure metadata and keeps retry available', async () => {
+    const page = await openFixture(1_440, 900, false, true);
+    await page.locator('.react-flow__node[data-id="topic-criteria"]').click();
+    const assistance = page.getByRole('group', {
+      name: 'AI suggestions for Agree on measurable launch decision criteria',
+    });
+    await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+    const error = assistance.getByRole('alert');
+    await pageExpect(error).toHaveAttribute('data-ai-error-code', 'OUTPUT_INVALID');
+    await pageExpect(error).toHaveAttribute('data-ai-output-failure', 'SCHEMA_MISMATCH');
+    await pageExpect(error.getByRole('button', { name: 'Retry' })).toBeEnabled();
+    await pageExpect(page.locator('.react-flow__node[data-id^="expansion-skeleton-"]')).toHaveCount(
+      0,
+    );
+    await pageExpect(page.locator('.react-flow__node')).toHaveCount(12);
+    expect(await page.evaluate(() => window.__convergeneMeetingCanvasProbe?.storageStarted)).toBe(
+      false,
+    );
     await page.close();
   }, 20_000);
 

@@ -9,16 +9,21 @@
 本文只记录风险 Spike 的可重复证据。`passed` 表示本仓库测试真实执行成功；
 `blocked` 不得解释为通过，也不能据此启用 Provider preset。
 
+#39 的生产凭据按安全边界只存在于加密存储，不能为了预合并测试读取或复制到本地。现有 fast
+preset 已有明确失败证据时，候选可按 [AI 任务契约](./ai-contracts.md) 的有界 production canary
+例外部署：Issue 保持开放、先过完整本地门禁并确认账号模型目录可见、部署后立即执行真实 Route
+与浏览器采样；模型不可用时立即回滚，门禁未过时继续修正，不能将 canary 标为 `passed`。
+
 ## 1. 结果摘要
 
 | 验证项 | 状态 | 可重复证据 | 结论 |
 |---|---|---|---|
 | AES-256-GCM | passed | `aes-gcm.test.ts` | 32-byte base64 secret、每次新 96-bit IV、round-trip、错误密钥、被修改 ciphertext/auth tag 均已覆盖 |
 | Redis 编排 | live passed | `redis-lifecycle*.test.ts` | 免费 Upstash 实例上的加密 set/get/decrypt/expire/renew/delete 全生命周期通过，测试后目标 key 已删除 |
-| StepFun structured output | credential-gated after preset correction | `provider-structured-output*.test.ts` | 历史 `step-3.7-flash` 最小 schema suite 通过；当前 `step-3.5-flash-2603` 是官方明确支持 `json_schema` 与低推理档的 preset，必须重新运行 live suite，不能继承历史通过状态 |
+| StepFun structured output | production canary pending | `provider-structured-output*.test.ts` | 历史 `step-3.7-flash` 最小 schema suite 通过；`step-3.5-flash-2603` 产品展开 0/3 后，fast role 按当前官方实时/高频建议切回 `step-3.7-flash + low`，必须重跑 live suite |
 | StepFun preparation contracts | credential-gated after preset correction | `provider-preparation-contracts.integration.test.ts` | 使用当前 preset 直接运行正式 Grill 与 initial-map Prompt、复杂 Provider schema 及领域 parse；无凭据时明确 skipped，不能以最小 schema 代替 |
-| SiliconFlow structured output | live passed | `provider-structured-output*.test.ts` | `deepseek-ai/DeepSeek-V4-Flash` 真实 streaming、JSON Schema、1ms 取消和 invalid-model 脱敏错误均通过 |
-| Expand-node 产品 Route | credential-gated | `expand-node-route.integration.test.ts` | 直接运行产品 `POST` Route、Prompt、1,024-token/15-second 调用和固定 2 个 `{kind,title}` 候选的窄 expansion schema（title 48）；两家 Provider 各以三个产品 Route 样本验证 median ≤3,000ms；缺少对应 Provider Key/model 环境变量时明确 skipped，不能记为 live passed |
+| SiliconFlow structured output | production canary pending | `provider-structured-output*.test.ts` | 历史 `deepseek-ai/DeepSeek-V4-Flash` suite 通过；账号模型目录已确认当前可见 `Qwen/Qwen3.5-4B`，其 streaming、JSON Schema、取消和脱敏错误仍须在 canary 后复核 |
+| Fast-role 产品 Route | production canary pending | `expand-node-route.integration.test.ts` | 每家 Provider 直接运行正式 fast role：英文/简中分类 Route，以及三个节点展开 Route；展开要求 3/3 成功且 median ≤3,000ms，缺少对应 Key/model 时明确 skipped |
 | Dagre LR | passed | `dagre-layout.test.ts` | 12 个长英文节点无重叠、边不变、所有边从左向右、一级议题顺序和重复布局稳定 |
 | Active Topic subtree focus | passed | `subtree-focus.test.ts`、`canvas-browser-probe.test.ts` | Vite test-only page 在真实 Chromium 渲染/测量 12 节点，并通过 React Flow instance 对目标三节点子树显式调用 `fitView` |
 | Mermaid flowchart | passed | `mermaid-renderer.test.ts` | `securityLevel: 'strict'` 下生成 SVG |
@@ -110,28 +115,30 @@ Spike 延迟失真。成功结果只返回 Provider、model id、first-chunk/tot
 
 | Provider | 固定 Base URL | fast | grill | report | 状态 |
 |---|---|---|---|---|---|
-| StepFun | `https://api.stepfun.com/step_plan/v1` | `step-3.5-flash-2603` | `step-3.5-flash-2603` | `step-3.5-flash-2603` | 官方明确支持 `json_schema`、`reasoning_effort: low` 和 Step Plan；新 preset 的 live suite 与产品 Route 门禁待重跑 |
-| SiliconFlow | `https://api.siliconflow.cn/v1` | `deepseek-ai/DeepSeek-V4-Flash` | `deepseek-ai/DeepSeek-V4-Flash` | `deepseek-ai/DeepSeek-V4-Flash` | 3 次成功样本 first chunk 平均 8,886ms、total 平均 9,031ms；schema/stream/timeout/error 通过 |
+| StepFun | `https://api.stepfun.com/step_plan/v1` | `step-3.7-flash` | `step-3.5-flash-2603` | `step-3.5-flash-2603` | 当前官方把 3.7 Flash 定位为低延迟、高吞吐实时模型并支持 `json_schema` / `reasoning_effort: low`；fast live gate 待重跑 |
+| SiliconFlow | `https://api.siliconflow.cn/v1` | `Qwen/Qwen3.5-4B` | `deepseek-ai/DeepSeek-V4-Flash` | `deepseek-ai/DeepSeek-V4-Flash` | 4B fast 候选可关闭 thinking；历史 V4 Flash suite 通过，但新 fast live gate 待重跑 |
 
-三个 role 在 P0 先共享每个 Provider 的单一受控模型，减少配置矩阵和供应商差异；ST-01 才允许
-白名单内覆盖。历史 `step-3.7-flash` 最小 probe 的三个成功样本 first chunk 平均 1,390ms、total
-平均 1,478ms，只证明当时简单 schema 的实际响应，不能作为当前 preset 或产品 expansion 的通过
-证据。SiliconFlow 三个样本中有一个 total latency 为 21,702ms，因此交互态必须保留
-15 秒产品超时与重试/切换 Provider 路径，report route 的平台 duration 仍需随 P0-26 部署验证。
+P0 配置仍是固定白名单，但 `fast` 与复杂 `grill/report` 允许使用不同的受控模型，避免把报告质量
+和实时交互延迟绑在同一个模型上；ST-01 才允许用户在白名单内覆盖。历史 `step-3.7-flash` 最小
+probe 的三个成功样本 first chunk 平均 1,390ms、total 平均 1,478ms，只证明当时简单 schema 的
+实际响应，不能作为当前产品 expansion 的通过证据。历史 SiliconFlow V4 Flash 三个样本中有一个
+total latency 为 21,702ms；实时 fast role 因而换成小模型候选，并把产品超时收紧到 5 秒，超时后
+保持重试/显式切换 Provider 路径。report route 的平台 duration 仍需随 P0-26 部署验证。
 StepFun 会把 reasoning token 计入输出上限；128/256 token 在实测中可能在 JSON 发出前耗尽，
 probe 使用 512 token 后稳定通过。后续产品任务应按各任务 schema 另行设置足够但有界的预算。
 
 上表的延迟样本采集于双方最低推理策略落地之前，不把它们冒充优化后的性能结果。自 #37 起，
 产品共享 adapter 与独立 structured-output probe 都通过各自配置的 provider name 发送供应商专属
-参数：SiliconFlow 使用 `enable_thinking: false` 完全关闭 thinking；StepFun
-`step-3.5-flash-2603` 使用其最低受支持的 `reasoning_effort: low`。fixture test 直接检查最终 HTTP JSON body，
+参数：SiliconFlow 使用 `enable_thinking: false` 完全关闭 thinking；StepFun 所有 role 使用
+`reasoning_effort: low`。fixture test 直接检查最终 HTTP JSON body，
 并确认两家字段互不泄漏。后续具备临时凭据时应重跑 credential-gated suite 并另记低推理延迟样本。
 
 官方资料（2026-08-30 复核）：
 
-- [Step Plan 推理模型接入](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)：OpenAI-compatible Base URL 与当前 Step Plan 支持的 `step-3.5-flash-2603`。
-- [StepFun Chat Completions API](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create)：`json_schema` 只支持 `step-3.5-flash` / `step-3.5-flash-2603`，且只有后者支持 `reasoning_effort: low`。
-- [SiliconFlow Chat Completions API](https://docs.siliconflow.cn/docs/api/chat-completions-post)：固定 chat endpoint、`response_format=json_schema` Structured Outputs 说明和 `deepseek-ai/DeepSeek-V4-Flash` 示例。
+- [Step Plan 快速开始](https://platform.stepfun.com/docs/zh/step-plan/quick-start)：OpenAI-compatible Base URL 与推荐验证模型 `step-3.7-flash`。
+- [StepFun Chat Completions API](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create)：当前 `json_schema` / strict、`reasoning_effort` 与 `step-3.7-flash` 示例。
+- [Step 3.7 Flash](https://platform.stepfun.com/docs/zh/guides/models/step-3.7-flash)：低延迟、高吞吐与实时/高频定位。
+- [SiliconFlow Chat Completions API](https://docs.siliconflow.cn/docs/api/chat-completions-post)：固定 chat endpoint、`response_format=json_schema`、`enable_thinking` 与当前 Qwen3.5 小模型清单。
 - [SiliconFlow 模型广场](https://cloud.siliconflow.cn/me/models?types=chat)：当前账号可见的 chat model catalog；内容会随 Provider 更新。
 
 通过两个 Provider 已登录控制台的既有项目 Key 复制/显隐控件把凭据仅注入测试子进程；明文没有
@@ -142,15 +149,15 @@ probe 使用 512 token 后稳定通过。后续产品任务应按各任务 schem
 
 ```bash
 STEPFUN_API_KEY=... \
-STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
+STEPFUN_VALIDATION_MODEL=step-3.7-flash \
 pnpm exec vitest run src/modules/integration-validation/provider-structured-output.integration.test.ts
 ```
 
-同一组 StepFun 变量还可直接验证准备阶段实际使用的两个复杂契约；该测试不返回或记录生成正文：
+同一 API Key 配合独立的 preparation model 变量，还可直接验证准备阶段实际使用的两个复杂契约；该测试不返回或记录生成正文：
 
 ```bash
 STEPFUN_API_KEY=... \
-STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
+STEPFUN_PREPARATION_VALIDATION_MODEL=step-3.5-flash-2603 \
 pnpm exec vitest run src/modules/integration-validation/provider-preparation-contracts.integration.test.ts
 ```
 
@@ -158,29 +165,40 @@ SiliconFlow 使用 `SILICONFLOW_API_KEY` 和 `SILICONFLOW_VALIDATION_MODEL`。�
 写入文件或输出；测试结果可记录 schema、stream delta 数、first-chunk/total latency 或安全的
 failure kind/elapsed time，不记录 response body。
 
-节点展开需要单独运行产品级 route probe；它不使用最小替代 schema，而是直接调用
-`POST /api/ai/expand-node` 的 Route Handler，经共享 configured-provider adapter、正式 Prompt、
-locale 校验和窄 Provider schema 返回恰好 2 个候选，再由领域 `ExpandNodeOutput` schema 验证。
-领域边界仍接受 2–4 个候选。测试用虚构会议数据，断言安全的
-`Server-Timing` 存在，既不输出返回正文，也不写 Redis 或 IndexedDB。Provider 的 Key 与 model
-变量命名沿用上面的 credential-gated suite：
+fast role 需要单独运行产品级 route probe；它不使用最小替代 schema，而是直接调用英文/简中
+`POST /api/ai/classify-meeting`，以及 `POST /api/ai/expand-node` 的正式 Route Handler、Prompt、
+共享 adapter、locale 校验和窄 Provider schema。展开返回恰好 2 个候选，再由领域
+`ExpandNodeOutput` schema 验证；领域边界仍接受 2–4 个候选。测试只用虚构会议数据，展开断言
+安全的 `Server-Timing` 存在，既不输出返回正文，也不写 Redis 或 IndexedDB。Provider 的 Key 与
+model 变量命名沿用上面的 credential-gated suite：
 
 ```bash
 STEPFUN_API_KEY=... \
-STEPFUN_VALIDATION_MODEL=step-3.5-flash-2603 \
+STEPFUN_VALIDATION_MODEL=step-3.7-flash \
 pnpm exec vitest run src/modules/integration-validation/expand-node-route.integration.test.ts
 ```
 
-SiliconFlow 对应使用 `SILICONFLOW_API_KEY` 与 `SILICONFLOW_VALIDATION_MODEL`。没有临时凭据时，
-两家 Provider 各自的功能与三样本性能 case（共四个 case）必须显示为 skipped；浏览器拦截测试
-只能证明客户端生命周期，不能替代这项真实调用。同一文件会对每个凭据齐全的 Provider 顺序运行
-三个独立 request id，解析安全的 `Server-Timing` 并断言中位数不超过 3,000ms；性能 case 未真实
-运行前，产品延迟目标仍只能记为待验证，不能由最小 schema 的历史样本推断。
+SiliconFlow 对应使用 `SILICONFLOW_API_KEY` 与
+`SILICONFLOW_VALIDATION_MODEL=Qwen/Qwen3.5-4B`。没有临时凭据时，两家 Provider 各自的
+fast-role gate 必须显示为 skipped；浏览器拦截测试只能证明客户端生命周期，不能替代真实调用。
+同一 case 会先对英文、简中分类各运行一次，再为每个凭据齐全的 Provider 顺序收齐三个展开
+request id；失败样本只保留 locale/sample、status、稳定 code、allowlist output failure 与安全
+`Server-Timing`，不输出模型正文。分类必须 2/2 通过 schema 与 locale；展开必须 3/3 成功且中位数
+不超过 3,000ms，不能在第一个失败后停止或只计算成功样本。
 
 2026-08-30 的 PR #41 生产门禁确认浏览器、Route、Provider、IndexedDB 与重载链路可以完成，
 同时捕获到原 2–4 候选 / 1,024-token 契约仍不满足 P0：SiliconFlow 两次成功分别为 6,101ms
 和 4,211ms，第三次在 15 秒边界失败；StepFun 一次在 13,357ms 返回无效结构。所有失败均为
 0 写入并保留重试。后续窄契约不能沿用这些结果宣称通过，必须部署后重新完成三次真实采样。
+
+PR #42 把交互 schema 收窄为固定两个 `{kind,title}` 并将 StepFun 暂改为
+`step-3.5-flash-2603` 后，第二轮生产门禁仍未通过：SiliconFlow 三次为 5,289ms / 成功、
+16,157ms / 失败、4,396ms / 成功（2/3，中位成功耗时 5,289ms）；StepFun 三次分别在
+12,894ms、13,332ms、11,521ms 失败（0/3）。全部失败仍为原子 0 写入，测试后恢复原
+SiliconFlow 激活状态。由于当时所有格式失败都被压成 `OUTPUT_INVALID`，当前 adapter 新增固定
+`outputFailure` allowlist，并在不读取原始输出的前提下区分上游拒绝、截断、内容过滤、JSON
+解析和 schema 不匹配；画布只把主码与 allowlist 枚举放入 data attribute，用户文案不显示内部
+细节。新 fast preset 和 5 秒边界仍须部署后完成同等生产采样，本文不能预先记为通过。
 
 2026-08-29 的历史 credential-gated suite 为每个 Provider 各运行三个 case，Vitest timeout 都是
 35 秒，大于 probe 的 30 秒硬上限：当时的候选模型成功 streaming/schema、同一模型 1ms 强制
@@ -230,8 +248,9 @@ Mermaid renderer。测试环境仅补齐 jsdom 缺少、但现代浏览器提供
 ## 6. 后续验证边界
 
 - 2026-08-29 的基础外部集成 Spike 已证明两个 Provider endpoint 与真实 Redis 可用；但当前
-  `step-3.5-flash-2603` 的 minimal / preparation 复测，以及两家 Provider 的窄 expansion Route
-  三样本门禁仍未运行，继续作为 #39 blocker，不能沿用历史结果关闭。
+  `step-3.7-flash` 与 `Qwen/Qwen3.5-4B` 的 fast minimal / classification / expansion、StepFun
+  `step-3.5-flash-2603` 的 preparation 复测仍未运行，继续作为 #39 关闭 blocker；只允许按本文
+  记录的 production canary 例外部署，不能沿用历史结果或单元 fixture 宣称通过。
 - Vercel 当前只有 scaffold 且没有报告 route；最慢报告请求的 Hobby Function duration 必须随
   P0-26 的真实 route 和部署环境验证，不能由本 Spike 伪造。
 - P0-07/P0-08 已实现匿名会话、配置 API、同源检查、原子限流和共享 Provider adapter，并通过

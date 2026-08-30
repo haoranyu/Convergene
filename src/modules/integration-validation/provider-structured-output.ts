@@ -10,10 +10,12 @@ export const providerValidationDefinitions = {
   SILICONFLOW: {
     baseURL: 'https://api.siliconflow.cn/v1',
     name: 'siliconflow-validation',
+    supportsStructuredOutputs: true,
   },
   STEPFUN: {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
     name: 'stepfun-validation',
+    supportsStructuredOutputs: true,
   },
 } as const;
 
@@ -87,9 +89,7 @@ export async function runProviderStructuredOutputProbe({
     baseURL: definition.baseURL,
     fetch,
     name: definition.name,
-    // The generic adapter otherwise falls back to response_format=json_object
-    // and silently omits the supplied JSON schema.
-    supportsStructuredOutputs: true,
+    supportsStructuredOutputs: definition.supportsStructuredOutputs,
   });
   const startedAt = now();
   const timeoutController = new AbortController();

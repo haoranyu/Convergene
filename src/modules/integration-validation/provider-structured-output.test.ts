@@ -72,7 +72,7 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)(
   '%s OpenAI-compatible adapter validation',
   (provider) => {
-    it('streams a JSON schema response and returns only safe latency metadata', async () => {
+    it('streams the provider output mode and returns only safe latency metadata', async () => {
       const modelId = 'test-model';
       const timestamps = [100, 112, 145];
       const result = await runProviderStructuredOutputProbe({

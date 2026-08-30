@@ -50,5 +50,15 @@ export function meetingAIErrorResponse(error: unknown): Response {
     error instanceof ProviderConfigServiceError
       ? error.code
       : 'UNKNOWN';
-  return meetingAIJson({ error: { code }, ok: false }, statusForCode(code));
+  const outputFailure =
+    error instanceof ProviderGatewayError && error.code === 'OUTPUT_INVALID'
+      ? error.outputFailure
+      : undefined;
+  return meetingAIJson(
+    {
+      error: { code, ...(outputFailure === undefined ? {} : { outputFailure }) },
+      ok: false,
+    },
+    statusForCode(code),
+  );
 }
