@@ -53,19 +53,31 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
       max_tokens?: number;
       messages?: Array<{ content?: string; role?: string }>;
       reasoning_effort?: string;
-      response_format?: { type?: string };
+      response_format?: {
+        json_schema?: { schema?: unknown; strict?: boolean };
+        type?: string;
+      };
       stream?: boolean;
     };
 
     expect(String(input)).toBe(
       `${providerValidationDefinitions[provider].baseURL}/chat/completions`,
     );
-    expect(requestBody.enable_thinking).toBeUndefined();
-    expect(requestBody.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
+    expect(requestBody.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+    expect(requestBody.reasoning_effort).toBeUndefined();
     expect(requestBody.max_tokens).toBe(512);
-    expect(requestBody.response_format?.type).toBe('json_object');
-    expect(requestBody.messages?.[0]).toMatchObject({ role: 'system' });
-    expect(requestBody.messages?.[0]?.content).toContain('"additionalProperties":false');
+    expect(requestBody.response_format?.type).toBe(
+      provider === 'STEPFUN' ? 'json_object' : 'json_schema',
+    );
+    if (provider === 'STEPFUN') {
+      expect(requestBody.messages?.[0]).toMatchObject({ role: 'system' });
+      expect(requestBody.messages?.[0]?.content).toContain('"additionalProperties":false');
+    } else {
+      expect(requestBody.response_format?.json_schema?.strict).toBe(true);
+      expect(JSON.stringify(requestBody.response_format?.json_schema?.schema)).toContain(
+        '"additionalProperties":false',
+      );
+    }
     expect(requestBody.stream).toBe(true);
 
     return createStreamingResponse(provider, modelId);

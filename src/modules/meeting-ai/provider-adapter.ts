@@ -3,7 +3,6 @@ import 'server-only';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   APICallError,
-  generateText,
   NoObjectGeneratedError,
   NoOutputGeneratedError,
   Output,
@@ -25,7 +24,7 @@ const minimumMaxOutputTokens = {
 } as const satisfies Record<ProviderId, Record<ProviderTaskRole, number>>;
 
 const providerStructuredOutputPolicies = {
-  SILICONFLOW: { fast: false, grill: true, report: true },
+  SILICONFLOW: { fast: true, grill: true, report: true },
   STEPFUN: { fast: false, grill: true, report: true },
 } as const satisfies Record<ProviderId, Record<ProviderTaskRole, boolean>>;
 
@@ -35,8 +34,8 @@ function providerRequestPolicy(
   provider: ProviderId,
   role: ProviderTaskRole,
 ): Record<string, boolean | string> {
-  if (provider === 'STEPFUN') return { reasoningEffort: 'low' };
-  return role === 'fast' ? {} : { enable_thinking: false };
+  if (provider === 'SILICONFLOW') return { enable_thinking: false };
+  return role === 'fast' ? {} : { reasoningEffort: 'low' };
 }
 
 function jsonObjectSystemInstruction(schemaName: string, schema: z.ZodType): string {
@@ -327,11 +326,6 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
         ? {}
         : { system: jsonObjectSystemInstruction(schemaName, schema) }),
     } as const;
-
-    if (role === 'fast') {
-      const result = await generateText(request);
-      return schema.parse(result.output);
-    }
 
     const result = streamText({
       ...request,

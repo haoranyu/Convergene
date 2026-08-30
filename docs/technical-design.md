@@ -386,7 +386,7 @@ const providerPresets = {
     baseURL: 'https://api.siliconflow.cn/v1',
     defaultModels: {
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
-      fast: 'Pro/Qwen/Qwen2.5-7B-Instruct',
+      fast: 'Qwen/Qwen3.5-4B',
       report: 'deepseek-ai/DeepSeek-V4-Flash'
     }
   }
@@ -395,29 +395,32 @@ const providerPresets = {
 
 2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
 SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
-实时节点展开的 `fast` preset。Step Plan 当前明确支持的低延迟候选仍是
-`step-3.7-flash + reasoning_effort: low`；`step-1o-turbo-vision` 只在标准 API 有官方示例，不能
-假设 sponsor 的 `/step_plan/v1` endpoint 和额度支持它。PR #43 的后续生产门禁证明
+实时节点展开的 `fast` preset。`step-3.7-flash` 已在当前 Step Plan 账号通过生产 JSON Mode
+分类调用；官方 Chat Completions 文档只对 `step-3.5-flash-2603` 声明支持
+`reasoning_effort`，因此 fast 不发送该字段。`step-1o-turbo-vision` 只在标准 API 有官方示例，
+不能假设 sponsor 的 `/step_plan/v1` endpoint 和额度支持它。PR #43 的后续生产门禁证明
 `Qwen/Qwen3.5-4B` 虽然 3/3 成功，但 4,604ms 中位耗时仍未达到 3 秒门槛；PR #44 又证明
 `inclusionAI/Ling-mini-2.0` 在 5 秒 Provider 边界内 0/3，因而 SiliconFlow fast 改用当前目录中
 明确支持 JSON Mode 的付费 `Pro/Qwen/Qwen2.5-7B-Instruct`，复杂角色仍用
-`deepseek-ai/DeepSeek-V4-Flash`。
+`deepseek-ai/DeepSeek-V4-Flash`。PR #45 的生产结果随后证明这个组合分类 0/2、展开 0/3，且
+追加三次展开均在 5 秒边界返回 `PROVIDER_UNAVAILABLE`；因此该候选被撤回，恢复已有 3/3 可靠性
+证据的 `Qwen/Qwen3.5-4B`，并通过 Redis preload 与部署 region 单独解决固定延迟。
 
-共享 OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`。两个 fast role 都使用
-非流式 `generateText` 和 `json_object`，完整 Draft-7 schema 置于 system message，返回后仍由
-本地 Zod/locale 权威校验；复杂任务保留流式严格 schema。SiliconFlow fast 不发送 thinking
-参数，复杂角色发送 `enable_thinking: false`；StepFun 所有角色发送
-`reasoning_effort: low`。
+共享 OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`。所有任务使用
+`streamText`，但只在完整对象校验后消费结果。SiliconFlow fast 与复杂 role 使用严格
+`json_schema` 并发送 `enable_thinking: false`；StepFun fast 使用 `json_object` 与完整 Draft-7
+system schema 且不发送 `reasoning_effort`，使用 3.5-2603 的复杂 role 才在严格 schema 请求中
+发送 `reasoning_effort: low`。
 两家的专属字段不得互相发送。这批交互任务
 需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
 可靠性边界；Provider 输出失败还必须只用固定 allowlist 区分截断、JSON 解析、schema 不匹配、
 内容过滤和上游拒绝，绝不保留原始模型文本。新 fast preset 仍须通过 credential-gated 产品
 Route 与生产浏览器门禁，不能借用历史最小 schema 的样本宣称通过。
 
-StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，因此 fast role 的 adapter 下限保持
-512 token；SiliconFlow 非推理 fast role 下限为 384。节点展开调用方声明 384，最终 StepFun
-请求会安全提升到 512，SiliconFlow 保持 384；其他调用仍使用各自有界预算。独立 probe 继续以
-bounded `streamText` 验证 streaming 能力，产品 fast path 则以 `generateText` 等待完整对象；两者
+StepFun 历史 probe 在 128/256 token 时可能在 JSON 发出前耗尽，因此 fast role 的 adapter 保留
+512-token 已验证安全下限；SiliconFlow 非推理 fast role 下限为 384。节点展开调用方声明 384，
+最终 StepFun 请求会安全提升到 512，SiliconFlow 保持 384；其他调用仍使用各自有界预算。独立 probe 继续以
+bounded `streamText` 验证 streaming 能力，产品 fast path 也等待同一流中的完整对象；两者
 都禁止原始 Provider 错误日志并只返回脱敏分类和 elapsed time。完整证据见
 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128
 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
@@ -706,6 +709,7 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 ## 17. 部署与成本
 
 - Vercel Hobby：`$0/月`，适合个人、非商业黑客松演示；
+- `vercel.json` 把 Node Functions 固定到香港 `hkg1`；静态资产仍由 CDN 就近提供，生产部署必须核对 function region；
 - Upstash Redis Free：`$0/月`，当前免费层足够保存小型加密配置；
 - 使用 `vercel.app` 免费域名；
 - 模型费用由用户自己的 sponsor Key 承担；
@@ -721,9 +725,9 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
 - [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
-  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Pro/Qwen/Qwen2.5-7B-Instruct`
-  的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家 expansion 必须
-  3/3 成功且中位数不超过 3 秒；
+  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Qwen/Qwen3.5-4B`
+  的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家英文与简中
+  expansion 都必须 3/3 成功且中位数不超过 3 秒；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；
 - [x] 在 test-only Vite page 用真实 Chromium 验证 12 节点长文本 DOM 尺寸/换行、Dagre LR、subtree bounds/viewport 和 React Flow instance 显式 `fitView`；
 - [x] 验证 Mermaid flowchart、受控 period label 的 timeline 和 pie；时钟冒号 timeline 降级为 flowchart/table；

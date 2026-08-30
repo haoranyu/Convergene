@@ -59,29 +59,6 @@ function streamingResponse(
   );
 }
 
-function completionResponse(
-  provider: ProviderId,
-  {
-    content = JSON.stringify({ status: 'ok' }),
-    finishReason = 'stop',
-  }: { content?: string; finishReason?: string } = {},
-): Response {
-  return Response.json({
-    choices: [
-      {
-        finish_reason: finishReason,
-        index: 0,
-        message: { content, role: 'assistant' },
-      },
-    ],
-    created: 1_788_000_000,
-    id: 'safe-test-id',
-    model: providerPresets[provider].models.fast,
-    object: 'chat.completion',
-    usage: { completion_tokens: 5, prompt_tokens: 8, total_tokens: 13 },
-  });
-}
-
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provider) => {
   it('uses only the approved endpoint, model, and fast-role output policy', async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -91,21 +68,36 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
         messages?: Array<{ content?: string; role?: string }>;
         model?: string;
         reasoning_effort?: string;
-        response_format?: { type?: string };
+        response_format?: {
+          json_schema?: { name?: string; schema?: unknown; strict?: boolean };
+          type?: string;
+        };
         stream?: boolean;
       };
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
-      expect(body.enable_thinking).toBeUndefined();
-      expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
+      expect(body.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
+      expect(body.reasoning_effort).toBeUndefined();
       expect(body.max_tokens).toBe(2_048);
-      expect(body.response_format?.type).toBe('json_object');
-      expect(body.stream).toBeUndefined();
-      expect(body.messages?.[0]).toMatchObject({ role: 'system' });
-      expect(body.messages?.[0]?.content).toContain('SafeTestOutput JSON Schema');
-      expect(body.messages?.[0]?.content).toContain('"additionalProperties":false');
-      expect(body.messages?.[0]?.content).toContain('"status"');
-      return completionResponse(provider);
+      expect(body.response_format?.type).toBe(
+        provider === 'STEPFUN' ? 'json_object' : 'json_schema',
+      );
+      expect(body.stream).toBe(true);
+      if (provider === 'STEPFUN') {
+        expect(body.messages?.[0]).toMatchObject({ role: 'system' });
+        expect(body.messages?.[0]?.content).toContain('SafeTestOutput JSON Schema');
+        expect(body.messages?.[0]?.content).toContain('"additionalProperties":false');
+        expect(body.messages?.[0]?.content).toContain('"status"');
+      } else {
+        expect(body.response_format?.json_schema).toMatchObject({
+          name: 'SafeTestOutput',
+          strict: true,
+        });
+        expect(JSON.stringify(body.response_format?.json_schema?.schema)).toContain(
+          '"additionalProperties":false',
+        );
+      }
+      return streamingResponse(provider);
     });
 
     await expect(
@@ -146,7 +138,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     ).resolves.toEqual({ status: 'ok' });
   });
 
-  it('places the complete output schema in fast-role JSON Mode instructions', async () => {
+  it('places the complete output schema in the fast-role provider contract', async () => {
     const content = JSON.stringify({
       children: [
         { kind: 'RISK', title: 'Budget approval may arrive late' },
@@ -156,14 +148,18 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as {
         messages?: Array<{ content?: string; role?: string }>;
+        response_format?: { json_schema?: { schema?: unknown }; type?: string };
       };
-      const system = body.messages?.find(({ role }) => role === 'system')?.content;
-      expect(system).toContain('"minItems":2');
-      expect(system).toContain('"maxItems":2');
-      expect(system).toContain('"additionalProperties":false');
-      expect(system).toContain('"OPTION"');
-      expect(system).toContain('"maxLength":48');
-      return completionResponse(provider, { content });
+      const serializedContract =
+        provider === 'STEPFUN'
+          ? body.messages?.find(({ role }) => role === 'system')?.content
+          : JSON.stringify(body.response_format?.json_schema?.schema);
+      expect(serializedContract).toContain('"minItems":2');
+      expect(serializedContract).toContain('"maxItems":2');
+      expect(serializedContract).toContain('"additionalProperties":false');
+      expect(serializedContract).toContain('"OPTION"');
+      expect(serializedContract).toContain('"maxLength":48');
+      return streamingResponse(provider, { content });
     });
 
     await expect(
@@ -182,7 +178,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as { max_tokens?: number };
       expect(body.max_tokens).toBe(provider === 'STEPFUN' ? 512 : 384);
-      return completionResponse(provider);
+      return streamingResponse(provider);
     });
 
     await expect(
@@ -255,7 +251,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       const promise = runStructuredProviderCall({
         config: config(provider),
         fetch: () =>
-          Promise.resolve(completionResponse(provider, { content: generatedText, finishReason })),
+          Promise.resolve(streamingResponse(provider, { content: generatedText, finishReason })),
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,
@@ -277,7 +273,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     await expect(
       runStructuredProviderCall({
         config: config(provider),
-        fetch: () => Promise.resolve(completionResponse(provider, { content: '' })),
+        fetch: () => Promise.resolve(streamingResponse(provider, { content: '' })),
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,

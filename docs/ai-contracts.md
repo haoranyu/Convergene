@@ -16,13 +16,15 @@
 - 输出失败时允许程序安全拒绝，不以“尽量展示”绕过 schema；
 - 不在服务端日志记录完整输入和输出。
 
-Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用
-`Pro/Qwen/Qwen2.5-7B-Instruct` 且不发送 thinking 参数，复杂 role 继续对 DeepSeek 显式发送
-`enable_thinking: false`；StepFun 的 `fast` role 使用 Step Plan 明确支持的
-`step-3.7-flash + reasoning_effort: low`，`grill/report` 暂保留 `step-3.5-flash-2603 + low`。
-两个 fast preset 都以非流式 JSON Mode 返回完整对象：完整 Draft-7 schema 放入 system message，
-Provider 收到 `json_object`，应用端再执行 Zod 和语言校验；复杂任务继续使用流式严格
-`json_schema`。两家的专属字段不得互相发送。该策略不改变
+Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用已经通过 3/3
+产品展开验证的 `Qwen/Qwen3.5-4B`，并与复杂 role 一样显式发送
+`enable_thinking: false`；StepFun 的 `fast` role 使用已经通过产品 JSON Mode 分类验证的
+`step-3.7-flash`，不发送官方只对 3.5-2603 声明支持的 `reasoning_effort`；`grill/report` 暂保留
+`step-3.5-flash-2603 + low`。
+所有任务都使用流式传输，但应用只在完整对象通过校验后消费结果：SiliconFlow fast 与复杂
+role 使用严格 `json_schema`；StepFun fast 使用 `json_object`、完整 Draft-7 system schema，
+复杂 role 使用严格 `json_schema`。两条路径都继续执行本地 Zod 和语言校验，且两家的专属字段
+不得互相发送。该策略不改变
 下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
 
 共同 envelope：

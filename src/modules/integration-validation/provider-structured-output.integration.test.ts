@@ -19,7 +19,7 @@ const liveProviderCases: Array<{
   },
   {
     apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
-    approvedModelId: 'Pro/Qwen/Qwen2.5-7B-Instruct',
+    approvedModelId: 'Qwen/Qwen3.5-4B',
     modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
     provider: 'SILICONFLOW',
   },
