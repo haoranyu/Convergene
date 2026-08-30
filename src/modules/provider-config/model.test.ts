@@ -5,7 +5,7 @@ import { providerConfigInputSchema, providerModelPresets } from './model';
 describe('provider configuration input', () => {
   it('uses the Step Plan low-latency preset for fast structured output', () => {
     expect(providerModelPresets.STEPFUN).toEqual({
-      fast: 'step-3.5-flash-2603',
+      fast: 'step-3.7-flash',
       grill: 'step-3.5-flash-2603',
       report: 'step-3.5-flash-2603',
     });

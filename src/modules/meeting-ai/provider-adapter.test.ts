@@ -59,6 +59,29 @@ function streamingResponse(
   );
 }
 
+it('sends reasoning effort only to StepFun models that document the field', async () => {
+  const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as { reasoning_effort?: string };
+    expect(body.reasoning_effort).toBeUndefined();
+    return streamingResponse('STEPFUN');
+  });
+  const stepfunConfig = config('STEPFUN');
+
+  await expect(
+    runStructuredProviderCall({
+      config: {
+        ...stepfunConfig,
+        models: { ...stepfunConfig.models, fast: 'step-3.5-flash' },
+      },
+      fetch,
+      prompt: 'Return status=ok.',
+      role: 'fast',
+      schema: outputSchema,
+      schemaName: 'SafeTestOutput',
+    }),
+  ).resolves.toEqual({ status: 'ok' });
+});
+
 describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provider) => {
   it('uses only the approved endpoint, model, and fast-role output policy', async () => {
     const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -113,7 +136,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     expect(fetch).toHaveBeenCalledOnce();
   });
 
-  it('keeps JSON Schema output and non-reasoning policy for complex roles', async () => {
+  it('keeps JSON Schema output and provider-specific policy for complex roles', async () => {
     const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       const body = JSON.parse(String(init?.body)) as {
         enable_thinking?: boolean;
