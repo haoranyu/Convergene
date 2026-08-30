@@ -10,7 +10,7 @@ const availableSummary = {
       keyHint: '••••••••',
       lastUsedAt: '2026-08-29T00:00:00.000Z',
       models: {
-        fast: 'step-3.7-flash',
+        fast: 'step-3.5-flash-2603',
         grill: 'step-3.5-flash-2603',
         report: 'step-3.5-flash-2603',
       },
@@ -70,7 +70,7 @@ test('tests and saves a key without echoing or retaining it in the form', async 
 
   await expect(page.getByText('••••••••')).toBeVisible();
   await expect(page.getByText('StepFun is selected for AI actions')).toBeVisible();
-  await expect(page.getByText('step-3.7-flash').first()).toBeVisible();
+  await expect(page.getByText('step-3.5-flash-2603').first()).toBeVisible();
   await expect(
     page.getByText('Model configuration saved. The API key is hidden from now on.'),
   ).toBeVisible();

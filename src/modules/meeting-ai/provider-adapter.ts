@@ -32,10 +32,10 @@ export type ProviderTaskRole = keyof ProviderModelMapping;
 
 function providerRequestPolicy(
   provider: ProviderId,
-  role: ProviderTaskRole,
+  modelId: string,
 ): Record<string, boolean | string> {
   if (provider === 'SILICONFLOW') return { enable_thinking: false };
-  return role === 'fast' ? {} : { reasoningEffort: 'low' };
+  return modelId === 'step-3.5-flash-2603' ? { reasoningEffort: 'low' } : {};
 }
 
 function jsonObjectSystemInstruction(schemaName: string, schema: z.ZodType): string {
@@ -320,7 +320,9 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       model: providerClient.chatModel(config.models[role]),
       output: Output.object({ name: schemaName, schema }),
       prompt,
-      providerOptions: { [preset.name]: providerRequestPolicy(config.provider, role) },
+      providerOptions: {
+        [preset.name]: providerRequestPolicy(config.provider, config.models[role]),
+      },
       temperature: 0,
       ...(providerStructuredOutputPolicies[config.provider][role]
         ? {}

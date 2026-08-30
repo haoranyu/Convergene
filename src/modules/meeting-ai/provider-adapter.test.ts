@@ -77,7 +77,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
       expect(body.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
-      expect(body.reasoning_effort).toBeUndefined();
+      expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
       expect(body.max_tokens).toBe(2_048);
       expect(body.response_format?.type).toBe(
         provider === 'STEPFUN' ? 'json_object' : 'json_schema',
