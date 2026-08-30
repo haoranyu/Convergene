@@ -113,6 +113,17 @@ export const expandNodeOutputSchema = z
   .object({ children: z.array(expandNodeChildSchema).min(2).max(4) })
   .strict();
 
+const expandNodeProviderChildSchema = z
+  .object({
+    kind: z.enum(expansionNodeKinds),
+    title: expandNodeChildSchema.shape.title,
+  })
+  .strict();
+
+export const expandNodeProviderOutputSchema = z
+  .object({ children: z.array(expandNodeProviderChildSchema).length(2) })
+  .strict();
+
 export const expandNodeResponseSchema = z
   .object({
     output: expandNodeOutputSchema,

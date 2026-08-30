@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ConfiguredProviderCaller } from './configured-provider-call';
-import { expandNodeRequestSchema } from './expand-node';
+import { expandNodeProviderOutputSchema, expandNodeRequestSchema } from './expand-node';
 import { runExpandNodeProviderTask } from './expand-node-task';
 import { meetingAIErrorResponse } from './http';
 
@@ -34,10 +34,40 @@ describe('runExpandNodeProviderTask', () => {
       expect.objectContaining({
         maxOutputTokens: 1_024,
         role: 'fast',
+        schema: expandNodeProviderOutputSchema,
         schemaName: 'ExpandNodeOutput',
         timeoutMs: 15_000,
       }),
     );
+  });
+
+  it('rejects a provider response outside the narrow two-child task contract', async () => {
+    const callProvider = vi.fn().mockResolvedValue({
+      children: [
+        { kind: 'RISK', title: 'Budget approval may arrive too late' },
+        { kind: 'RISK', title: 'The launch owner lacks capacity' },
+        { kind: 'RISK', title: 'The rollout window may close' },
+      ],
+    }) as unknown as ConfiguredProviderCaller;
+
+    const task = runExpandNodeProviderTask(callProvider, request);
+    await expect(task).rejects.toMatchObject({ code: 'OUTPUT_INVALID' });
+    const response = meetingAIErrorResponse(await task.catch((error: unknown) => error));
+    expect(response.status).toBe(422);
+  });
+
+  it('maps an overlong provider title to the public output-invalid contract', async () => {
+    const callProvider = vi.fn().mockResolvedValue({
+      children: [
+        { kind: 'RISK', title: 'a'.repeat(49) },
+        { kind: 'RISK', title: 'The launch owner lacks capacity' },
+      ],
+    }) as unknown as ConfiguredProviderCaller;
+
+    const task = runExpandNodeProviderTask(callProvider, request);
+    await expect(task).rejects.toMatchObject({ code: 'OUTPUT_INVALID' });
+    const response = meetingAIErrorResponse(await task.catch((error: unknown) => error));
+    expect(response.status).toBe(422);
   });
 
   it('rejects output in the wrong locale after provider validation', async () => {

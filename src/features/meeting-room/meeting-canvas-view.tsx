@@ -110,6 +110,8 @@ interface ExpansionState {
   strategyId: StrategyId;
 }
 
+const expansionPlaceholderCount = 2;
+
 function HostCheats({ aggregate }: Pick<MeetingCanvasViewProps, 'aggregate'>) {
   const t = useTranslations('facilitation');
   const activeTopic = aggregate.nodes.find(
@@ -402,7 +404,7 @@ function CanvasContent({
     }
     return [
       ...decorated,
-      ...Array.from({ length: 3 }, (_, index): MeetingCanvasNode => ({
+      ...Array.from({ length: expansionPlaceholderCount }, (_, index): MeetingCanvasNode => ({
         ariaLabel: t('expansion.loading'),
         data: {
           activeLabel: '',
@@ -421,7 +423,7 @@ function CanvasContent({
         initialWidth: meetingNodeSize.width,
         position: {
           x: selectedNode.position.x + 384,
-          y: selectedNode.position.y + index * 112 - 112,
+          y: selectedNode.position.y + index * 112 - ((expansionPlaceholderCount - 1) * 112) / 2,
         },
         selectable: false,
         style: meetingNodeSize,

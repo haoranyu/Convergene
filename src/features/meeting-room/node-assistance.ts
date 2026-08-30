@@ -13,11 +13,13 @@ import {
   type StrategyId,
 } from '@/modules/mind-map-domain';
 
+const maximumBriefSummaryLength = 1_200;
+const maximumBriefFieldLength = maximumBriefSummaryLength / 2;
 const maximumNeighborCount = 8;
-const maximumNoteSummaryLength = 320;
+const maximumNoteSummaryLength = 160;
 
-function contextForNode(node: MindMapNode): ExpandNodeContext {
-  const note = node.note?.trim().slice(0, maximumNoteSummaryLength);
+function contextForNode(node: MindMapNode, includeNote = false): ExpandNodeContext {
+  const note = includeNote ? node.note?.trim().slice(0, maximumNoteSummaryLength) : undefined;
   return {
     id: node.id,
     kind: node.kind,
@@ -30,10 +32,10 @@ function briefSummary(aggregate: MeetingAggregate): string {
   const brief = aggregate.meeting.brief;
   if (brief === undefined) throw new Error('BRIEF_NOT_CONFIRMED');
   return [brief.objective, brief.desiredOutcome]
-    .map((value) => value.trim())
+    .map((value) => value.trim().slice(0, maximumBriefFieldLength))
     .filter(Boolean)
     .join('\n')
-    .slice(0, 2_400);
+    .slice(0, maximumBriefSummaryLength);
 }
 
 export function buildExpandNodeInput(
@@ -53,7 +55,7 @@ export function buildExpandNodeInput(
     .slice(0, maximumNeighborCount)
     .map((edge) => aggregate.nodes.find((node) => node.id === edge.targetNodeId))
     .filter((node): node is MindMapNode => node !== undefined)
-    .map(contextForNode);
+    .map((node) => contextForNode(node));
   const siblings =
     incomingEdge === undefined
       ? []
@@ -66,14 +68,14 @@ export function buildExpandNodeInput(
           .slice(0, maximumNeighborCount)
           .map((edge) => aggregate.nodes.find((node) => node.id === edge.targetNodeId))
           .filter((node): node is MindMapNode => node !== undefined)
-          .map(contextForNode);
+          .map((node) => contextForNode(node));
 
   return expandNodeInputSchema.parse({
     briefSummary: briefSummary(aggregate),
     children,
     mode,
     ...(parent ? { parent: contextForNode(parent) } : {}),
-    selectedNode: contextForNode(selectedNode),
+    selectedNode: contextForNode(selectedNode, true),
     siblings,
     strategyId,
   });
