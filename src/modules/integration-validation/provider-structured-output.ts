@@ -90,8 +90,10 @@ export async function runProviderStructuredOutputProbe({
     fetch,
     name: definition.name,
     supportsStructuredOutputs: definition.supportsStructuredOutputs,
-    transformRequestBody: (body) =>
-      provider === 'STEPFUN' ? { ...body, response_format: { type: 'json_object' } } : body,
+    transformRequestBody: (body) => ({
+      ...body,
+      response_format: { type: 'json_object' },
+    }),
   });
   const startedAt = now();
   const timeoutController = new AbortController();
@@ -124,14 +126,10 @@ export async function runProviderStructuredOutputProbe({
       }),
       prompt: `Return only this JSON object with no extra keys: {"provider":"${provider}","status":"ok","value":7}.`,
       providerOptions: providerProbeRequestPolicies[provider],
-      ...(provider === 'STEPFUN'
-        ? {
-            system: [
-              'Return only one JSON object matching this JSON Schema. Do not add prose or Markdown.',
-              JSON.stringify(z.toJSONSchema(structuredProbeSchema, { target: 'draft-7' })),
-            ].join('\n'),
-          }
-        : {}),
+      system: [
+        'Return only one JSON object matching this JSON Schema. Do not add prose or Markdown.',
+        JSON.stringify(z.toJSONSchema(structuredProbeSchema, { target: 'draft-7' })),
+      ].join('\n'),
       temperature: 0,
     });
     const output = await result.output;

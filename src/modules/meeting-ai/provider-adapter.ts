@@ -3,6 +3,7 @@ import 'server-only';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import {
   APICallError,
+  generateText,
   NoObjectGeneratedError,
   NoOutputGeneratedError,
   Output,
@@ -18,10 +19,13 @@ import type { ProviderOutputFailure } from './provider-output-failure';
 const defaultTimeoutMs = 15_000;
 const maximumTimeoutMs = 60_000;
 const defaultMaxOutputTokens = 2_048;
-const minimumMaxOutputTokens = 512;
+const minimumMaxOutputTokens = {
+  SILICONFLOW: { fast: 384, grill: 512, report: 512 },
+  STEPFUN: { fast: 512, grill: 512, report: 512 },
+} as const satisfies Record<ProviderId, Record<ProviderTaskRole, number>>;
 
 const providerStructuredOutputPolicies = {
-  SILICONFLOW: { fast: true, grill: true, report: true },
+  SILICONFLOW: { fast: false, grill: true, report: true },
   STEPFUN: { fast: false, grill: true, report: true },
 } as const satisfies Record<ProviderId, Record<ProviderTaskRole, boolean>>;
 
@@ -310,14 +314,11 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
           ? body
           : { ...body, response_format: { type: 'json_object' } },
     });
-    const result = streamText({
+    const request = {
       abortSignal: combinedSignal,
-      maxOutputTokens: Math.max(maxOutputTokens, minimumMaxOutputTokens),
+      maxOutputTokens: Math.max(maxOutputTokens, minimumMaxOutputTokens[config.provider][role]),
       maxRetries: 0,
       model: providerClient.chatModel(config.models[role]),
-      onError: ({ error }) => {
-        streamedError = error;
-      },
       output: Output.object({ name: schemaName, schema }),
       prompt,
       providerOptions: { [preset.name]: providerRequestPolicy(config.provider, role) },
@@ -325,6 +326,18 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       ...(providerStructuredOutputPolicies[config.provider][role]
         ? {}
         : { system: jsonObjectSystemInstruction(schemaName, schema) }),
+    } as const;
+
+    if (role === 'fast') {
+      const result = await generateText(request);
+      return schema.parse(result.output);
+    }
+
+    const result = streamText({
+      ...request,
+      onError: ({ error }) => {
+        streamedError = error;
+      },
     });
 
     return schema.parse(await result.output);

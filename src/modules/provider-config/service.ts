@@ -33,6 +33,7 @@ import {
   type EncryptedProviderConfigV2,
   type EncryptedProviderCredential,
   type LegacyEncryptedProviderConfig,
+  type ProviderConfigPreload,
   type ProviderConfigWriteExpectation,
   type ProviderConfigStore,
 } from './store';
@@ -130,21 +131,24 @@ function availableSummary(
   };
 }
 
+function parseStoredRecord(value: unknown): EncryptedProviderConfig | null {
+  if (value === null) {
+    return null;
+  }
+
+  const parsed = encryptedProviderConfigSchema.safeParse(value);
+  if (!parsed.success) {
+    throw new ProviderConfigServiceError('PROVIDER_CONFIG_INVALID');
+  }
+  return parsed.data;
+}
+
 async function readRecord(
   store: ProviderConfigStore,
   sessionId: string,
 ): Promise<EncryptedProviderConfig | null> {
   try {
-    const value = await store.get(providerConfigKey(sessionId));
-    if (value === null) {
-      return null;
-    }
-
-    const parsed = encryptedProviderConfigSchema.safeParse(value);
-    if (!parsed.success) {
-      throw new ProviderConfigServiceError('PROVIDER_CONFIG_INVALID');
-    }
-    return parsed.data;
+    return parseStoredRecord(await store.get(providerConfigKey(sessionId)));
   } catch (error) {
     if (error instanceof ProviderConfigServiceError) {
       throw error;
@@ -325,9 +329,16 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
 
   async function readNormalizedRecord(
     sessionId: string,
+    preload?: ProviderConfigPreload,
   ): Promise<EncryptedProviderConfigV2 | null> {
+    const key = providerConfigKey(sessionId);
+    let pendingPreload = preload?.key === key && preload.record !== null ? preload : undefined;
     for (let attempt = 0; attempt < maximumWriteAttempts; attempt += 1) {
-      const storedRecord = await readRecord(store, sessionId);
+      const currentPreload = pendingPreload;
+      pendingPreload = undefined;
+      const storedRecord = currentPreload
+        ? parseStoredRecord(currentPreload.record)
+        : await readRecord(store, sessionId);
       if (!storedRecord) return null;
 
       const normalized = normalizeRecord(storedRecord, keyring);
@@ -454,21 +465,29 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
       session.set(sessionId);
     },
 
-    async resolve(): Promise<ResolvedStoredProviderConfig> {
+    async resolve(preload?: ProviderConfigPreload): Promise<ResolvedStoredProviderConfig> {
       const sessionId = parseProviderSessionId(session.get());
       if (!sessionId) {
         throw new ResolvedProviderConfigError('PROVIDER_NOT_CONFIGURED');
       }
 
+      const configKey = providerConfigKey(sessionId);
+      let pendingPreload = preload;
       for (let attempt = 0; attempt < maximumWriteAttempts; attempt += 1) {
         let record: EncryptedProviderConfigV2 | null;
+        const currentPreload = pendingPreload;
+        const preloadWasUsed = currentPreload?.key === configKey && currentPreload.record !== null;
+        pendingPreload = undefined;
         try {
-          record = await readNormalizedRecord(sessionId);
+          record = await readNormalizedRecord(sessionId, currentPreload);
         } catch (error) {
           if (
             error instanceof ProviderConfigServiceError &&
             error.code === 'PROVIDER_CONFIG_INVALID'
           ) {
+            if (preloadWasUsed) {
+              continue;
+            }
             throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
           }
           throw new ResolvedProviderConfigError('PROVIDER_CONFIG_UNAVAILABLE');
@@ -484,10 +503,16 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
           throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
         }
         if (credential.health === 'AUTH_REJECTED') {
+          if (preloadWasUsed) {
+            continue;
+          }
           throw new ResolvedProviderConfigError('PROVIDER_AUTH_FAILED');
         }
         const key = credential.keyId === 'legacy' ? undefined : keyring.keys.get(credential.keyId);
         if (!key || credential.health === 'DECRYPTION_FAILED') {
+          if (preloadWasUsed) {
+            continue;
+          }
           throw new ResolvedProviderConfigError('PROVIDER_CONFIG_INVALID');
         }
 
@@ -495,6 +520,9 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
         try {
           apiKey = decryptCredential(credential, key.secret);
         } catch {
+          if (preloadWasUsed) {
+            continue;
+          }
           try {
             await updateRecord(sessionId, (current) => {
               const currentCredential = current?.providers[provider];
@@ -532,9 +560,11 @@ export function createProviderConfigService(dependencies: ProviderConfigServiceD
           session.clear();
           throw new ResolvedProviderConfigError('PROVIDER_NOT_CONFIGURED');
         }
+        const touchedCredential = touchedRecord.providers[provider];
         if (
           touchedRecord.activeProvider !== provider ||
-          touchedRecord.providers[provider]?.revision !== credential.revision
+          touchedCredential?.revision !== credential.revision ||
+          touchedCredential?.health !== 'AVAILABLE'
         ) {
           continue;
         }

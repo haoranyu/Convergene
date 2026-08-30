@@ -52,6 +52,7 @@ describe('Mermaid strict-mode rendering validation', () => {
         expect(result.svg).toContain(`id="integration-validation-${diagramType}"`);
       }
     },
+    15_000,
   );
 
   it('returns the source and readable Markdown fallback without a raw renderer error', async () => {

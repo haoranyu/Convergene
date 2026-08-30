@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   createProviderSessionId,
+  providerConfigKey,
   providerSessionCookieName,
   type ProviderConfigStore,
 } from '../provider-config/server';
@@ -115,10 +116,13 @@ describe('provider configuration HTTP security', () => {
     let receivedKey = '';
     const store = {
       compareAndSet: () => Promise.resolve(false),
-      consumeRateLimit(key: string) {
-        receivedKey = key;
+      consumeRateLimit: () => Promise.resolve(1),
+      consumeRateLimitAndReadConfig(
+        input: Parameters<ProviderConfigStore['consumeRateLimitAndReadConfig']>[0],
+      ) {
+        receivedKey = input.clientRateLimitKey;
         count += 1;
-        return Promise.resolve(count);
+        return Promise.resolve({ count, record: null });
       },
       delete: () => Promise.resolve(),
       get: () => Promise.resolve(null),
@@ -130,7 +134,7 @@ describe('provider configuration HTTP security', () => {
     });
 
     for (let index = 0; index < 30; index += 1) {
-      await expect(enforceProviderConfigRateLimit(request, store)).resolves.toBeUndefined();
+      await expect(enforceProviderConfigRateLimit(request, store)).resolves.toEqual({});
     }
     await expect(enforceProviderConfigRateLimit(request, store)).rejects.toMatchObject({
       code: 'RATE_LIMITED',
@@ -143,9 +147,12 @@ describe('provider configuration HTTP security', () => {
     const receivedKeys: string[] = [];
     const store = {
       compareAndSet: () => Promise.resolve(false),
-      consumeRateLimit(key: string) {
-        receivedKeys.push(key);
-        return Promise.resolve(1);
+      consumeRateLimit: () => Promise.resolve(1),
+      consumeRateLimitAndReadConfig(
+        input: Parameters<ProviderConfigStore['consumeRateLimitAndReadConfig']>[0],
+      ) {
+        receivedKeys.push(input.clientRateLimitKey);
+        return Promise.resolve({ count: 1, record: null });
       },
       delete: () => Promise.resolve(),
       get: () => Promise.resolve(null),
@@ -165,12 +172,17 @@ describe('provider configuration HTTP security', () => {
   });
 
   it('keeps forged session cookies in the pre-session client bucket', async () => {
-    const receivedKeys: string[] = [];
+    const rateCounts = new Map<string, number>();
+    const grants = [];
     const store = {
       compareAndSet: () => Promise.resolve(false),
-      consumeRateLimit(key: string) {
-        receivedKeys.push(key);
-        return Promise.resolve(1);
+      consumeRateLimit: () => Promise.resolve(1),
+      consumeRateLimitAndReadConfig(
+        input: Parameters<ProviderConfigStore['consumeRateLimitAndReadConfig']>[0],
+      ) {
+        const count = (rateCounts.get(input.clientRateLimitKey) ?? 0) + 1;
+        rateCounts.set(input.clientRateLimitKey, count);
+        return Promise.resolve({ count, record: null });
       },
       delete: () => Promise.resolve(),
       get: () => Promise.resolve(null),
@@ -179,26 +191,118 @@ describe('provider configuration HTTP security', () => {
     } as ProviderConfigStore;
 
     for (const sessionId of ['A'.repeat(43), 'B'.repeat(43)]) {
-      await enforceProviderConfigRateLimit(
-        new Request('https://convergene.example/api/provider-config', {
-          headers: {
-            cookie: `convergene_session=${sessionId}`,
-            'x-vercel-forwarded-for': '203.0.113.11',
-          },
-        }),
-        store,
+      grants.push(
+        await enforceProviderConfigRateLimit(
+          new Request('https://convergene.example/api/provider-config', {
+            headers: {
+              cookie: `convergene_session=${sessionId}`,
+              'x-vercel-forwarded-for': '203.0.113.11',
+            },
+          }),
+          store,
+        ),
       );
     }
 
-    expect(receivedKeys).toHaveLength(2);
-    expect(receivedKeys[0]).toBe(receivedKeys[1]);
+    expect([...rateCounts.values()]).toEqual([2]);
+    expect(grants).toEqual([
+      { config: { key: expect.stringMatching(/^provider-config:[a-f0-9]{64}$/u), record: null } },
+      { config: { key: expect.stringMatching(/^provider-config:[a-f0-9]{64}$/u), record: null } },
+    ]);
+    expect(grants[0]).not.toEqual(grants[1]);
+  });
+
+  it('atomically preloads an existing session configuration without exposing raw scopes', async () => {
+    const sessionId = createProviderSessionId();
+    const storedRecord = { safe: 'encrypted-record-placeholder' };
+    const consumeRateLimitAndReadConfig = vi.fn().mockResolvedValue({
+      count: 1,
+      record: storedRecord,
+    });
+    const store = {
+      consumeRateLimitAndReadConfig,
+    } as unknown as ProviderConfigStore;
+
+    const grant = await enforceProviderConfigRateLimit(
+      new Request('https://convergene.example/api/ai/expand-node', {
+        headers: {
+          cookie: `${providerSessionCookieName}=${sessionId}`,
+          'x-forwarded-for': '203.0.113.12',
+        },
+      }),
+      store,
+      20,
+      60,
+      'expand-node',
+    );
+
+    expect(consumeRateLimitAndReadConfig).toHaveBeenCalledOnce();
+    const claim = consumeRateLimitAndReadConfig.mock.calls[0]![0];
+    expect(claim).toMatchObject({
+      clientRateLimitKey: expect.stringMatching(/^rate-limit:expand-node:[a-f0-9]{64}$/u),
+      limit: 20,
+      session: {
+        providerConfigKey: expect.stringMatching(/^provider-config:[a-f0-9]{64}$/u),
+        rateLimitKey: expect.stringMatching(/^rate-limit:expand-node:[a-f0-9]{64}$/u),
+      },
+      windowSeconds: 60,
+    });
+    expect(JSON.stringify(claim)).not.toContain(sessionId);
+    expect(JSON.stringify(claim)).not.toContain('203.0.113.12');
+    expect(grant).toEqual({
+      config: { key: claim.session.providerConfigKey, record: storedRecord },
+    });
+  });
+
+  it('normalizes an encoded session cookie before choosing the rate-limit scope', async () => {
+    const sessionId = 'A'.repeat(43);
+    const storedRecord = { safe: 'encrypted-record-placeholder' };
+    const consumeRateLimitAndReadConfig = vi.fn().mockResolvedValue({
+      count: 1,
+      record: storedRecord,
+    });
+    const store = { consumeRateLimitAndReadConfig } as unknown as ProviderConfigStore;
+
+    const grant = await enforceProviderConfigRateLimit(
+      new Request('https://convergene.example/api/ai/expand-node', {
+        headers: {
+          cookie: `${providerSessionCookieName}=%41${'A'.repeat(42)}`,
+          'x-forwarded-for': '203.0.113.13',
+        },
+      }),
+      store,
+      20,
+      60,
+      'expand-node',
+    );
+
+    const claim = consumeRateLimitAndReadConfig.mock.calls[0]![0];
+    expect(claim.session.providerConfigKey).toBe(providerConfigKey(sessionId));
+    expect(grant).toEqual({
+      config: { key: providerConfigKey(sessionId), record: storedRecord },
+    });
+  });
+
+  it('rejects malformed session-cookie encoding before consuming a limit', async () => {
+    const store = {
+      consumeRateLimitAndReadConfig: vi.fn(),
+    } as unknown as ProviderConfigStore;
+
+    await expect(
+      enforceProviderConfigRateLimit(
+        new Request('https://convergene.example/api/provider-config/status', {
+          headers: { cookie: `${providerSessionCookieName}=%invalid` },
+        }),
+        store,
+      ),
+    ).rejects.toMatchObject({ code: 'INPUT_INVALID' });
+    expect(store.consumeRateLimitAndReadConfig).not.toHaveBeenCalled();
   });
 
   it('rejects duplicate session cookies before choosing a rate-limit scope', async () => {
     const sessionId = createProviderSessionId();
     const store = {
-      consumeRateLimit: vi.fn(),
-      has: vi.fn(),
+      consumeRateLimitAndReadConfig: vi.fn(),
     } as unknown as ProviderConfigStore;
     const request = new Request('https://convergene.example/api/provider-config/status', {
       headers: {
@@ -210,14 +314,14 @@ describe('provider configuration HTTP security', () => {
     await expect(enforceProviderConfigRateLimit(request, store)).rejects.toMatchObject({
       code: 'INPUT_INVALID',
     });
-    expect(store.has).not.toHaveBeenCalled();
-    expect(store.consumeRateLimit).not.toHaveBeenCalled();
+    expect(store.consumeRateLimitAndReadConfig).not.toHaveBeenCalled();
   });
 
   it('distinguishes rate-store failure from a consumed limit', async () => {
     const store = {
       compareAndSet: () => Promise.resolve(false),
-      consumeRateLimit: () => Promise.reject(new Error('raw Redis failure')),
+      consumeRateLimit: () => Promise.resolve(1),
+      consumeRateLimitAndReadConfig: () => Promise.reject(new Error('raw Redis failure')),
       delete: () => Promise.resolve(),
       get: () => Promise.resolve(null),
       has: () => Promise.resolve(false),

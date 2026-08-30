@@ -9,6 +9,7 @@ import {
   providerConfigKey,
   providerSessionCookieName,
   rateLimitKey,
+  type ProviderConfigPreload,
   type ProviderConfigStore,
 } from '../provider-config/server';
 
@@ -133,22 +134,26 @@ function getCookie(request: Request, name: string): string | undefined {
     }
   }
 
-  return value;
-}
-
-async function requestRateLimitScope(
-  request: Request,
-  store: ProviderConfigStore,
-): Promise<string> {
-  const sessionId = parseProviderSessionId(getCookie(request, providerSessionCookieName));
-  if (sessionId && (await store.has(providerConfigKey(sessionId)))) {
-    return `session:${sessionId}`;
+  if (value === undefined) {
+    return undefined;
   }
 
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    throw new ApiSecurityError('INPUT_INVALID');
+  }
+}
+
+function requestClientScope(request: Request): string {
   const forwardedForHeader =
     request.headers.get('x-vercel-forwarded-for') ?? request.headers.get('x-forwarded-for');
   const forwardedFor = forwardedForHeader?.split(',', 1)[0]?.trim() || 'unknown-client';
   return `client:${forwardedFor}`;
+}
+
+export interface ProviderConfigRateLimitGrant {
+  config?: ProviderConfigPreload;
 }
 
 export async function enforceProviderConfigRateLimit(
@@ -157,17 +162,27 @@ export async function enforceProviderConfigRateLimit(
   limit = 30,
   windowSeconds = 60,
   namespace = 'provider-config',
-): Promise<void> {
+): Promise<ProviderConfigRateLimitGrant> {
   try {
-    const scope = await requestRateLimitScope(request, store);
-    const count = await store.consumeRateLimit(
-      rateLimitKey(scope, namespace),
+    const sessionId = parseProviderSessionId(getCookie(request, providerSessionCookieName));
+    const configKey = sessionId ? providerConfigKey(sessionId) : undefined;
+    const result = await store.consumeRateLimitAndReadConfig({
+      clientRateLimitKey: rateLimitKey(requestClientScope(request), namespace),
       limit,
+      ...(sessionId && configKey
+        ? {
+            session: {
+              providerConfigKey: configKey,
+              rateLimitKey: rateLimitKey(`session:${sessionId}`, namespace),
+            },
+          }
+        : {}),
       windowSeconds,
-    );
-    if (count > limit) {
+    });
+    if (result.count > limit) {
       throw new ApiSecurityError('RATE_LIMITED');
     }
+    return configKey ? { config: { key: configKey, record: result.record } } : {};
   } catch (error) {
     if (error instanceof ApiSecurityError) {
       throw error;

@@ -25,12 +25,13 @@
 
 ## 3. 风险优先 Spike（0–1.5 小时）
 
-状态（2026-08-30）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
+状态（2026-08-31）：R1–R3 已完成。历史 StepFun `step-3.7-flash`、硅基流动
 `deepseek-ai/DeepSeek-V4-Flash` 的真实 streaming/schema/timeout/invalid-model suite 共六个 case
-已通过；三轮产品节点展开验证没有同时通过成功率/延迟门禁，因此当前保留 StepFun
-`step-3.7-flash`，并把 SiliconFlow fast role 校准为官方标记“快速响应”的非推理模型
-`inclusionAI/Ling-mini-2.0`。StepFun fast role 按官方 JSON Mode 发送 `json_object`，复杂 role 仍用
-严格 JSON Schema；所有结果继续在本地执行 Zod/locale 校验和原子写入。新 fast preset 仍保留独立的
+已通过；四轮产品节点展开验证没有同时通过成功率/延迟门禁。当前保留 Step Plan 明确支持的
+`step-3.7-flash`，并把 SiliconFlow fast role 改测付费
+`Pro/Qwen/Qwen2.5-7B-Instruct`。两个 fast role 都以非流式 JSON Mode 发送 `json_object` 和完整
+system schema，复杂 role 仍用流式严格 JSON Schema；所有结果继续在本地执行 Zod/locale 校验和
+原子写入。AI Route 的限流与配置预读也合并为一次 Redis 原子操作。新 fast preset 仍保留独立的
 credential-gated 回归门禁。免费 Upstash 上的加密
 set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/Mermaid 与真实 Chromium
 browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
@@ -244,7 +245,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - 与快速任务固定双候选契约一致的 2 个骨架节点；
 - request id、取消、失败和重试；
 - 绑定安全的浏览器 UUID、固定骨架几何与完整 `try/catch/finally` 清理；
-- `fast` role 的 1,024-token / 5-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限、安全 `Server-Timing` 和 allowlist 输出失败分型；
+- `fast` role 的 384-token 调用方预算（StepFun 安全提升至 512）/ 5-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限、安全 `Server-Timing` 和 allowlist 输出失败分型；
 - 成功事务写图。
 
 ### P0-19 主持人小抄

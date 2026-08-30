@@ -27,6 +27,16 @@ export class InMemoryProviderConfigStore implements ProviderConfigStore {
     return Promise.resolve(1);
   }
 
+  consumeRateLimitAndReadConfig(
+    input: Parameters<ProviderConfigStore['consumeRateLimitAndReadConfig']>[0],
+  ): ReturnType<ProviderConfigStore['consumeRateLimitAndReadConfig']> {
+    const record = input.session ? this.records.get(input.session.providerConfigKey) : undefined;
+    return Promise.resolve({
+      count: 1,
+      record: record ? structuredClone(record) : null,
+    });
+  }
+
   async delete(key: string): Promise<void> {
     this.records.delete(key);
   }

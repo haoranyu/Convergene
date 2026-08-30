@@ -56,6 +56,14 @@ const output = {
   ],
 } as const;
 
+const preloadedConfig = {
+  key: `provider-config:${'a'.repeat(64)}`,
+  record: { version: 2 },
+};
+
+const runtimeService = {};
+const runtimeStore = {};
+
 function request(): Request {
   return new Request('http://localhost/api/ai/expand-node', {
     headers: { 'content-type': 'application/json', origin: 'http://localhost' },
@@ -73,8 +81,8 @@ function timingNames(response: Response): string[] {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.readJsonInput.mockResolvedValue(envelope);
-  mocks.createRuntime.mockResolvedValue({ service: {}, store: {} });
-  mocks.enforceRateLimit.mockResolvedValue(undefined);
+  mocks.createRuntime.mockResolvedValue({ service: runtimeService, store: runtimeStore });
+  mocks.enforceRateLimit.mockResolvedValue({ config: preloadedConfig });
   mocks.resolveProvider.mockResolvedValue(vi.fn());
   mocks.runTask.mockResolvedValue(output);
 });
@@ -85,6 +93,14 @@ describe('expand-node route timing stages', () => {
 
     expect(response.status).toBe(200);
     expect(timingNames(response)).toEqual(['expand', 'rate', 'config', 'provider']);
+    expect(mocks.enforceRateLimit).toHaveBeenCalledWith(
+      expect.any(Request),
+      runtimeStore,
+      20,
+      60,
+      'expand-node',
+    );
+    expect(mocks.resolveProvider).toHaveBeenCalledWith(runtimeService, preloadedConfig);
   });
 
   it.each([

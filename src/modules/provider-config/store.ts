@@ -108,9 +108,32 @@ export interface ProviderConfigTouch {
   ttlSeconds: number;
 }
 
+export interface ProviderConfigPreload {
+  key: string;
+  record: unknown | null;
+}
+
+export interface ProviderConfigRateLimitInput {
+  clientRateLimitKey: string;
+  limit: number;
+  session?: {
+    providerConfigKey: string;
+    rateLimitKey: string;
+  };
+  windowSeconds: number;
+}
+
+export interface ProviderConfigRateLimitResult {
+  count: number;
+  record: unknown | null;
+}
+
 export interface ProviderConfigStore {
   compareAndSet(key: string, write: ProviderConfigWrite): Promise<boolean>;
   consumeRateLimit(key: string, limit: number, windowSeconds: number): Promise<number>;
+  consumeRateLimitAndReadConfig(
+    input: ProviderConfigRateLimitInput,
+  ): Promise<ProviderConfigRateLimitResult>;
   delete(key: string): Promise<void>;
   get(key: string): Promise<unknown>;
   has(key: string): Promise<boolean>;

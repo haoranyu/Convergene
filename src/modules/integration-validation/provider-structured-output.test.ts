@@ -63,15 +63,9 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
     expect(requestBody.enable_thinking).toBeUndefined();
     expect(requestBody.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
     expect(requestBody.max_tokens).toBe(512);
-    expect(requestBody.response_format?.type).toBe(
-      provider === 'STEPFUN' ? 'json_object' : 'json_schema',
-    );
-    if (provider === 'STEPFUN') {
-      expect(requestBody.messages?.[0]).toMatchObject({ role: 'system' });
-      expect(requestBody.messages?.[0]?.content).toContain('"additionalProperties":false');
-    } else {
-      expect(requestBody.messages?.[0]?.role).toBe('user');
-    }
+    expect(requestBody.response_format?.type).toBe('json_object');
+    expect(requestBody.messages?.[0]).toMatchObject({ role: 'system' });
+    expect(requestBody.messages?.[0]?.content).toContain('"additionalProperties":false');
     expect(requestBody.stream).toBe(true);
 
     return createStreamingResponse(provider, modelId);

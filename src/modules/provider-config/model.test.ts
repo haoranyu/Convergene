@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { providerConfigInputSchema, providerModelPresets } from './model';
 
 describe('provider configuration input', () => {
-  it('keeps every StepFun structured-output role on the schema-capable preset', () => {
+  it('uses the Step Plan low-latency preset for fast structured output', () => {
     expect(providerModelPresets.STEPFUN).toEqual({
       fast: 'step-3.7-flash',
       grill: 'step-3.5-flash-2603',
@@ -11,9 +11,9 @@ describe('provider configuration input', () => {
     });
   });
 
-  it('keeps SiliconFlow fast work on the non-reasoning low-activation preset', () => {
+  it('uses the paid low-latency SiliconFlow preset for fast structured output', () => {
     expect(providerModelPresets.SILICONFLOW).toEqual({
-      fast: 'inclusionAI/Ling-mini-2.0',
+      fast: 'Pro/Qwen/Qwen2.5-7B-Instruct',
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
       report: 'deepseek-ai/DeepSeek-V4-Flash',
     });
