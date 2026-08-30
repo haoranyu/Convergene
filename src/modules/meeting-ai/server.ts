@@ -18,6 +18,11 @@ export {
 } from './expand-node';
 export { buildExpandNodePrompt } from './expand-node-prompt';
 export {
+  expandNodeMaxOutputTokens,
+  expandNodeTimeoutMs,
+  runExpandNodeProviderTask,
+} from './expand-node-task';
+export {
   resolveConfiguredProviderCaller,
   runConfiguredProviderCall,
   type ConfiguredProviderCaller,

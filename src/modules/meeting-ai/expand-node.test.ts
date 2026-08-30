@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import {
   expandNodeOutputSchema,
@@ -78,6 +79,35 @@ describe('expand-node contract', () => {
       expandNodeOutputSchema.parse({
         children: [
           { kind: 'IDEA', title: 'a'.repeat(49) },
+          { kind: 'IDEA', title: 'Valid title' },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it('publishes the 48-character title bound in the provider JSON Schema', () => {
+    const schema = z.toJSONSchema(expandNodeOutputSchema) as unknown as {
+      properties: {
+        children: { items: { properties: { title: { maxLength?: number } } } };
+      };
+    };
+
+    expect(schema.properties.children.items.properties.title.maxLength).toBe(48);
+  });
+
+  it('keeps the runtime title limit grapheme-aware for astral Unicode', () => {
+    expect(() =>
+      expandNodeOutputSchema.parse({
+        children: [
+          { kind: 'IDEA', title: '😀'.repeat(30) },
+          { kind: 'IDEA', title: 'Valid title' },
+        ],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      expandNodeOutputSchema.parse({
+        children: [
+          { kind: 'IDEA', title: '😀'.repeat(49) },
           { kind: 'IDEA', title: 'Valid title' },
         ],
       }),

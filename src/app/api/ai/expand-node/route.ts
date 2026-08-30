@@ -4,21 +4,25 @@ import {
   readJsonInput,
 } from '@/modules/api-security';
 import {
-  buildExpandNodePrompt,
   expandNodeMaximumRequestBodyBytes,
-  expandNodeOutputMatchesLocale,
-  expandNodeOutputSchema,
   expandNodeRequestSchema,
   meetingAIErrorResponse,
   meetingAIJson,
-  MeetingAIContractError,
-  runConfiguredProviderCall,
+  resolveConfiguredProviderCaller,
+  runExpandNodeProviderTask,
 } from '@/modules/meeting-ai/server';
 import { createProviderConfigRuntime } from '@/modules/provider-config/server';
 
 export const runtime = 'nodejs';
 
+function withServerTiming(response: Response, startedAt: number): Response {
+  response.headers.set('Server-Timing', `expand;dur=${(performance.now() - startedAt).toFixed(1)}`);
+  return response;
+}
+
 export async function POST(request: Request): Promise<Response> {
+  const startedAt = performance.now();
+
   try {
     assertSameOrigin(request);
     const envelope = await readJsonInput(
@@ -28,23 +32,17 @@ export async function POST(request: Request): Promise<Response> {
     );
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 20, 60, 'expand-node');
-    const output = await runConfiguredProviderCall({
-      abortSignal: request.signal,
-      prompt: buildExpandNodePrompt(envelope.input, envelope.outputLocale),
-      role: 'fast',
-      schema: expandNodeOutputSchema,
-      schemaName: 'ExpandNodeOutput',
-      service,
-    });
-    if (!expandNodeOutputMatchesLocale(output, envelope.outputLocale)) {
-      throw new MeetingAIContractError('OUTPUT_LANGUAGE_MISMATCH');
-    }
-    return meetingAIJson({
-      output,
-      requestId: envelope.requestId,
-      task: envelope.task,
-    });
+    const callProvider = await resolveConfiguredProviderCaller(service);
+    const output = await runExpandNodeProviderTask(callProvider, envelope, request.signal);
+    return withServerTiming(
+      meetingAIJson({
+        output,
+        requestId: envelope.requestId,
+        task: envelope.task,
+      }),
+      startedAt,
+    );
   } catch (error) {
-    return meetingAIErrorResponse(error);
+    return withServerTiming(meetingAIErrorResponse(error), startedAt);
   }
 }

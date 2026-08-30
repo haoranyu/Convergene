@@ -187,6 +187,29 @@ describe('meeting canvas browser acceptance', () => {
     await page.close();
   }, 20_000);
 
+  it('stops offering cancellation once the atomic expansion write begins', async () => {
+    const page = await openFixture(1_440, 900);
+    await page.locator('.react-flow__node[data-id="topic-criteria"]').click();
+    const assistance = page.getByRole('group', {
+      name: 'AI suggestions for Agree on measurable launch decision criteria',
+    });
+    await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+    await pageExpect
+      .poll(() =>
+        page.evaluate(() => window.__convergeneMeetingCanvasProbe?.storageStarted ?? false),
+      )
+      .toBe(true);
+    await pageExpect(assistance.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+    await pageExpect(assistance.getByRole('button', { name: /^Add an option/u })).toBeDisabled();
+    await pageExpect(assistance.getByRole('button', { name: /^Surface risk/u })).toBeDisabled();
+    await pageExpect(assistance.getByRole('button', { name: /^Drive a choice/u })).toBeDisabled();
+
+    await page.evaluate(() => window.__convergeneMeetingCanvasProbe?.releaseExpansionStorage?.());
+    await pageExpect(assistance.getByRole('button', { name: /^Surface risk/u })).toBeEnabled();
+    await page.close();
+  }, 20_000);
+
   it('falls back to a non-scrolling topic tree on a phone', async () => {
     const page = await openFixture(375, 812);
     await pageExpect(page.getByText(/Use a computer for the full canvas/)).toBeVisible();

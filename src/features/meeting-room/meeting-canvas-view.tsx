@@ -48,6 +48,7 @@ import {
   strategyIdsForMode,
   type MeetingAIErrorCode,
 } from '@/modules/meeting-ai/expand-node';
+import { meetingNodeSize } from '@/modules/mind-map-layout';
 import type { MindMapNode, NodeKind } from '@/modules/mind-map-domain';
 import { orderedTopicIds, subtreeNodeIds } from '@/modules/mind-map-domain';
 import type { StrategyId } from '@/modules/mind-map-domain';
@@ -103,6 +104,7 @@ interface ExpansionState {
   errorCode?: MeetingAIErrorCode | CanvasCommandErrorCode;
   expectedMeetingUpdatedAt: string;
   nodeId: string;
+  phase: 'persisting' | 'requesting';
   requestId: string;
   status: 'error' | 'loading';
   strategyId: StrategyId;
@@ -175,6 +177,7 @@ function CanvasContent({
   const [quickNote, setQuickNote] = useState('');
   const [expansion, setExpansion] = useState<ExpansionState>();
   const expansionAbortRef = useRef<AbortController | undefined>(undefined);
+  const expansionPhaseRef = useRef<ExpansionState['phase'] | undefined>(undefined);
   const clearingSelectionRef = useRef(false);
 
   const nodeKindLabels = useMemo<Record<NodeKind, string>>(
@@ -209,12 +212,21 @@ function CanvasContent({
   useEffect(() => setNodes(elements.nodes), [elements.nodes, setNodes]);
   const selectedNode = aggregate.nodes.find((node) => node.id === selectedNodeId);
   const cancelExpansion = useCallback(() => {
+    if (expansionPhaseRef.current !== 'requesting') return;
     expansionAbortRef.current?.abort();
     expansionAbortRef.current = undefined;
+    expansionPhaseRef.current = undefined;
     setExpansion(undefined);
   }, []);
 
-  useEffect(() => () => expansionAbortRef.current?.abort(), []);
+  useEffect(
+    () => () => {
+      expansionAbortRef.current?.abort();
+      expansionAbortRef.current = undefined;
+      expansionPhaseRef.current = undefined;
+    },
+    [],
+  );
 
   const selectNode = useCallback(
     (nodeId?: string) => {
@@ -273,11 +285,13 @@ function CanvasContent({
       const nextExpansion: ExpansionState = {
         expectedMeetingUpdatedAt,
         nodeId: selectedNode.id,
+        phase: 'requesting',
         requestId,
         status: 'loading',
         strategyId,
       };
       expansionAbortRef.current = controller;
+      expansionPhaseRef.current = 'requesting';
       setExpansion(nextExpansion);
       setNotice(undefined);
 
@@ -291,36 +305,54 @@ function CanvasContent({
         });
       } catch {
         expansionAbortRef.current = undefined;
+        expansionPhaseRef.current = undefined;
         setExpansion({ ...nextExpansion, errorCode: 'OUTPUT_INVALID', status: 'error' });
         return;
       }
 
-      const result = await expandNode(request, { signal: controller.signal });
-      if (expansionAbortRef.current !== controller) return;
-      if (!result.ok) {
-        expansionAbortRef.current = undefined;
-        if (result.error.code === 'REQUEST_CANCELLED') {
-          setExpansion(undefined);
+      let phase: ExpansionState['phase'] = 'requesting';
+      try {
+        const result = await expandNode(request, { signal: controller.signal });
+        if (expansionAbortRef.current !== controller) return;
+        if (!result.ok) {
+          if (result.error.code === 'REQUEST_CANCELLED') {
+            setExpansion(undefined);
+            return;
+          }
+          setExpansion({ ...nextExpansion, errorCode: result.error.code, status: 'error' });
           return;
         }
-        setExpansion({ ...nextExpansion, errorCode: result.error.code, status: 'error' });
-        return;
-      }
 
-      const saved = await commands.applyExpansion({
-        children: result.value.output.children,
-        expectedMeetingUpdatedAt,
-        parentNodeId: selectedNode.id,
-        strategyId,
-      });
-      if (expansionAbortRef.current !== controller) return;
-      expansionAbortRef.current = undefined;
-      if (!saved.ok) {
-        setExpansion({ ...nextExpansion, errorCode: saved.error.code, status: 'error' });
-        return;
+        phase = 'persisting';
+        expansionPhaseRef.current = phase;
+        setExpansion({ ...nextExpansion, phase });
+        const saved = await commands.applyExpansion({
+          children: result.value.output.children,
+          expectedMeetingUpdatedAt,
+          parentNodeId: selectedNode.id,
+          strategyId,
+        });
+        if (expansionAbortRef.current !== controller) return;
+        if (!saved.ok) {
+          setExpansion({ ...nextExpansion, errorCode: saved.error.code, phase, status: 'error' });
+          return;
+        }
+        setExpansion(undefined);
+        setNotice({ kind: 'success', text: t('expansion.saved') });
+      } catch {
+        if (expansionAbortRef.current !== controller) return;
+        setExpansion({
+          ...nextExpansion,
+          errorCode: phase === 'persisting' ? 'STORAGE_ERROR' : 'UNKNOWN',
+          phase,
+          status: 'error',
+        });
+      } finally {
+        if (expansionAbortRef.current === controller) {
+          expansionAbortRef.current = undefined;
+          expansionPhaseRef.current = undefined;
+        }
       }
-      setExpansion(undefined);
-      setNotice({ kind: 'success', text: t('expansion.saved') });
     },
     [aggregate, cancelExpansion, commands, expandNode, pendingAction, selectedNode, t],
   );
@@ -337,6 +369,7 @@ function CanvasContent({
             data: {
               ...node.data,
               assistance: {
+                cancellable: expansion?.status === 'loading' && expansion.phase === 'requesting',
                 cancelLabel: t('expansion.cancel'),
                 cards: strategies.map((strategyId) => ({
                   description: tStrategy(`${strategyId}.description`),
@@ -384,12 +417,14 @@ function CanvasContent({
         draggable: false,
         focusable: false,
         id: `expansion-skeleton-${expansion.requestId}-${index}`,
+        initialHeight: meetingNodeSize.height,
+        initialWidth: meetingNodeSize.width,
         position: {
           x: selectedNode.position.x + 384,
           y: selectedNode.position.y + index * 112 - 112,
         },
         selectable: false,
-        style: { height: 88, width: 280 },
+        style: meetingNodeSize,
         type: 'meetingNode',
         zIndex: 3,
       })),

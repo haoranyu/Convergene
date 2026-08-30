@@ -94,7 +94,7 @@ export function buildExpansionChildren({
   parent,
   strategyId,
   timestamp,
-  uuid = crypto.randomUUID,
+  uuid = () => crypto.randomUUID(),
 }: BuildExpansionChildrenOptions): ExpansionChild[] {
   const validated = expandNodeOutputSchema.parse({ children: drafts }).children;
   const verticalOffset = ((validated.length - 1) * 112) / 2;
