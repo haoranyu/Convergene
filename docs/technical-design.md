@@ -378,7 +378,7 @@ const providerPresets = {
     baseURL: 'https://api.stepfun.com/step_plan/v1',
     defaultModels: {
       grill: 'step-3.5-flash-2603',
-      fast: 'step-3.5-flash-2603',
+      fast: 'step-3.7-flash',
       report: 'step-3.5-flash-2603'
     }
   },
@@ -386,25 +386,28 @@ const providerPresets = {
     baseURL: 'https://api.siliconflow.cn/v1',
     defaultModels: {
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
-      fast: 'deepseek-ai/DeepSeek-V4-Flash',
+      fast: 'Qwen/Qwen3.5-4B',
       report: 'deepseek-ai/DeepSeek-V4-Flash'
     }
   }
 } as const
 ```
 
-2026-08-29 的真实 sponsor probe 曾验证 StepFun `step-3.7-flash` 的最小结构化输出；但
-2026-08-30 的产品级节点展开暴露无效结构后，官方 Chat Completion 文档确认 `json_schema` 只由
-`step-3.5-flash` 与 `step-3.5-flash-2603` 支持。因此当前 P0 preset 改为后者；该模型同时是
-Step Plan 当前支持、针对高频 Agent 与低推理延迟优化的模型。硅基流动继续使用已验证的
+2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
+SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
+实时节点展开的 `fast` preset。当天再次复核官方文档后，Step Plan 仍明确推荐
+`step-3.7-flash`，Chat Completion 也已把 `json_schema` 与低推理档列为其当前能力；因此只把
+StepFun 的 `fast` role 切回 `step-3.7-flash`，不把未完成的生产门禁外推到 `grill/report`。
+SiliconFlow 的 `fast` role 改为可关闭 thinking 的 `Qwen/Qwen3.5-4B` 低延迟候选，复杂角色仍用
 `deepseek-ai/DeepSeek-V4-Flash`。共享 OpenAI-compatible adapter 必须显式声明
 `supportsStructuredOutputs: true`，否则当前 AI SDK 只发送旧 `json_object` 模式而不发送 JSON
 schema。所有产品结构化请求（包括配置连接测试）必须在以 preset `name` 为 key 的
 `providerOptions` 中使用该供应商最低推理策略：硅基流动发送 `enable_thinking: false`，StepFun
-`step-3.5-flash-2603` 发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务
+发送 `reasoning_effort: low`。两家的专属字段不得互相发送。这批交互任务
 需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
-可靠性边界；新 preset 仍须通过 credential-gated 产品 Route 与生产浏览器门禁，不能借用历史
-最小 schema 的样本宣称通过。
+可靠性边界；Provider 输出失败还必须只用固定 allowlist 区分截断、JSON 解析、schema 不匹配、
+内容过滤和上游拒绝，绝不保留原始模型文本。新 fast preset 仍须通过 credential-gated 产品
+Route 与生产浏览器门禁，不能借用历史最小 schema 的样本宣称通过。
 
 StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免 StepFun 在稍复杂的分类中发出 JSON 前耗尽 reasoning budget。probe 使用与产品一致的双方最低推理策略和 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
@@ -701,7 +704,10 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 创建 Upstash Redis Free 实例，并用临时注入的服务端环境变量验证加密 set/get/续期/delete；
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
-- [ ] 用 sponsor Key 重跑当前 StepFun `step-3.5-flash-2603` 的 minimal、Grill 与 initial-map 复杂契约，并完成两家 Provider 的窄 expansion Route 三样本门禁；
+- [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
+  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Qwen/Qwen3.5-4B`
+  的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家 expansion 必须
+  3/3 成功且中位数不超过 3 秒；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；
 - [x] 在 test-only Vite page 用真实 Chromium 验证 12 节点长文本 DOM 尺寸/换行、Dagre LR、subtree bounds/viewport 和 React Flow instance 显式 `fitView`；
 - [x] 验证 Mermaid flowchart、受控 period label 的 timeline 和 pie；时钟冒号 timeline 降级为 flowchart/table；

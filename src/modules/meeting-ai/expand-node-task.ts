@@ -13,7 +13,7 @@ import {
 import { buildExpandNodePrompt } from './expand-node-prompt';
 
 export const expandNodeMaxOutputTokens = 1_024;
-export const expandNodeTimeoutMs = 15_000;
+export const expandNodeTimeoutMs = 5_000;
 
 export async function runExpandNodeProviderTask(
   callProvider: ConfiguredProviderCaller,

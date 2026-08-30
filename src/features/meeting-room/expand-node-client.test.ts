@@ -86,4 +86,59 @@ describe('expand-node browser client', () => {
       ok: false,
     });
   });
+
+  it('keeps only an allowlisted output failure classification', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: {
+            code: 'OUTPUT_INVALID',
+            detail: 'raw provider detail',
+            outputFailure: 'TRUNCATED',
+          },
+          ok: false,
+        },
+        { status: 422 },
+      ),
+    );
+
+    await expect(requestNodeExpansion(request, { fetch })).resolves.toEqual({
+      error: { code: 'OUTPUT_INVALID', outputFailure: 'TRUNCATED' },
+      ok: false,
+    });
+  });
+
+  it('rejects unknown output failure values instead of forwarding them', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: { code: 'OUTPUT_INVALID', outputFailure: 'RAW_PROVIDER_BODY' },
+          ok: false,
+        },
+        { status: 422 },
+      ),
+    );
+
+    await expect(requestNodeExpansion(request, { fetch })).resolves.toEqual({
+      error: { code: 'UNKNOWN' },
+      ok: false,
+    });
+  });
+
+  it('drops output failure metadata from unrelated error codes', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      Response.json(
+        {
+          error: { code: 'PROVIDER_UNAVAILABLE', outputFailure: 'SCHEMA_MISMATCH' },
+          ok: false,
+        },
+        { status: 503 },
+      ),
+    );
+
+    await expect(requestNodeExpansion(request, { fetch })).resolves.toEqual({
+      error: { code: 'PROVIDER_UNAVAILABLE' },
+      ok: false,
+    });
+  });
 });

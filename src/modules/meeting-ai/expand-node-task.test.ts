@@ -36,7 +36,7 @@ describe('runExpandNodeProviderTask', () => {
         role: 'fast',
         schema: expandNodeProviderOutputSchema,
         schemaName: 'ExpandNodeOutput',
-        timeoutMs: 15_000,
+        timeoutMs: 5_000,
       }),
     );
   });

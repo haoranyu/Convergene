@@ -47,6 +47,7 @@ import {
   expandNodeRequestSchema,
   strategyIdsForMode,
   type MeetingAIErrorCode,
+  type ProviderOutputFailure,
 } from '@/modules/meeting-ai/expand-node';
 import { meetingNodeSize } from '@/modules/mind-map-layout';
 import type { MindMapNode, NodeKind } from '@/modules/mind-map-domain';
@@ -94,7 +95,10 @@ function expansionErrorKey(code: MeetingAIErrorCode | CanvasCommandErrorCode): s
   if (code === 'PROVIDER_RATE_LIMITED' || code === 'RATE_LIMITED') {
     return 'expansion.errors.rateLimited';
   }
-  if (code === 'OUTPUT_INVALID' || code === 'OUTPUT_LANGUAGE_MISMATCH') {
+  if (code === 'OUTPUT_LANGUAGE_MISMATCH') {
+    return 'expansion.errors.languageMismatch';
+  }
+  if (code === 'OUTPUT_INVALID') {
     return 'expansion.errors.invalidOutput';
   }
   return 'expansion.errors.unavailable';
@@ -104,6 +108,7 @@ interface ExpansionState {
   errorCode?: MeetingAIErrorCode | CanvasCommandErrorCode;
   expectedMeetingUpdatedAt: string;
   nodeId: string;
+  outputFailure?: ProviderOutputFailure;
   phase: 'persisting' | 'requesting';
   requestId: string;
   status: 'error' | 'loading';
@@ -321,7 +326,13 @@ function CanvasContent({
             setExpansion(undefined);
             return;
           }
-          setExpansion({ ...nextExpansion, errorCode: result.error.code, status: 'error' });
+          setExpansion({
+            ...nextExpansion,
+            errorCode: result.error.code,
+            outputFailure:
+              result.error.code === 'OUTPUT_INVALID' ? result.error.outputFailure : undefined,
+            status: 'error',
+          });
           return;
         }
 
@@ -387,8 +398,10 @@ function CanvasContent({
                 error:
                   expansion?.status === 'error' && expansion.nodeId === selectedNode.id
                     ? {
+                        code: expansion.errorCode ?? 'UNKNOWN',
                         message: t(expansionErrorKey(expansion.errorCode ?? 'UNKNOWN')),
                         onRetry: () => void startNodeExpansion(expansion.strategyId),
+                        outputFailure: expansion.outputFailure,
                         retryLabel: t('expansion.retry'),
                       }
                     : undefined,

@@ -1,12 +1,19 @@
 import 'server-only';
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { APICallError, Output, streamText } from 'ai';
+import {
+  APICallError,
+  NoObjectGeneratedError,
+  NoOutputGeneratedError,
+  Output,
+  streamText,
+} from 'ai';
 import type { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
 import type { ProviderModelMapping } from '../provider-config';
 import { providerPresets } from '../provider-config/server';
+import type { ProviderOutputFailure } from './provider-output-failure';
 
 const defaultTimeoutMs = 15_000;
 const maximumTimeoutMs = 60_000;
@@ -17,6 +24,11 @@ const providerRequestPolicies = {
   SILICONFLOW: { enable_thinking: false },
   STEPFUN: { reasoningEffort: 'low' },
 } as const satisfies Record<ProviderId, Record<string, boolean | string>>;
+
+const providerStructuredOutputPolicies = {
+  SILICONFLOW: true,
+  STEPFUN: true,
+} as const satisfies Record<ProviderId, boolean>;
 
 export type ProviderTaskRole = keyof ProviderModelMapping;
 
@@ -30,9 +42,15 @@ export type ProviderGatewayErrorCode =
   | 'REQUEST_CANCELLED';
 
 export class ProviderGatewayError extends Error {
-  constructor(readonly code: ProviderGatewayErrorCode) {
+  readonly outputFailure?: ProviderOutputFailure;
+
+  constructor(
+    readonly code: ProviderGatewayErrorCode,
+    outputFailure?: ProviderOutputFailure,
+  ) {
     super(code);
     this.name = 'ProviderGatewayError';
+    this.outputFailure = code === 'OUTPUT_INVALID' ? outputFailure : undefined;
   }
 }
 
@@ -125,6 +143,54 @@ function hasTypeError(error: unknown): boolean {
   return false;
 }
 
+function classifyProviderOutputFailure(error: unknown): ProviderOutputFailure | undefined {
+  if (NoObjectGeneratedError.isInstance(error)) {
+    if (error.finishReason === 'length') {
+      return 'TRUNCATED';
+    }
+    if (error.finishReason === 'content-filter') {
+      return 'CONTENT_FILTERED';
+    }
+
+    const causeName =
+      typeof error.cause === 'object' &&
+      error.cause !== null &&
+      'name' in error.cause &&
+      typeof error.cause.name === 'string'
+        ? error.cause.name
+        : undefined;
+    if (causeName === 'AI_JSONParseError') {
+      return 'JSON_PARSE';
+    }
+    if (causeName === 'AI_TypeValidationError') {
+      return 'SCHEMA_MISMATCH';
+    }
+    return 'UNKNOWN';
+  }
+
+  if (NoOutputGeneratedError.isInstance(error)) {
+    return 'NO_OUTPUT';
+  }
+
+  return undefined;
+}
+
+function selectProviderError(caughtError: unknown, streamedError: unknown): unknown {
+  if (
+    streamedError !== undefined &&
+    (findApiErrorMetadata(streamedError) !== undefined || hasTypeError(streamedError))
+  ) {
+    return streamedError;
+  }
+  if (
+    NoObjectGeneratedError.isInstance(caughtError) ||
+    NoOutputGeneratedError.isInstance(caughtError)
+  ) {
+    return caughtError;
+  }
+  return streamedError ?? caughtError;
+}
+
 function safeProviderErrorCode(data: unknown): string | number | undefined {
   if (typeof data !== 'object' || data === null) {
     return undefined;
@@ -185,6 +251,9 @@ function normalizeProviderError(
   if (statusCode !== undefined && statusCode >= 500) {
     return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
   }
+  if (statusCode !== undefined && statusCode >= 400) {
+    return new ProviderGatewayError('OUTPUT_INVALID', 'UPSTREAM_REJECTED');
+  }
   if (metadata && statusCode === undefined) {
     return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
   }
@@ -192,7 +261,10 @@ function normalizeProviderError(
     return new ProviderGatewayError('PROVIDER_UNAVAILABLE');
   }
 
-  return new ProviderGatewayError('OUTPUT_INVALID');
+  return new ProviderGatewayError(
+    'OUTPUT_INVALID',
+    classifyProviderOutputFailure(error) ?? 'UNKNOWN',
+  );
 }
 
 export async function runStructuredProviderCall<Schema extends z.ZodType>({
@@ -222,7 +294,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
       baseURL: preset.baseURL,
       fetch,
       name: preset.name,
-      supportsStructuredOutputs: true,
+      supportsStructuredOutputs: providerStructuredOutputPolicies[config.provider],
     });
     const result = streamText({
       abortSignal: combinedSignal,
@@ -241,7 +313,7 @@ export async function runStructuredProviderCall<Schema extends z.ZodType>({
     return schema.parse(await result.output);
   } catch (error) {
     const normalizedError = normalizeProviderError(
-      streamedError ?? error,
+      selectProviderError(error, streamedError),
       config.provider,
       abortSignal?.aborted === true,
       timeoutController.signal.aborted,

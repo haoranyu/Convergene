@@ -30,12 +30,12 @@ export type ProviderModelMapping = z.infer<typeof providerModelMappingSchema>;
 
 export const providerModelPresets = {
   SILICONFLOW: {
-    fast: 'deepseek-ai/DeepSeek-V4-Flash',
+    fast: 'Qwen/Qwen3.5-4B',
     grill: 'deepseek-ai/DeepSeek-V4-Flash',
     report: 'deepseek-ai/DeepSeek-V4-Flash',
   },
   STEPFUN: {
-    fast: 'step-3.5-flash-2603',
+    fast: 'step-3.7-flash',
     grill: 'step-3.5-flash-2603',
     report: 'step-3.5-flash-2603',
   },

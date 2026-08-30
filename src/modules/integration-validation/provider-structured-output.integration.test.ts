@@ -13,13 +13,13 @@ const liveProviderCases: Array<{
 }> = [
   {
     apiKeyEnvironmentVariable: 'STEPFUN_API_KEY',
-    approvedModelId: 'step-3.5-flash-2603',
+    approvedModelId: 'step-3.7-flash',
     modelEnvironmentVariable: 'STEPFUN_VALIDATION_MODEL',
     provider: 'STEPFUN',
   },
   {
     apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
-    approvedModelId: 'deepseek-ai/DeepSeek-V4-Flash',
+    approvedModelId: 'Qwen/Qwen3.5-4B',
     modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
     provider: 'SILICONFLOW',
   },

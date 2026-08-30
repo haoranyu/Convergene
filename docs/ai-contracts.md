@@ -17,9 +17,10 @@
 - 不在服务端日志记录完整输入和输出。
 
 Provider request policy 由共享服务端 adapter 统一控制：硅基流动的所有产品结构化调用必须显式
-发送 `enable_thinking: false`，完全关闭供应商的 thinking；StepFun 使用官方明确支持
-`json_schema` 与低推理档的 `step-3.5-flash-2603`，并发送 `reasoning_effort: low`。两家的专属字段
-不得互相发送。该策略不改变
+发送 `enable_thinking: false`，完全关闭供应商的 thinking；StepFun 的 `fast` role 使用官方面向
+实时/高频场景的 `step-3.7-flash`，`grill/report` 暂保留 `step-3.5-flash-2603`，所有角色都发送
+`reasoning_effort: low`。双方均继续使用 `json_schema`，并在本地再次执行 Zod 校验；两家的专属
+字段不得互相发送。该策略不改变
 下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
 
 共同 envelope：
@@ -53,7 +54,12 @@ interface AIResponse<TOutput> {
 | `grill` | 下一问、准备度、最终 Brief | 推理与追问质量优先 |
 | `report` | 事实草稿的语言组织 | 长文本稳定性和三语表达优先 |
 
-三个 role 可以指向同一个模型。默认 model id 在真实 sponsor 环境验证后写入 Provider preset；实现 ST-01 后，用户可在同一 Provider 内覆盖，不改变任务 schema。
+三个 role 可以指向同一个模型。默认 model id 在真实 sponsor 环境验证后写入 Provider preset；实现
+ST-01 后，用户可在同一 Provider 内覆盖，不改变任务 schema。若凭据按安全边界只能留在生产环境，
+且现有 preset 已经由生产门禁确认失败，则候选只能作为关联开放 Issue 的有界 production canary
+部署：合并前必须通过完整本地门禁并确认账号可见模型，部署后立即跑真实 fast-role Route 与浏览器
+门禁，在结论产生前不得关闭 Issue；模型不可用时立即回滚，未达成功率或延迟目标时必须继续修正，
+不能把 canary 当成 passed。
 
 ## 3. 剧本配置
 
@@ -317,8 +323,9 @@ interface ExpandNodeOutput {
 
 运行时契约：
 
-- 使用 `fast` role、最多 1,024 output tokens，并在 15 秒取消 Provider 调用；固定双候选和无 note
-  已缩短实际输出，但保留 token 余量，避免推理型 Provider 在正文完成前被截断；
+- 使用 `fast` role、最多 1,024 output tokens，并在 5 秒取消 Provider 调用；固定双候选和无 note
+  已缩短实际输出，但保留 token 余量，避免推理型 Provider 在正文完成前被截断；超时后立即回到
+  可重试状态，不让一次交互继续占住画布；
 - Route 返回不含会议内容的 `Server-Timing: expand;dur=<milliseconds>`，只用于观察整段服务端耗时；
 - 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；
 - pending 立即显示两个与真实节点共享固定几何尺寸的骨架节点，避免 React Flow 在测量前把反馈隐藏；
@@ -458,6 +465,19 @@ type AIErrorCode =
   | 'OUTPUT_LANGUAGE_MISMATCH'
   | 'REQUEST_CANCELLED'
   | 'UNKNOWN'
+
+type ProviderOutputFailure =
+  | 'UPSTREAM_REJECTED'
+  | 'NO_OUTPUT'
+  | 'TRUNCATED'
+  | 'CONTENT_FILTERED'
+  | 'JSON_PARSE'
+  | 'SCHEMA_MISMATCH'
+  | 'UNKNOWN'
+
+type AIError =
+  | { code: 'OUTPUT_INVALID'; outputFailure?: ProviderOutputFailure }
+  | { code: Exclude<AIErrorCode, 'OUTPUT_INVALID'> }
 ```
 
 - 只有 HTTP 401 或供应商已验证的等价错误码映射为 `PROVIDER_AUTH_FAILED`，并只把本次使用的供应商槽标为需重配；
@@ -468,6 +488,10 @@ type AIErrorCode =
 - 5xx 可由用户重试；
 - schema 失败只对初始图自动修复一次；
 - 目标语言明显错误时允许用户重试，不能客户端自动翻译；
+- `outputFailure` 只允许随 Provider 的 `OUTPUT_INVALID` 返回，用于区分上游拒绝、截断、内容过滤、
+  JSON 解析和 schema 校验；画布可把固定枚举暴露给自动化，但用户文案仍保持可理解的重试建议；
+- 输出分型只读取 AI SDK 的 `finishReason`、稳定 error name 与 HTTP 状态；不得读取、记录或序列化
+  `NoObjectGeneratedError.text`、cause message、Provider body、Prompt 或会议内容；
 - 错误信息不得包含 Key、完整请求或供应商原始响应体。
 
 ## 12. Prompt 组织

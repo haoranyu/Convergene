@@ -18,8 +18,10 @@ import {
 } from '@arco-design/web-react/icon';
 import type { ReactNode } from 'react';
 
+import type { MeetingAIErrorCode, ProviderOutputFailure } from '@/modules/meeting-ai/expand-node';
 import type { StrategyId } from '@/modules/mind-map-domain';
 
+import type { CanvasCommandErrorCode } from './canvas-contract';
 import styles from './meeting-canvas.module.css';
 
 export interface MeetingCanvasNodeData extends Record<string, unknown> {
@@ -41,7 +43,13 @@ export interface MeetingCanvasNodeData extends Record<string, unknown> {
       loading: boolean;
       onActivate: () => void;
     }>;
-    error?: { message: string; onRetry: () => void; retryLabel: string };
+    error?: {
+      code: CanvasCommandErrorCode | MeetingAIErrorCode;
+      message: string;
+      onRetry: () => void;
+      outputFailure?: ProviderOutputFailure;
+      retryLabel: string;
+    };
     groupLabel: string;
     onCancel: () => void;
   };
@@ -125,7 +133,12 @@ export function MeetingNode({ data, selected }: NodeProps<MeetingCanvasNode>) {
               </Button>
             ) : null}
             {data.assistance.error ? (
-              <div className={styles.strategyError} role="alert">
+              <div
+                className={styles.strategyError}
+                data-ai-error-code={data.assistance.error.code}
+                data-ai-output-failure={data.assistance.error.outputFailure}
+                role="alert"
+              >
                 <span>{data.assistance.error.message}</span>
                 <Button onClick={data.assistance.error.onRetry} size="mini" type="text">
                   {data.assistance.error.retryLabel}

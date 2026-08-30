@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 import { meetingModes, supportedLocales } from '@/modules/meeting-domain';
 
+export {
+  meetingAIErrorCodeSchema,
+  meetingAIErrorCodes,
+  meetingAIErrorResponseSchema,
+  type MeetingAIError,
+  type MeetingAIErrorCode,
+  type MeetingAIResult,
+} from './error-contract';
+
 export const classifyMeetingTask = 'classify-meeting' as const;
 export const classifyMeetingMaximumRequestBodyBytes = 24_576;
 
@@ -126,48 +135,3 @@ export class MeetingAIContractError extends Error {
     this.name = 'MeetingAIContractError';
   }
 }
-
-export type MeetingAIErrorCode =
-  | 'INPUT_INVALID'
-  | 'ORIGIN_INVALID'
-  | 'OUTPUT_INVALID'
-  | 'OUTPUT_LANGUAGE_MISMATCH'
-  | 'PROVIDER_ACCESS_RESTRICTED'
-  | 'PROVIDER_AUTH_FAILED'
-  | 'PROVIDER_CONFIG_INVALID'
-  | 'PROVIDER_CONFIG_UNAVAILABLE'
-  | 'PROVIDER_MODEL_NOT_FOUND'
-  | 'PROVIDER_NOT_CONFIGURED'
-  | 'PROVIDER_RATE_LIMITED'
-  | 'PROVIDER_UNAVAILABLE'
-  | 'RATE_LIMITED'
-  | 'REQUEST_CANCELLED'
-  | 'UNKNOWN';
-
-export const meetingAIErrorCodeSchema = z.enum([
-  'INPUT_INVALID',
-  'ORIGIN_INVALID',
-  'OUTPUT_INVALID',
-  'OUTPUT_LANGUAGE_MISMATCH',
-  'PROVIDER_ACCESS_RESTRICTED',
-  'PROVIDER_AUTH_FAILED',
-  'PROVIDER_CONFIG_INVALID',
-  'PROVIDER_CONFIG_UNAVAILABLE',
-  'PROVIDER_MODEL_NOT_FOUND',
-  'PROVIDER_NOT_CONFIGURED',
-  'PROVIDER_RATE_LIMITED',
-  'PROVIDER_UNAVAILABLE',
-  'RATE_LIMITED',
-  'REQUEST_CANCELLED',
-  'UNKNOWN',
-] satisfies MeetingAIErrorCode[]);
-
-export const meetingAIErrorResponseSchema = z
-  .object({
-    error: z.object({ code: meetingAIErrorCodeSchema }).strict(),
-    ok: z.literal(false),
-  })
-  .strict();
-
-export type MeetingAIResult<Value> =
-  { ok: true; value: Value } | { error: { code: MeetingAIErrorCode }; ok: false };

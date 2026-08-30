@@ -17,7 +17,7 @@ import { runStructuredProviderCall } from '@/modules/meeting-ai/provider-adapter
 import { providerPresets } from '@/modules/provider-config/server';
 
 const stepFunApiKey = process.env.STEPFUN_API_KEY;
-const stepFunModelId = process.env.STEPFUN_VALIDATION_MODEL;
+const stepFunModelId = process.env.STEPFUN_PREPARATION_VALIDATION_MODEL;
 const liveTest = stepFunApiKey && stepFunModelId ? it : it.skip;
 
 const grillInput: GrillInput = {

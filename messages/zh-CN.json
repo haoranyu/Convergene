@@ -640,6 +640,7 @@
         "reconfigure": "重新连接模型后再试。",
         "rateLimited": "模型正在限流，请稍后再试。",
         "invalidOutput": "模型返回的建议不可用，请重试。",
+        "languageMismatch": "模型未使用会议语言，请重试。",
         "unavailable": "AI 建议暂不可用，本机会议仍安全。"
       }
     }

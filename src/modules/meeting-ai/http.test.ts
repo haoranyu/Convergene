@@ -26,11 +26,25 @@ describe('meeting AI HTTP errors', () => {
   });
 
   it('maps provider schema failures to the public retryable output category', async () => {
-    const response = meetingAIErrorResponse(new ProviderGatewayError('OUTPUT_INVALID'));
+    const response = meetingAIErrorResponse(
+      new ProviderGatewayError('OUTPUT_INVALID', 'SCHEMA_MISMATCH'),
+    );
 
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({
-      error: { code: 'OUTPUT_INVALID' },
+      error: { code: 'OUTPUT_INVALID', outputFailure: 'SCHEMA_MISMATCH' },
+      ok: false,
+    });
+  });
+
+  it('does not attach output diagnostics to unrelated public errors', async () => {
+    const response = meetingAIErrorResponse(
+      new ProviderGatewayError('PROVIDER_UNAVAILABLE', 'SCHEMA_MISMATCH'),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: { code: 'PROVIDER_UNAVAILABLE' },
       ok: false,
     });
   });

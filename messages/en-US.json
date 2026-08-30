@@ -640,6 +640,7 @@
         "reconfigure": "Reconnect your model, then try again.",
         "rateLimited": "The model is limiting requests. Try again shortly.",
         "invalidOutput": "The model returned unusable suggestions. Try again.",
+        "languageMismatch": "The model used the wrong language. Try again.",
         "unavailable": "AI suggestions are unavailable. Your meeting is still safe."
       }
     }

@@ -40,9 +40,7 @@ export async function requestNodeExpansion(
     const body = await readBoundedJson(response);
     if (!response.ok) {
       const error = meetingAIErrorResponseSchema.safeParse(body);
-      return error.success
-        ? { error: { code: error.data.error.code }, ok: false }
-        : { error: { code: 'UNKNOWN' }, ok: false };
+      return error.success ? error.data : { error: { code: 'UNKNOWN' }, ok: false };
     }
     const parsed = expandNodeResponseSchema.safeParse(body);
     if (!parsed.success || parsed.data.requestId !== request.requestId) {

@@ -43,6 +43,7 @@ function success(): Promise<CanvasCommandResult> {
 
 function MeetingCanvasBrowserFixture() {
   const [aggregate, setAggregate] = useState(createMeetingCanvasTestFixture);
+  const expansionFails = new URLSearchParams(window.location.search).get('expansion') === 'error';
   const commands = useMemo<CanvasCommands>(
     () => ({
       applyExpansion: () => {
@@ -167,19 +168,27 @@ function MeetingCanvasBrowserFixture() {
           <MeetingCanvasView
             aggregate={aggregate}
             commands={commands}
-            expandNode={async (_request: ExpandNodeRequest) => ({
-              ok: true,
-              value: {
-                output: {
-                  children: [
-                    { kind: 'RISK', title: 'A delayed local write' },
-                    { kind: 'RISK', title: 'A second delayed local write' },
-                  ],
-                },
-                requestId: _request.requestId,
-                task: 'expand-node',
-              } satisfies ExpandNodeResponse,
-            })}
+            expandNode={async (_request: ExpandNodeRequest) => {
+              if (expansionFails) {
+                return {
+                  error: { code: 'OUTPUT_INVALID', outputFailure: 'SCHEMA_MISMATCH' },
+                  ok: false,
+                } as const;
+              }
+              return {
+                ok: true,
+                value: {
+                  output: {
+                    children: [
+                      { kind: 'RISK', title: 'A delayed local write' },
+                      { kind: 'RISK', title: 'A second delayed local write' },
+                    ],
+                  },
+                  requestId: _request.requestId,
+                  task: 'expand-node',
+                } satisfies ExpandNodeResponse,
+              } as const;
+            }}
           />
         </main>
       </AppProviders>
