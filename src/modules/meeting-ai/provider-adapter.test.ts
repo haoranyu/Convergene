@@ -59,10 +59,26 @@ function streamingResponse(
   );
 }
 
-function emptyStreamingResponse(): Response {
-  return new Response('data: [DONE]\n\n', {
-    headers: { 'content-type': 'text/event-stream' },
-    status: 200,
+function completionResponse(
+  provider: ProviderId,
+  {
+    content = JSON.stringify({ status: 'ok' }),
+    finishReason = 'stop',
+  }: { content?: string; finishReason?: string } = {},
+): Response {
+  return Response.json({
+    choices: [
+      {
+        finish_reason: finishReason,
+        index: 0,
+        message: { content, role: 'assistant' },
+      },
+    ],
+    created: 1_788_000_000,
+    id: 'safe-test-id',
+    model: providerPresets[provider].models.fast,
+    object: 'chat.completion',
+    usage: { completion_tokens: 5, prompt_tokens: 8, total_tokens: 13 },
   });
 }
 
@@ -76,24 +92,20 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
         model?: string;
         reasoning_effort?: string;
         response_format?: { type?: string };
+        stream?: boolean;
       };
       expect(String(input)).toBe(`${providerPresets[provider].baseURL}/chat/completions`);
       expect(body.model).toBe(providerPresets[provider].models.fast);
       expect(body.enable_thinking).toBeUndefined();
       expect(body.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
       expect(body.max_tokens).toBe(2_048);
-      expect(body.response_format?.type).toBe(
-        provider === 'STEPFUN' ? 'json_object' : 'json_schema',
-      );
-      if (provider === 'STEPFUN') {
-        expect(body.messages?.[0]).toMatchObject({ role: 'system' });
-        expect(body.messages?.[0]?.content).toContain('SafeTestOutput JSON Schema');
-        expect(body.messages?.[0]?.content).toContain('"additionalProperties":false');
-        expect(body.messages?.[0]?.content).toContain('"status"');
-      } else {
-        expect(body.messages?.[0]?.role).toBe('user');
-      }
-      return streamingResponse(provider);
+      expect(body.response_format?.type).toBe('json_object');
+      expect(body.stream).toBeUndefined();
+      expect(body.messages?.[0]).toMatchObject({ role: 'system' });
+      expect(body.messages?.[0]?.content).toContain('SafeTestOutput JSON Schema');
+      expect(body.messages?.[0]?.content).toContain('"additionalProperties":false');
+      expect(body.messages?.[0]?.content).toContain('"status"');
+      return completionResponse(provider);
     });
 
     await expect(
@@ -134,9 +146,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     ).resolves.toEqual({ status: 'ok' });
   });
 
-  it('places the complete output schema in StepFun fast system instructions', async () => {
-    if (provider !== 'STEPFUN') return;
-
+  it('places the complete output schema in fast-role JSON Mode instructions', async () => {
     const content = JSON.stringify({
       children: [
         { kind: 'RISK', title: 'Budget approval may arrive late' },
@@ -153,7 +163,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       expect(system).toContain('"additionalProperties":false');
       expect(system).toContain('"OPTION"');
       expect(system).toContain('"maxLength":48');
-      return streamingResponse(provider, { content });
+      return completionResponse(provider, { content });
     });
 
     await expect(
@@ -166,6 +176,26 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
         schemaName: 'ExpandNodeOutput',
       }),
     ).resolves.toHaveProperty('children', expect.any(Array));
+  });
+
+  it('keeps the fast output budget above each provider-safe minimum', async () => {
+    const fetch = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { max_tokens?: number };
+      expect(body.max_tokens).toBe(provider === 'STEPFUN' ? 512 : 384);
+      return completionResponse(provider);
+    });
+
+    await expect(
+      runStructuredProviderCall({
+        config: config(provider),
+        fetch,
+        maxOutputTokens: 1,
+        prompt: 'Return status=ok.',
+        role: 'fast',
+        schema: outputSchema,
+        schemaName: 'SafeTestOutput',
+      }),
+    ).resolves.toEqual({ status: 'ok' });
   });
 
   it.each([
@@ -225,7 +255,7 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
       const promise = runStructuredProviderCall({
         config: config(provider),
         fetch: () =>
-          Promise.resolve(streamingResponse(provider, { content: generatedText, finishReason })),
+          Promise.resolve(completionResponse(provider, { content: generatedText, finishReason })),
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,
@@ -243,11 +273,11 @@ describe.each(['STEPFUN', 'SILICONFLOW'] as const)('%s provider adapter', (provi
     },
   );
 
-  it('classifies an empty completed stream without inspecting generated text', async () => {
+  it('classifies an empty completed response without inspecting generated text', async () => {
     await expect(
       runStructuredProviderCall({
         config: config(provider),
-        fetch: () => Promise.resolve(emptyStreamingResponse()),
+        fetch: () => Promise.resolve(completionResponse(provider, { content: '' })),
         prompt: 'Return status=ok.',
         role: 'fast',
         schema: outputSchema,

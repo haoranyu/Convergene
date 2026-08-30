@@ -56,4 +56,55 @@ describe('UpstashProviderConfigStore', () => {
       ['V2', 'a'.repeat(22), JSON.stringify(record), '60'],
     );
   });
+
+  it.each([
+    ['an automatically deserialized record', { version: 2 }],
+    ['a serialized record', JSON.stringify({ version: 2 })],
+  ])('atomically consumes a session limit and returns %s', async (_label, record) => {
+    exec.mockResolvedValue([1, 1, record]);
+    const store = new UpstashProviderConfigStore('https://redis.example', 'test-token');
+
+    await expect(
+      store.consumeRateLimitAndReadConfig({
+        clientRateLimitKey: 'rate-limit:client',
+        limit: 20,
+        session: {
+          providerConfigKey: 'provider-config:test',
+          rateLimitKey: 'rate-limit:session',
+        },
+        windowSeconds: 60,
+      }),
+    ).resolves.toEqual({ count: 1, record: { version: 2 } });
+    expect(exec).toHaveBeenCalledWith(
+      ['rate-limit:client', 'provider-config:test', 'rate-limit:session'],
+      ['60', '20', '1'],
+    );
+  });
+
+  it('withholds configuration data from a consumed client-only limit', async () => {
+    exec.mockResolvedValue([21, 0]);
+    const store = new UpstashProviderConfigStore('https://redis.example', 'test-token');
+
+    await expect(
+      store.consumeRateLimitAndReadConfig({
+        clientRateLimitKey: 'rate-limit:client',
+        limit: 20,
+        windowSeconds: 60,
+      }),
+    ).resolves.toEqual({ count: 21, record: null });
+    expect(exec).toHaveBeenCalledWith(['rate-limit:client'], ['60', '20', '0']);
+  });
+
+  it('rejects malformed atomic claim responses instead of guessing a scope', async () => {
+    exec.mockResolvedValue(['not-a-count', 1, { version: 2 }]);
+    const store = new UpstashProviderConfigStore('https://redis.example', 'test-token');
+
+    await expect(
+      store.consumeRateLimitAndReadConfig({
+        clientRateLimitKey: 'rate-limit:client',
+        limit: 20,
+        windowSeconds: 60,
+      }),
+    ).rejects.toThrow();
+  });
 });

@@ -16,13 +16,13 @@
 - 输出失败时允许程序安全拒绝，不以“尽量展示”绕过 schema；
 - 不在服务端日志记录完整输入和输出。
 
-Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用非推理
-`inclusionAI/Ling-mini-2.0` 且不发送 thinking 参数，复杂 role 继续对 DeepSeek 显式发送
-`enable_thinking: false`；StepFun 的 `fast` role 使用官方面向实时/高频场景的
-`step-3.7-flash`，`grill/report` 暂保留 `step-3.5-flash-2603`，所有角色都发送
-`reasoning_effort: low`。StepFun fast 按官方 JSON Mode 使用 `json_object`，Prompt 明确对象字段；
-其余任务继续使用 `json_schema`。所有结果都在本地再次执行 Zod 和语言校验，两家的专属字段不得
-互相发送。该策略不改变
+Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用
+`Pro/Qwen/Qwen2.5-7B-Instruct` 且不发送 thinking 参数，复杂 role 继续对 DeepSeek 显式发送
+`enable_thinking: false`；StepFun 的 `fast` role 使用 Step Plan 明确支持的
+`step-3.7-flash + reasoning_effort: low`，`grill/report` 暂保留 `step-3.5-flash-2603 + low`。
+两个 fast preset 都以非流式 JSON Mode 返回完整对象：完整 Draft-7 schema 放入 system message，
+Provider 收到 `json_object`，应用端再执行 Zod 和语言校验；复杂任务继续使用流式严格
+`json_schema`。两家的专属字段不得互相发送。该策略不改变
 下面各 role 的任务质量目标，也不移除 schema 校验、一次有界修复或确定性 fallback。
 
 共同 envelope：
@@ -325,8 +325,8 @@ interface ExpandNodeOutput {
 
 运行时契约：
 
-- 使用 `fast` role、最多 1,024 output tokens，并在 5 秒取消 Provider 调用；固定双候选和无 note
-  已缩短实际输出，但保留 token 余量，避免推理型 Provider 在正文完成前被截断；超时后立即回到
+- 使用 `fast` role、调用方最多声明 384 output tokens（StepFun 由 adapter 提升到 512 安全下限），
+  并在 5 秒取消 Provider 调用；固定双候选和无 note 已缩短实际输出，同时避免推理型 StepFun 在正文完成前被截断；超时后立即回到
   可重试状态，不让一次交互继续占住画布；
 - Route 返回不含会议内容的 `Server-Timing`：始终包含 `expand` 总耗时，按固定名称追加已经开始的 `rate`、`config`、`provider` 阶段；正常进入 Provider 的请求包含四项。
 - 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；

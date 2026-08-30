@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-import { providerPresets } from '../provider-config/server';
+import { providerPresets, type ProviderConfigPreload } from '../provider-config/server';
 import {
   resolveConfiguredProviderCaller,
   runConfiguredProviderCall,
@@ -46,10 +46,17 @@ describe('runConfiguredProviderCall', () => {
       models: providerPresets.SILICONFLOW.models,
       provider: 'SILICONFLOW' as const,
     });
-    const callProvider = await resolveConfiguredProviderCaller({
-      markNeedsReconfiguration,
-      resolve,
-    });
+    const preload: ProviderConfigPreload = {
+      key: `provider-config:${'a'.repeat(64)}`,
+      record: { version: 2 },
+    };
+    const callProvider = await resolveConfiguredProviderCaller(
+      {
+        markNeedsReconfiguration,
+        resolve,
+      },
+      preload,
+    );
     const options = {
       fetch: () => Promise.resolve(new Response(null, { status: 401 })),
       prompt: 'Return status=ok.',
@@ -66,6 +73,7 @@ describe('runConfiguredProviderCall', () => {
     );
 
     expect(resolve).toHaveBeenCalledOnce();
+    expect(resolve).toHaveBeenCalledWith(preload);
     expect(markNeedsReconfiguration).toHaveBeenCalledTimes(2);
     expect(markNeedsReconfiguration).toHaveBeenNthCalledWith(
       1,

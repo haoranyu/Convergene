@@ -3,12 +3,15 @@ import 'server-only';
 import type { z } from 'zod';
 
 import type { ProviderId } from '../provider-config';
-import type { ResolvedStoredProviderConfig } from '../provider-config/server';
+import type {
+  ProviderConfigPreload,
+  ResolvedStoredProviderConfig,
+} from '../provider-config/server';
 import { runStructuredProviderCall, type StructuredProviderCallOptions } from './provider-adapter';
 
 interface StoredProviderConfigService {
   markNeedsReconfiguration(provider: ProviderId, credentialRevision: string): Promise<void>;
-  resolve(): Promise<ResolvedStoredProviderConfig>;
+  resolve(preload?: ProviderConfigPreload): Promise<ResolvedStoredProviderConfig>;
 }
 
 type ProviderCallOptions<Schema extends z.ZodType> = Omit<
@@ -26,8 +29,9 @@ export interface ConfiguredProviderCaller {
 
 export async function resolveConfiguredProviderCaller(
   service: StoredProviderConfigService,
+  preload?: ProviderConfigPreload,
 ): Promise<ConfiguredProviderCaller> {
-  const config = await service.resolve();
+  const config = await service.resolve(preload);
   return <Schema extends z.ZodType>(options: ProviderCallOptions<Schema>) =>
     runStructuredProviderCall({
       ...options,

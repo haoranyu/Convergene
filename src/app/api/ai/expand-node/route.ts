@@ -51,11 +51,11 @@ export async function POST(request: Request): Promise<Response> {
       expandNodeMaximumRequestBodyBytes,
     );
     const { service, store } = await createProviderConfigRuntime();
-    await measure('rate', timings, () =>
+    const rateLimitGrant = await measure('rate', timings, () =>
       enforceProviderConfigRateLimit(request, store, 20, 60, 'expand-node'),
     );
     const callProvider = await measure('config', timings, () =>
-      resolveConfiguredProviderCaller(service),
+      resolveConfiguredProviderCaller(service, rateLimitGrant.config),
     );
     const output = await measure('provider', timings, () =>
       runExpandNodeProviderTask(callProvider, envelope, request.signal),

@@ -32,7 +32,7 @@ describe('runExpandNodeProviderTask', () => {
     await expect(runExpandNodeProviderTask(callProvider, request)).resolves.toEqual(output);
     expect(callProvider).toHaveBeenCalledWith(
       expect.objectContaining({
-        maxOutputTokens: 1_024,
+        maxOutputTokens: 384,
         role: 'fast',
         schema: expandNodeProviderOutputSchema,
         schemaName: 'ExpandNodeOutput',

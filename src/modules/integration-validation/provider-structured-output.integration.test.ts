@@ -19,7 +19,7 @@ const liveProviderCases: Array<{
   },
   {
     apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
-    approvedModelId: 'inclusionAI/Ling-mini-2.0',
+    approvedModelId: 'Pro/Qwen/Qwen2.5-7B-Instruct',
     modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
     provider: 'SILICONFLOW',
   },

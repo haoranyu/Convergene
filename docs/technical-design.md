@@ -386,7 +386,7 @@ const providerPresets = {
     baseURL: 'https://api.siliconflow.cn/v1',
     defaultModels: {
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
-      fast: 'inclusionAI/Ling-mini-2.0',
+      fast: 'Pro/Qwen/Qwen2.5-7B-Instruct',
       report: 'deepseek-ai/DeepSeek-V4-Flash'
     }
   }
@@ -395,25 +395,32 @@ const providerPresets = {
 
 2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
 SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
-实时节点展开的 `fast` preset。当天再次复核官方文档后，Step 3.7 的模型页仍把
-`step-3.7-flash` 定位为低延迟、高吞吐模型并列出低推理档；因此只把 StepFun 的 `fast` role
-切回 `step-3.7-flash`，不把未完成的生产门禁外推到 `grill/report`。当前 Chat Completion API
-总表只为 3.5 系列声明严格 `json_schema`，所以 3.7 fast 改用官方通用 `json_object`。
-PR #43 的后续生产门禁证明 `Qwen/Qwen3.5-4B` 虽然 3/3 成功，但 4,604ms 中位耗时仍未达到
-3 秒门槛；因此 SiliconFlow 的 `fast` role 改为官方标记“快速响应”的非推理模型
-`inclusionAI/Ling-mini-2.0`，复杂角色仍用 `deepseek-ai/DeepSeek-V4-Flash`。共享
-OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`；SiliconFlow 与复杂任务继续
-发送严格 schema，StepFun fast 则在最终请求体中受控改写为官方 `json_object`，并依赖 Prompt
-字段约束与本地 Zod/locale 校验。所有产品结构化请求（包括配置连接测试）必须在以 preset
-`name` 为 key 的 `providerOptions` 中使用供应商策略：SiliconFlow fast 的非推理模型不发送
-thinking 参数，复杂角色发送 `enable_thinking: false`，StepFun 发送 `reasoning_effort: low`。
+实时节点展开的 `fast` preset。Step Plan 当前明确支持的低延迟候选仍是
+`step-3.7-flash + reasoning_effort: low`；`step-1o-turbo-vision` 只在标准 API 有官方示例，不能
+假设 sponsor 的 `/step_plan/v1` endpoint 和额度支持它。PR #43 的后续生产门禁证明
+`Qwen/Qwen3.5-4B` 虽然 3/3 成功，但 4,604ms 中位耗时仍未达到 3 秒门槛；PR #44 又证明
+`inclusionAI/Ling-mini-2.0` 在 5 秒 Provider 边界内 0/3，因而 SiliconFlow fast 改用当前目录中
+明确支持 JSON Mode 的付费 `Pro/Qwen/Qwen2.5-7B-Instruct`，复杂角色仍用
+`deepseek-ai/DeepSeek-V4-Flash`。
+
+共享 OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`。两个 fast role 都使用
+非流式 `generateText` 和 `json_object`，完整 Draft-7 schema 置于 system message，返回后仍由
+本地 Zod/locale 权威校验；复杂任务保留流式严格 schema。SiliconFlow fast 不发送 thinking
+参数，复杂角色发送 `enable_thinking: false`；StepFun 所有角色发送
+`reasoning_effort: low`。
 两家的专属字段不得互相发送。这批交互任务
 需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
 可靠性边界；Provider 输出失败还必须只用固定 allowlist 区分截断、JSON 解析、schema 不匹配、
 内容过滤和上游拒绝，绝不保留原始模型文本。新 fast preset 仍须通过 credential-gated 产品
 Route 与生产浏览器门禁，不能借用历史最小 schema 的样本宣称通过。
 
-StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，最小 probe 使用 512 token 才稳定。产品任务的 adapter 默认使用 2,048 token 的有界预算，调用方可以按 schema 覆盖，但不能低于 512，避免 StepFun 在稍复杂的分类中发出 JSON 前耗尽 reasoning budget。probe 使用与产品一致的双方最低推理策略和 bounded `streamText`，覆盖默认 `onError` 以禁止原始 Provider 错误日志，并只返回脱敏分类和 elapsed time。完整证据见 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
+StepFun 即使在 `low` 档仍会把 reasoning token 计入输出上限，因此 fast role 的 adapter 下限保持
+512 token；SiliconFlow 非推理 fast role 下限为 384。节点展开调用方声明 384，最终 StepFun
+请求会安全提升到 512，SiliconFlow 保持 384；其他调用仍使用各自有界预算。独立 probe 继续以
+bounded `streamText` 验证 streaming 能力，产品 fast path 则以 `generateText` 等待完整对象；两者
+都禁止原始 Provider 错误日志并只返回脱敏分类和 elapsed time。完整证据见
+[高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128
+字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
 
 ## 7. Route Handlers
 
@@ -525,6 +532,11 @@ PATCH 只切换已配置且可用的供应商。成功读取会原子更新当�
 合并重试，不以最后写入覆盖另一供应商。当前 key 的正常 status 不解密；v1 或已知旧 key 只在迁移路径短暂解密
 并用当前 key 重加密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
 使用 IP bucket；Redis/Lua 故障返回配置不可用，不能伪装为用户触发限流。
+节点展开的热路径通过一次 Lua 原子完成“读取配置以选择可信限流 scope + 计数 + 首次过期”，并只
+在未超限时返回绑定到 hashed config key 的加密 record preload。配置 service 仍执行 Zod、keyring、
+AES 解密和 credential health 校验，再用独立 touch Lua 检查 active provider 与 credential revision
+并续期；preload 缺失、无效或在并发切换后变旧时回退到原有 GET/CAS 重读。因此正常热路径由
+4 次串行 Redis 往返降为 2 次，同时不让伪造 Cookie 获得 session bucket，也不把会议内容写入 Redis。
 `src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
 Schema、超时/取消及错误归一化的唯一共享边界；Route 统一通过配置感知的调用封装，把 401 只归因
 到本次请求解析出的凭证 revision。
@@ -709,7 +721,7 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
 - [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
-  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `inclusionAI/Ling-mini-2.0`
+  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Pro/Qwen/Qwen2.5-7B-Instruct`
   的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家 expansion 必须
   3/3 成功且中位数不超过 3 秒；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；

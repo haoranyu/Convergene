@@ -115,7 +115,7 @@ Then 两家保存结果都保留；迟到 401 只匹配旧凭证 revision，不�
 
 Given 用户选择硅基流动或 StepFun
 When 测试连接或发起任一产品结构化 AI 调用
-Then 硅基流动 fast 的非推理模型不含 thinking 参数，复杂 role 显式包含 `enable_thinking: false`；StepFun body 显式包含 `reasoning_effort: low` 且不含 `enable_thinking`；StepFun fast 使用 `json_object`，其余任务使用 JSON Schema，所有任务仍保留本地 Zod、token、取消、超时和安全错误归一化策略。
+Then 硅基流动 fast 不含 thinking 参数，复杂 role 显式包含 `enable_thinking: false`；StepFun body 显式包含 `reasoning_effort: low` 且不含 `enable_thinking`；两家 fast 都使用非流式 `json_object` 与完整 system schema，复杂 role 使用流式 JSON Schema，所有任务仍保留本地 Zod、token、取消、超时和安全错误归一化策略。
 
 ## 4. 创建与剧本
 

@@ -2,7 +2,13 @@ import 'server-only';
 
 import { Redis } from '@upstash/redis';
 
-import type { ProviderConfigStore, ProviderConfigTouch, ProviderConfigWrite } from './store';
+import type {
+  ProviderConfigRateLimitInput,
+  ProviderConfigRateLimitResult,
+  ProviderConfigStore,
+  ProviderConfigTouch,
+  ProviderConfigWrite,
+} from './store';
 
 const consumeRateLimitScript = `
 local count = redis.call('INCR', KEYS[1])
@@ -10,6 +16,28 @@ if count == 1 then
   redis.call('EXPIRE', KEYS[1], ARGV[1])
 end
 return count
+`;
+
+const consumeRateLimitAndReadConfigScript = `#!lua flags=allow-key-locking
+local value = false
+local rateKey = KEYS[1]
+
+if ARGV[3] == '1' then
+  value = redis.call('GET', KEYS[2])
+  if value then
+    rateKey = KEYS[3]
+  end
+end
+
+local count = redis.call('INCR', rateKey)
+if count == 1 then
+  redis.call('EXPIRE', rateKey, ARGV[1])
+end
+
+if count > tonumber(ARGV[2]) or not value then
+  return {count, 0}
+end
+return {count, 1, value}
 `;
 
 const compareAndSetProviderConfigScript = `
@@ -105,6 +133,39 @@ export class UpstashProviderConfigStore implements ProviderConfigStore {
   async consumeRateLimit(key: string, _limit: number, windowSeconds: number): Promise<number> {
     const script = this.redis.createScript<number>(consumeRateLimitScript);
     return script.exec([key], [String(windowSeconds)]);
+  }
+
+  async consumeRateLimitAndReadConfig(
+    input: ProviderConfigRateLimitInput,
+  ): Promise<ProviderConfigRateLimitResult> {
+    const script = this.redis.createScript<unknown>(consumeRateLimitAndReadConfigScript);
+    const result = await script.exec(
+      [
+        input.clientRateLimitKey,
+        ...(input.session ? [input.session.providerConfigKey, input.session.rateLimitKey] : []),
+      ],
+      [String(input.windowSeconds), String(input.limit), input.session ? '1' : '0'],
+    );
+    if (
+      !Array.isArray(result) ||
+      !Number.isInteger(result[0]) ||
+      result[0] < 1 ||
+      (result[1] !== 0 && result[1] !== 1) ||
+      (result[1] === 1 && result.length < 3)
+    ) {
+      throw new Error('Invalid atomic rate-limit response');
+    }
+
+    const count = result[0] as number;
+    const rawRecord = count <= input.limit && result[1] === 1 ? result[2] : null;
+    if (typeof rawRecord !== 'string') {
+      return { count, record: rawRecord ?? null };
+    }
+    try {
+      return { count, record: JSON.parse(rawRecord) };
+    } catch {
+      return { count, record: rawRecord };
+    }
   }
 
   async delete(key: string): Promise<void> {
