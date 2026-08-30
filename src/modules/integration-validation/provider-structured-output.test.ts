@@ -64,7 +64,7 @@ function createOpenAICompatibleStreamingFetch(provider: ValidationProvider, mode
       `${providerValidationDefinitions[provider].baseURL}/chat/completions`,
     );
     expect(requestBody.enable_thinking).toBe(provider === 'SILICONFLOW' ? false : undefined);
-    expect(requestBody.reasoning_effort).toBeUndefined();
+    expect(requestBody.reasoning_effort).toBe(provider === 'STEPFUN' ? 'low' : undefined);
     expect(requestBody.max_tokens).toBe(512);
     expect(requestBody.response_format?.type).toBe(
       provider === 'STEPFUN' ? 'json_object' : 'json_schema',

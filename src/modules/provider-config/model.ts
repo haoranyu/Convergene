@@ -35,7 +35,7 @@ export const providerModelPresets = {
     report: 'deepseek-ai/DeepSeek-V4-Flash',
   },
   STEPFUN: {
-    fast: 'step-3.7-flash',
+    fast: 'step-3.5-flash-2603',
     grill: 'step-3.5-flash-2603',
     report: 'step-3.5-flash-2603',
   },

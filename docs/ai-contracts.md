@@ -18,9 +18,8 @@
 
 Provider request policy 由共享服务端 adapter 统一控制：硅基流动 `fast` 使用已经通过 3/3
 产品展开验证的 `Qwen/Qwen3.5-4B`，并与复杂 role 一样显式发送
-`enable_thinking: false`；StepFun 的 `fast` role 使用已经通过产品 JSON Mode 分类验证的
-`step-3.7-flash`，不发送官方只对 3.5-2603 声明支持的 `reasoning_effort`；`grill/report` 暂保留
-`step-3.5-flash-2603 + low`。
+`enable_thinking: false`；StepFun 所有 role 使用 Step Plan 明确支持、且官方允许切换低推理模式的
+`step-3.5-flash-2603 + reasoning_effort: low`。
 所有任务都使用流式传输，但应用只在完整对象通过校验后消费结果：SiliconFlow fast 与复杂
 role 使用严格 `json_schema`；StepFun fast 使用 `json_object`、完整 Draft-7 system schema，
 复杂 role 使用严格 `json_schema`。两条路径都继续执行本地 Zod 和语言校验，且两家的专属字段

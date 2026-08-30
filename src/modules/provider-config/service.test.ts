@@ -138,7 +138,7 @@ const providerModelMappings = {
     report: 'deepseek-ai/DeepSeek-V4-Flash',
   },
   STEPFUN: {
-    fast: 'step-3.7-flash',
+    fast: 'step-3.5-flash-2603',
     grill: 'step-3.5-flash-2603',
     report: 'step-3.5-flash-2603',
   },
@@ -160,7 +160,7 @@ describe('provider configuration service', () => {
           models:
             provider === 'STEPFUN'
               ? {
-                  fast: 'step-3.7-flash',
+                  fast: 'step-3.5-flash-2603',
                   grill: 'step-3.5-flash-2603',
                   report: 'step-3.5-flash-2603',
                 }
@@ -492,7 +492,7 @@ describe('provider configuration service', () => {
     const sessionId = createProviderSessionId();
     const testConnection = vi.fn().mockResolvedValue({
       models: {
-        fast: 'step-3.7-flash',
+        fast: 'step-3.5-flash-2603',
         grill: 'step-3.5-flash-2603',
         report: 'step-3.5-flash-2603',
       },
@@ -537,7 +537,7 @@ describe('provider configuration service', () => {
       store,
       testConnection: vi.fn().mockResolvedValue({
         models: {
-          fast: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },
@@ -622,7 +622,7 @@ describe('provider configuration service', () => {
       store,
       testConnection: vi.fn().mockResolvedValue({
         models: {
-          fast: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },
@@ -659,7 +659,7 @@ describe('provider configuration service', () => {
       store,
       testConnection: vi.fn().mockResolvedValue({
         models: {
-          fast: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },
@@ -714,7 +714,7 @@ describe('provider configuration service', () => {
       store,
       testConnection: vi.fn().mockResolvedValue({
         models: {
-          fast: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },
@@ -748,7 +748,7 @@ describe('provider configuration service', () => {
       store,
       testConnection: vi.fn().mockResolvedValue({
         models: {
-          fast: 'step-3.7-flash',
+          fast: 'step-3.5-flash-2603',
           grill: 'step-3.5-flash-2603',
           report: 'step-3.5-flash-2603',
         },

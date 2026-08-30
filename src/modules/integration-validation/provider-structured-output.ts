@@ -23,7 +23,7 @@ export type ValidationProvider = keyof typeof providerValidationDefinitions;
 
 const providerProbeRequestPolicies = {
   SILICONFLOW: { siliconflowValidation: { enable_thinking: false } },
-  STEPFUN: { stepfunValidation: {} },
+  STEPFUN: { stepfunValidation: { reasoningEffort: 'low' } },
 } as const satisfies Record<ValidationProvider, Record<string, Record<string, boolean | string>>>;
 
 const structuredProbeSchema = z.object({
