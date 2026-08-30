@@ -31,6 +31,7 @@ export interface MeetingCanvasNodeData extends Record<string, unknown> {
   outcomeLabel: string;
   title: string;
   assistance?: {
+    cancellable: boolean;
     cancelLabel: string;
     cards: Array<{
       description: string;
@@ -118,7 +119,7 @@ export function MeetingNode({ data, selected }: NodeProps<MeetingCanvasNode>) {
                 </Button>
               ))}
             </div>
-            {data.assistance.cards.some((card) => card.loading) ? (
+            {data.assistance.cancellable ? (
               <Button onClick={data.assistance.onCancel} size="mini" type="text">
                 {data.assistance.cancelLabel}
               </Button>

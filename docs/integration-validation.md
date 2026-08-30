@@ -17,6 +17,7 @@
 | Redis 编排 | live passed | `redis-lifecycle*.test.ts` | 免费 Upstash 实例上的加密 set/get/decrypt/expire/renew/delete 全生命周期通过，测试后目标 key 已删除 |
 | StepFun structured output | live passed | `provider-structured-output*.test.ts` | `step-3.7-flash` 真实 streaming、JSON Schema、1ms 取消和 invalid-model 脱敏错误均通过 |
 | SiliconFlow structured output | live passed | `provider-structured-output*.test.ts` | `deepseek-ai/DeepSeek-V4-Flash` 真实 streaming、JSON Schema、1ms 取消和 invalid-model 脱敏错误均通过 |
+| Expand-node 产品 Route | credential-gated | `expand-node-route.integration.test.ts` | 直接运行产品 `POST` Route、Prompt、1,024-token/15-second 调用和真实 48-character expansion schema；StepFun 另以三个产品 Route 样本验证 median ≤3,000ms；缺少对应 Provider Key/model 环境变量时明确 skipped，不能记为 live passed |
 | Dagre LR | passed | `dagre-layout.test.ts` | 12 个长英文节点无重叠、边不变、所有边从左向右、一级议题顺序和重复布局稳定 |
 | Active Topic subtree focus | passed | `subtree-focus.test.ts`、`canvas-browser-probe.test.ts` | Vite test-only page 在真实 Chromium 渲染/测量 12 节点，并通过 React Flow instance 对目标三节点子树显式调用 `fitView` |
 | Mermaid flowchart | passed | `mermaid-renderer.test.ts` | `securityLevel: 'strict'` 下生成 SVG |
@@ -145,6 +146,24 @@ pnpm exec vitest run src/modules/integration-validation/provider-structured-outp
 SiliconFlow 使用 `SILICONFLOW_API_KEY` 和 `SILICONFLOW_VALIDATION_MODEL`。测试不会把这些值
 写入文件或输出；测试结果可记录 schema、stream delta 数、first-chunk/total latency 或安全的
 failure kind/elapsed time，不记录 response body。
+
+节点展开需要单独运行产品级 route probe；它不使用最小替代 schema，而是直接调用
+`POST /api/ai/expand-node` 的 Route Handler，经共享 configured-provider adapter、正式 Prompt、
+locale 校验和 `ExpandNodeOutput` schema 返回 2–4 个候选。测试用虚构会议数据，断言安全的
+`Server-Timing` 存在，既不输出返回正文，也不写 Redis 或 IndexedDB。Provider 的 Key 与 model
+变量命名沿用上面的 credential-gated suite：
+
+```bash
+STEPFUN_API_KEY=... \
+STEPFUN_VALIDATION_MODEL=step-3.7-flash \
+pnpm exec vitest run src/modules/integration-validation/expand-node-route.integration.test.ts
+```
+
+SiliconFlow 对应使用 `SILICONFLOW_API_KEY` 与 `SILICONFLOW_VALIDATION_MODEL`。没有临时凭据时，
+这两个 case 必须显示为 skipped；浏览器拦截测试只能证明客户端生命周期，不能替代这项真实调用。
+同一文件在 StepFun 两个变量均存在时还会顺序运行三个独立 request id，解析安全的
+`Server-Timing` 并断言中位数不超过 3,000ms；该性能 case 未真实运行前，产品延迟目标仍只能记为
+待验证，不能由最小 schema 的历史样本推断。
 
 每个 Provider 的 credential-gated suite 有三个独立 case，Vitest timeout 都是 35 秒，大于
 probe 的 30 秒硬上限：真实候选模型成功 streaming/schema、同一模型 1ms 强制取消，以及明确

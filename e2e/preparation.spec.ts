@@ -184,6 +184,28 @@ async function seedMapReadyMeeting(page: Page) {
   );
 }
 
+async function countMeetingNodes(page: Page, meetingId = 'demo-lifecycle'): Promise<number> {
+  return page.evaluate(
+    (targetMeetingId) =>
+      new Promise<number>((resolve, reject) => {
+        const request = indexedDB.open('convergene');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const database = request.result;
+          const transaction = database.transaction('nodes', 'readonly');
+          const countRequest = transaction
+            .objectStore('nodes')
+            .index('meetingId')
+            .count(targetMeetingId);
+          countRequest.onerror = () => reject(countRequest.error);
+          countRequest.onsuccess = () => resolve(countRequest.result);
+          transaction.oncomplete = () => database.close();
+        };
+      }),
+    meetingId,
+  );
+}
+
 test('rejects malformed preparation AI envelopes before provider execution', async ({
   request,
 }) => {
@@ -306,6 +328,256 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
     '# Meeting report: Demo lifecycle',
   );
   await expect(page.getByLabel('Markdown source')).toContainText('```mermaid');
+});
+
+test('persists a successful AI node expansion through the real browser canvas', async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  let requestCount = 0;
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.route('**/api/ai/expand-node', async (route) => {
+    requestCount += 1;
+    const request = route.request().postDataJSON() as { requestId: string };
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    await route.fulfill({
+      body: JSON.stringify({
+        output: {
+          children: [
+            { kind: 'RISK', title: 'Budget approval arrives too late' },
+            { kind: 'RISK', title: 'The launch owner lacks capacity' },
+          ],
+        },
+        requestId: request.requestId,
+        task: 'expand-node',
+      }),
+      contentType: 'application/json',
+      status: 200,
+    });
+  });
+
+  await page.goto('/en-US/meetings/demo-lifecycle');
+  await expect(page.getByText('This meeting is not stored in the current browser.')).toBeVisible();
+  await seedMapReadyMeeting(page);
+  await page.reload();
+
+  await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
+  const assistance = page.getByRole('group', { name: 'AI suggestions for Compare options' });
+  await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+  await expect(assistance.getByRole('button', { name: /^Add an option/u })).toBeDisabled();
+  await expect(assistance.getByRole('button', { name: /^Surface risk/u })).toBeDisabled();
+  await expect(assistance.getByRole('button', { name: /^Drive a choice/u })).toBeDisabled();
+  expect(requestCount).toBe(1);
+  const skeletons = page.locator('.react-flow__node[data-id^="expansion-skeleton-"]');
+  await expect(skeletons).toHaveCount(3);
+  await expect(skeletons.first()).toBeVisible();
+  await expect(
+    page
+      .locator('.react-flow__node')
+      .getByText('Budget approval arrives too late', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.react-flow__node').getByText('The launch owner lacks capacity', { exact: true }),
+  ).toBeVisible();
+  await expect(skeletons).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(6);
+  expect(requestCount).toBe(1);
+  expect(pageErrors).toEqual([]);
+
+  await page.reload();
+  await expect(
+    page
+      .locator('.react-flow__node')
+      .getByText('Budget approval arrives too late', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.react-flow__node').getByText('The launch owner lacks capacity', { exact: true }),
+  ).toBeVisible();
+  expect(await countMeetingNodes(page)).toBe(6);
+});
+
+test('keeps a failed AI node expansion retryable without partial writes', async ({ page }) => {
+  let attempt = 0;
+  await page.route('**/api/ai/expand-node', async (route) => {
+    attempt += 1;
+    if (attempt === 1) {
+      await route.fulfill({
+        body: JSON.stringify({ error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false }),
+        contentType: 'application/json',
+        status: 503,
+      });
+      return;
+    }
+
+    const request = route.request().postDataJSON() as { requestId: string };
+    await route.fulfill({
+      body: JSON.stringify({
+        output: {
+          children: [
+            { kind: 'RISK', title: 'Budget approval arrives too late' },
+            { kind: 'RISK', title: 'The launch owner lacks capacity' },
+          ],
+        },
+        requestId: request.requestId,
+        task: 'expand-node',
+      }),
+      contentType: 'application/json',
+      status: 200,
+    });
+  });
+
+  await page.goto('/en-US/meetings/demo-lifecycle');
+  await expect(page.getByText('This meeting is not stored in the current browser.')).toBeVisible();
+  await seedMapReadyMeeting(page);
+  await page.reload();
+  await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
+  const assistance = page.getByRole('group', { name: 'AI suggestions for Compare options' });
+  await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+  await expect(
+    assistance.getByText('AI suggestions are unavailable. Your meeting is still safe.'),
+  ).toBeVisible();
+  await expect(page.locator('.react-flow__node[data-id^="expansion-skeleton-"]')).toHaveCount(0);
+  await expect(
+    page
+      .locator('.react-flow__node')
+      .getByText('Budget approval arrives too late', { exact: true }),
+  ).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(4);
+
+  await assistance.getByRole('button', { name: 'Retry' }).click();
+  await expect(
+    page
+      .locator('.react-flow__node')
+      .getByText('Budget approval arrives too late', { exact: true }),
+  ).toBeVisible();
+  expect(await countMeetingNodes(page)).toBe(6);
+  expect(attempt).toBe(2);
+});
+
+test('clears AI expansion progress when local persistence throws', async ({ page }) => {
+  await page.route('**/api/ai/expand-node', async (route) => {
+    const request = route.request().postDataJSON() as { requestId: string };
+    await route.fulfill({
+      body: JSON.stringify({
+        output: {
+          children: [
+            { kind: 'RISK', title: 'Persistence failure must stay absent' },
+            { kind: 'RISK', title: 'Atomic write must stay absent' },
+          ],
+        },
+        requestId: request.requestId,
+        task: 'expand-node',
+      }),
+      contentType: 'application/json',
+      status: 200,
+    });
+  });
+
+  await page.goto('/en-US/meetings/demo-lifecycle');
+  await expect(page.getByText('This meeting is not stored in the current browser.')).toBeVisible();
+  await seedMapReadyMeeting(page);
+  await page.reload();
+  await page.evaluate(() => {
+    const nativeAdd = IDBObjectStore.prototype.add;
+    let expansionNodeAddCount = 0;
+    IDBObjectStore.prototype.add = function failSecondExpansionNode(value, key) {
+      const node = value as { source?: unknown };
+      if (this.name === 'nodes' && node.source === 'EXPANSION_AI') {
+        expansionNodeAddCount += 1;
+        if (expansionNodeAddCount === 2) {
+          throw new DOMException('Synthetic storage failure', 'QuotaExceededError');
+        }
+      }
+      return key === undefined ? nativeAdd.call(this, value) : nativeAdd.call(this, value, key);
+    };
+  });
+  await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
+  const assistance = page.getByRole('group', { name: 'AI suggestions for Compare options' });
+  await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+  await expect(assistance.getByText('Could not save suggestions in this browser.')).toBeVisible();
+  await expect(page.locator('.react-flow__node[data-id^="expansion-skeleton-"]')).toHaveCount(0);
+  await expect(page.getByText('Persistence failure must stay absent', { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText('Atomic write must stay absent', { exact: true })).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(4);
+
+  await page.reload();
+  await expect(page.getByText('Persistence failure must stay absent', { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText('Atomic write must stay absent', { exact: true })).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(4);
+});
+
+test('discards a cancelled AI node expansion even when its response arrives late', async ({
+  page,
+}) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  let releaseResponse: (() => void) | undefined;
+  let markResponseSettled: (() => void) | undefined;
+  const responseSettled = new Promise<void>((resolve) => {
+    markResponseSettled = resolve;
+  });
+  await page.route('**/api/ai/expand-node', async (route) => {
+    const request = route.request().postDataJSON() as { requestId: string };
+    await new Promise<void>((resolve) => {
+      releaseResponse = resolve;
+    });
+    try {
+      await route.fulfill({
+        body: JSON.stringify({
+          output: {
+            children: [
+              { kind: 'RISK', title: 'Cancelled response must stay absent' },
+              { kind: 'RISK', title: 'Late response must stay absent' },
+            ],
+          },
+          requestId: request.requestId,
+          task: 'expand-node',
+        }),
+        contentType: 'application/json',
+        status: 200,
+      });
+    } catch {
+      // Chromium may close the intercepted request as soon as its AbortSignal fires.
+    } finally {
+      markResponseSettled?.();
+    }
+  });
+
+  await page.goto('/en-US/meetings/demo-lifecycle');
+  await expect(page.getByText('This meeting is not stored in the current browser.')).toBeVisible();
+  await seedMapReadyMeeting(page);
+  await page.reload();
+  await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
+  const assistance = page.getByRole('group', { name: 'AI suggestions for Compare options' });
+  await assistance.getByRole('button', { name: /^Surface risk/u }).click();
+
+  const skeletons = page.locator('.react-flow__node[data-id^="expansion-skeleton-"]');
+  await expect(skeletons).toHaveCount(3);
+  await assistance.getByRole('button', { name: 'Cancel' }).click();
+  await expect(skeletons).toHaveCount(0);
+  expect(releaseResponse).toBeDefined();
+  releaseResponse?.();
+  await responseSettled;
+  await expect(page.getByText('Cancelled response must stay absent', { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText('Late response must stay absent', { exact: true })).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(4);
+  expect(pageErrors).toEqual([]);
+
+  await page.reload();
+  await expect(page.getByText('Cancelled response must stay absent', { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText('Late response must stay absent', { exact: true })).toHaveCount(0);
+  expect(await countMeetingNodes(page)).toBe(4);
 });
 
 test('keeps the Traditional Chinese lifecycle and report path usable on a phone', async ({

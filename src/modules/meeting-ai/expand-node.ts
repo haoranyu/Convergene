@@ -104,7 +104,8 @@ export const expandNodeChildSchema = z
       .trim()
       .min(1)
       .max(192)
-      .refine((value) => withinGraphemeLimit(value, 48)),
+      .refine((value) => withinGraphemeLimit(value, 48))
+      .meta({ maxLength: 48 }),
   })
   .strict();
 
@@ -157,14 +158,4 @@ export function expandNodeOutputMatchesLocale(
   return outputLocale === 'zh-TW'
     ? simplifiedCount < 2 || traditionalCount > 0
     : traditionalCount < 2 || simplifiedCount > 0;
-}
-
-export class MeetingAIContractError extends Error {
-  readonly code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH';
-
-  constructor(code: 'OUTPUT_INVALID' | 'OUTPUT_LANGUAGE_MISMATCH' = 'OUTPUT_INVALID') {
-    super(code);
-    this.code = code;
-    this.name = 'MeetingAIContractError';
-  }
 }

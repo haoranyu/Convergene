@@ -23,6 +23,8 @@ export interface MeetingCanvasCommandProbe {
 
 export interface MeetingCanvasBrowserProbe {
   commandLog: MeetingCanvasCommandProbe[];
+  releaseExpansionStorage?: () => void;
+  storageStarted: boolean;
 }
 
 declare global {
@@ -32,7 +34,8 @@ declare global {
 }
 
 const commandLog: MeetingCanvasCommandProbe[] = [];
-window.__convergeneMeetingCanvasProbe = { commandLog };
+const browserProbe: MeetingCanvasBrowserProbe = { commandLog, storageStarted: false };
+window.__convergeneMeetingCanvasProbe = browserProbe;
 
 function success(): Promise<CanvasCommandResult> {
   return Promise.resolve({ ok: true });
@@ -42,7 +45,16 @@ function MeetingCanvasBrowserFixture() {
   const [aggregate, setAggregate] = useState(createMeetingCanvasTestFixture);
   const commands = useMemo<CanvasCommands>(
     () => ({
-      applyExpansion: () => success(),
+      applyExpansion: () => {
+        browserProbe.storageStarted = true;
+        return new Promise<CanvasCommandResult>((resolve) => {
+          browserProbe.releaseExpansionStorage = () => {
+            browserProbe.releaseExpansionStorage = undefined;
+            browserProbe.storageStarted = false;
+            resolve({ ok: true });
+          };
+        });
+      },
       deleteSubtree: (nodeId) => {
         commandLog.push({ name: 'deleteSubtree', nodeId });
         setAggregate((current) => {
@@ -158,7 +170,12 @@ function MeetingCanvasBrowserFixture() {
             expandNode={async (_request: ExpandNodeRequest) => ({
               ok: true,
               value: {
-                output: { children: [] },
+                output: {
+                  children: [
+                    { kind: 'RISK', title: 'A delayed local write' },
+                    { kind: 'RISK', title: 'A second delayed local write' },
+                  ],
+                },
                 requestId: _request.requestId,
                 task: 'expand-node',
               } satisfies ExpandNodeResponse,

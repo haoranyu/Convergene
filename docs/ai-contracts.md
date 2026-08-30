@@ -303,11 +303,23 @@ interface ExpandNodeOutput {
 约束：
 
 - 恰好 2–4 个候选；
+- 每个标题最多 48 个字素；该上限必须直接出现在发送给 Provider 的 JSON Schema 中，不能只依赖返回后的本地 refine；
 - 不返回 parent id、坐标或产出标记；
 - 避免与已有 siblings/children 同义重复；
 - `BRAINSTORM_CONVERGE` 可以返回筛选问题或组合候选，但不能删除已有节点；
 - `RETRO_TURN_INTO_ACTION` 不能虚构负责人和截止日期；
 - 客户端把所有新节点作为选中节点的直接子节点，标记 `source = EXPANSION_AI` 和 `strategyId`。
+
+运行时契约：
+
+- 使用 `fast` role、最多 1,024 output tokens，并在 15 秒取消 Provider 调用；
+- Route 返回不含会议内容的 `Server-Timing: expand;dur=<milliseconds>`，只用于观察整段服务端耗时；
+- 同一节点一次只能有一个 pending expansion；pending 时所有 Strategy action 禁用；
+- pending 立即显示三个与真实节点共享固定几何尺寸的骨架节点，避免 React Flow 在测量前把反馈隐藏；
+- 只有 Provider 输出、locale 和领域约束全部通过后，才在一个 IndexedDB transaction 中写入节点、边和 meeting revision；
+- 等待 Provider 时允许取消；原子 IndexedDB transaction 开始后进入不可取消的短提交阶段，避免界面声称取消但 transaction 已提交；
+- 失败、取消、持久化异常或迟到响应都移除骨架且不写部分图；可恢复失败在原节点附近保留一次明确的重试动作；
+- UUID 由浏览器本地生成，调用原生 `crypto.randomUUID()` 时必须保留其接收者。
 
 ## 8. `classify-note`（ST-02 Stretch）
 

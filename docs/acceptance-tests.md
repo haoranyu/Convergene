@@ -273,13 +273,13 @@ Then 只显示该模式对应的三个 Strategy action，未选中节点不常�
 
 Given 用户打出一张 Strategy  
 When 模型成功返回  
-Then 只新增 2–4 个直接子节点，保存 `source` 和 `strategyId`，不修改已有节点。
+Then 立即显示可见且尺寸稳定的骨架；只新增 2–4 个直接子节点，保存 `source` 和 `strategyId`，不修改已有节点；刷新后新增节点仍存在，默认 Chromium UUID 路径不抛错。
 
 ### AT-062 展开失败
 
-Given 模型超时、取消或 schema 无效  
+Given 模型超时、取消、schema 无效或本机持久化失败
 When 请求结束  
-Then 移除骨架节点、保留原图并提供重试；迟到响应不应用。
+Then 移除骨架节点、保留原图且不产生部分写入；可恢复失败提供重试；取消后的迟到响应不应用，pending 期间不能重复触发。
 
 ### AT-063 随手记即时性
 
