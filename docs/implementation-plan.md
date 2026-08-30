@@ -40,6 +40,12 @@ set/get/续期/delete lifecycle 已通过且清理隔离 key；Dagre/React Flow/
 browser probe 也有可重复证据。映射、延迟样本、测试入口和降级决策见
 [高风险集成验证记录](./integration-validation.md)。
 
+最终 PR #48 已补完此前待测的 `hkg1 + step-3.7-flash + low + streaming JSON Mode`：StepFun
+双语分类均失败，英文和简中展开均 0/3，所有样本返回安全 `PROVIDER_UNAVAILABLE` 且 0 写入。
+因此 #39 不再继续替换 fast preset，而是增加 role-aware capability gate。SiliconFlow
+`fast/grill` 为 live path；历史 StepFun 只保留既有激活会话的 `grill`；两家 `report` 暂不开放。
+这份 capability matrix 是产品流量事实源，preset 和历史最小 probe 不能绕过它。
+
 ### R1：Provider 合约
 
 - 用两个 sponsor Provider 各发送一次最小结构化输出请求；
@@ -47,7 +53,8 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - 选择默认 `fast`、`grill`、`report` 映射；
 - 如果硅基流动某模型不支持结构化输出，将其从默认下拉排除，不改通用接口。
 
-完成门槛：两个 Provider 至少各有一个可通过 Zod 的测试结果；否则明确一个 Provider P0、另一个降级为设置预告。
+完成门槛：至少一个 Provider 的每个开放 role 通过对应产品契约和生产门禁；未通过的
+Provider/role 必须在 capability matrix 中关闭，不能因最小 Zod probe 通过就进入产品流量。
 
 ### R2：Redis 与加密
 
@@ -141,18 +148,24 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 ### P0-08 Provider 配置 UI/API
 
 - status/test/save/delete；
-- 已配置供应商之间显式切换，保存/重配一家不覆盖另一家；
-- StepFun / 硅基流动预设；
-- 硅基流动所有 role 固定使用 `enable_thinking: false`；StepFun fast 使用 3.7、复杂 role 使用 3.5-2603，两种模型都固定使用官方支持的 `reasoning_effort: low`，且两家字段互不发送；
+- SiliconFlow 作为唯一新配置、测试、保存与激活入口；
+- 保存/重配 SiliconFlow 不覆盖历史 StepFun 密文；历史 StepFun 卡片只展示有限能力，不提供新的
+  测试、保存、重配或激活；
+- role-aware capability matrix：SiliconFlow `fast/grill` 可用；只有既有且已激活的 StepFun
+  `grill` 可用；两家 `report` 与 StepFun `fast` 不可用；
+- 硅基流动开放 role 固定使用 `enable_thinking: false`；历史 StepFun `grill` 使用
+  3.5-2603 + `reasoning_effort: low`，且两家字段互不发送；
 - Key password input；
 - 保存后不回显；
-- 认证、权限限制、限流、未知模型和 Redis 错误；只有确认的认证拒绝标记目标供应商需重配。
+- 认证、权限限制、限流、未知模型、Redis 与 capability 错误；只有确认的认证拒绝标记目标供应商
+  需重配，capability 422 不触碰凭证、不调用上游也不自动 fallback。
 
 ### ST-01 高级模型覆盖
 
 基础设置稳定后再实现折叠的三个 model id；时间不足时切掉，不影响 preset。
 
-完成门槛：新浏览器可配置自己的 Key、刷新后继续使用、清除后 AI route 返回 `PROVIDER_NOT_CONFIGURED`；Redis 没有会议内容。
+完成门槛：新浏览器可配置自己的 SiliconFlow Key、刷新后继续使用、清除后 AI route 返回
+`PROVIDER_NOT_CONFIGURED`；历史 StepFun 记录按上述边界保留；Redis 没有会议内容。
 
 ## 7. 首页、导览和创建（6.5–8 小时）
 
@@ -248,7 +261,10 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - 与快速任务固定双候选契约一致的 2 个骨架节点；
 - request id、取消、失败和重试；
 - 绑定安全的浏览器 UUID、固定骨架几何与完整 `try/catch/finally` 清理；
-- `fast` role 的 384-token 调用方预算（StepFun 安全提升至 512）/ 5-second 有界调用、固定 2 个 `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限、安全 `Server-Timing` 和 allowlist 输出失败分型；
+- SiliconFlow `fast` role 的 384-token 调用方预算 / 5-second 有界调用、固定 2 个
+  `{kind,title}` 候选的窄 Provider schema、Provider 可见 48 字符标题上限、安全
+  `Server-Timing` 和 allowlist 输出失败分型；StepFun fast 的 512-token 下限只保留在历史 probe；
+- capability 422 在 Provider 前终止、零写入、零骨架残留且不展示无效重试；
 - 成功事务写图。
 
 ### P0-19 主持人小抄
@@ -362,6 +378,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 ### P0-29 错误与空态
 
 - Provider 未配置/失效；
+- Provider role capability 不可用：HTTP 422、无自动重试、引导显式启用 SiliconFlow；
 - Redis/IndexedDB/模型/Mermaid 失败；
 - loading、取消和重试；
 - reduced motion、键盘焦点。
@@ -375,6 +392,7 @@ browser probe 也有可重复证据。映射、延迟样本、测试入口和降
 - CSP、Cookie 和 Origin 检查；
 - 用全新浏览器跑无 Key 导览；
 - 用真实用户 Key 跑主演示；
+- 确认 SiliconFlow 为 live active Provider；历史 StepFun 只显示有限能力且不能被新建或激活；
 - 清除 Key，确认会议仍在；
 - 导出 JSON 和 Markdown；
 - 记录已知问题和 stretch 完成情况；

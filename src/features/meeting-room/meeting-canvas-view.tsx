@@ -40,7 +40,7 @@ import {
   type ReactFlowInstance,
 } from '@xyflow/react';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -89,6 +89,9 @@ function expansionErrorKey(code: MeetingAIErrorCode | CanvasCommandErrorCode): s
   if (code === 'STALE_WRITE') return 'expansion.errors.stale';
   if (code === 'STORAGE_ERROR') return 'expansion.errors.storage';
   if (code === 'PROVIDER_NOT_CONFIGURED') return 'expansion.errors.notConfigured';
+  if (code === 'PROVIDER_CAPABILITY_UNAVAILABLE') {
+    return 'expansion.errors.capabilityUnavailable';
+  }
   if (code === 'PROVIDER_AUTH_FAILED' || code === 'PROVIDER_CONFIG_INVALID') {
     return 'expansion.errors.reconfigure';
   }
@@ -163,6 +166,7 @@ function CanvasContent({
   expandNode,
   onSelectedNodeChange,
 }: MeetingCanvasViewProps) {
+  const locale = useLocale();
   const t = useTranslations('mindMap');
   const tStrategy = useTranslations('strategy');
   const tQuickNote = useTranslations('mindMap.quickNote');
@@ -373,6 +377,8 @@ function CanvasContent({
   const displayNodes = useMemo<MeetingCanvasNode[]>(() => {
     const mode = aggregate.meeting.mode;
     const strategies = mode === undefined ? [] : strategyIdsForMode[mode];
+    const capabilityBlocked =
+      expansion?.status === 'error' && expansion.errorCode === 'PROVIDER_CAPABILITY_UNAVAILABLE';
     const cardsVisible =
       selectedNode !== undefined && isStructuralEditingAllowed && strategies.length === 3;
     const decorated = nodes.map((node) =>
@@ -386,7 +392,10 @@ function CanvasContent({
                 cancelLabel: t('expansion.cancel'),
                 cards: strategies.map((strategyId) => ({
                   description: tStrategy(`${strategyId}.description`),
-                  disabled: expansion?.status === 'loading' || pendingAction !== undefined,
+                  disabled:
+                    capabilityBlocked ||
+                    expansion?.status === 'loading' ||
+                    pendingAction !== undefined,
                   id: strategyId,
                   label: tStrategy(`${strategyId}.label`),
                   loading:
@@ -396,13 +405,23 @@ function CanvasContent({
                   onActivate: () => void startNodeExpansion(strategyId),
                 })),
                 error:
-                  expansion?.status === 'error' && expansion.nodeId === selectedNode.id
+                  expansion?.status === 'error' &&
+                  (capabilityBlocked || expansion.nodeId === selectedNode.id)
                     ? {
                         code: expansion.errorCode ?? 'UNKNOWN',
                         message: t(expansionErrorKey(expansion.errorCode ?? 'UNKNOWN')),
-                        onRetry: () => void startNodeExpansion(expansion.strategyId),
                         outputFailure: expansion.outputFailure,
-                        retryLabel: t('expansion.retry'),
+                        ...(expansion.errorCode === 'PROVIDER_CAPABILITY_UNAVAILABLE'
+                          ? {
+                              recoveryAction: {
+                                href: `/${locale}/settings/model`,
+                                label: t('expansion.modelSettings'),
+                              },
+                            }
+                          : {
+                              onRetry: () => void startNodeExpansion(expansion.strategyId),
+                              retryLabel: t('expansion.retry'),
+                            }),
                       }
                     : undefined,
                 groupLabel: t('expansion.groupLabel', { node: selectedNode.title }),
@@ -449,6 +468,7 @@ function CanvasContent({
     cancelExpansion,
     expansion,
     isStructuralEditingAllowed,
+    locale,
     nodes,
     pendingAction,
     selectedNode,

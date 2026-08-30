@@ -29,7 +29,7 @@ flowchart LR
     end
 
     Redis[(Upstash Redis)]
-    Provider[StepFun / SiliconFlow]
+    Provider[SiliconFlow live / retained StepFun preparation]
 
     UI -->|AI task + minimum context| API
     API --> Crypto
@@ -393,6 +393,23 @@ const providerPresets = {
 } as const
 ```
 
+Preset 只定义受控 endpoint 和模型映射，不代表对应组合已经获准进入产品流量。运行时能力是另一份
+编译期白名单，并且必须在解密、touch 或 Provider 调用之前按 role 检查：
+
+```ts
+type ProviderModelRole = 'fast' | 'grill' | 'report'
+
+const providerCapabilities = {
+  SILICONFLOW: { fast: 'AVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+  STEPFUN: { fast: 'UNAVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+} as const
+```
+
+SiliconFlow 是当前唯一可新建、测试、保存和激活的 live Provider。历史 StepFun 密文仍保留在原
+v2 槽位中；只有升级前已经激活 StepFun 的会话可继续解析 `grill` role，供既有 Grill/initial-map
+流程使用。公共 test/PUT/PATCH 不再允许新建、重配或激活 StepFun。能力收窄不能删除凭证、改写
+credential health 或把请求静默转发给同一记录中的另一家 Provider。
+
 2026-08-30 的第一轮产品门禁证明，StepFun `step-3.5-flash-2603` 连续 3 次没有产出可用节点，
 SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗时 5,289ms；两者都不能作为
 实时节点展开的 `fast` preset。`step-3.7-flash` 曾在当前 Step Plan 账号通过生产 JSON Mode
@@ -409,7 +426,14 @@ SiliconFlow `deepseek-ai/DeepSeek-V4-Flash` 只有 2/3 成功且成功中位耗�
 追加三次展开均在 5 秒边界返回 `PROVIDER_UNAVAILABLE`；因此该候选被撤回，恢复已有 3/3 可靠性
 证据的 `Qwen/Qwen3.5-4B`，并通过 Redis preload 与部署 region 单独解决固定延迟。
 
-共享 OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`。所有任务使用
+PR #48 最终在 `hkg1` 复测 StepFun `step-3.7-flash + reasoning_effort:low + streaming JSON
+Mode`：英文和简中分类都在 18 秒观察窗内返回 `PROVIDER_UNAVAILABLE`；简中三次展开为
+5,943 / 5,920 / 5,647ms，英文三次为 5,901 / 5,838 / 5,929ms，全部 0 节点写入且骨架归零。
+该精确组合因此不是待优化的 live fast 候选，而是已失败的产品门禁。#39 以 role-aware capability
+gate 收口：StepFun `fast` 明确不可用，SiliconFlow `Qwen/Qwen3.5-4B` 继续作为已经通过双语
+3/3、median ≤3 秒门禁的 live fast path。
+
+共享 OpenAI-compatible adapter 保持 `supportsStructuredOutputs: true`。进入 adapter 的任务使用
 `streamText`，但只在完整对象校验后消费结果。SiliconFlow fast 与复杂 role 使用严格
 `json_schema` 并发送 `enable_thinking: false`；StepFun fast 使用 `json_object` 与完整 Draft-7
 system schema，复杂 role 使用严格 schema；两类请求都发送模型明确支持的
@@ -417,13 +441,15 @@ system schema，复杂 role 使用严格 schema；两类请求都发送模型明
 两家的专属字段不得互相发送。这批交互任务
 需要的是低延迟、可验证的结构化结果，schema 校验、一次有界修复和确定性 fallback 继续承担
 可靠性边界；Provider 输出失败还必须只用固定 allowlist 区分截断、JSON 解析、schema 不匹配、
-内容过滤和上游拒绝，绝不保留原始模型文本。新 fast preset 仍须通过 credential-gated 产品
-Route 与生产浏览器门禁，不能借用历史最小 schema 的样本宣称通过。
+内容过滤和上游拒绝，绝不保留原始模型文本。StepFun fast 协议只保留为历史诊断与回归 fixture，
+runtime capability gate 不允许产品 Route 调用它；未来若要重新开放，必须先提交新的能力变更并
+重跑 credential-gated Route 与生产浏览器门禁，不能借用历史最小 schema 的样本宣称通过。
 
 StepFun 历史 probe 在 128/256 token 时可能在 JSON 发出前耗尽，因此 fast role 的 adapter 保留
 512-token 已验证安全下限；SiliconFlow 非推理 fast role 下限为 384。节点展开调用方声明 384，
-最终 StepFun 请求会安全提升到 512，SiliconFlow 保持 384；其他调用仍使用各自有界预算。独立 probe 继续以
-bounded `streamText` 验证 streaming 能力，产品 fast path 也等待同一流中的完整对象；两者
+若独立 StepFun probe 显式绕过产品能力门禁，请求会安全提升到 512；live SiliconFlow 保持 384，
+其他调用仍使用各自有界预算。独立 probe 继续以 bounded `streamText` 验证 streaming 能力，
+产品 fast path 也等待同一流中的完整对象；两者
 都禁止原始 Provider 错误日志并只返回脱敏分类和 elapsed time。完整证据见
 [高风险集成验证记录](./integration-validation.md)。ST-01 高级设置只覆盖 model id：最大 128
 字符，只允许常见模型 id 字符集；不接受 URL、header 或任意 JSON 参数。基础 P0 只使用 preset。
@@ -440,10 +466,10 @@ PATCH  /api/provider-config
 DELETE /api/provider-config
 ```
 
-- `test` 使用用户提交的 Key 做一次最小调用，不提前持久化；
-- `status` 返回 `activeProvider` 与两个供应商各自的固定掩码、模型和状态；v2 当前 key 只校验 envelope 与 `keyId`，v1/旧 key 迁移才在服务端短暂解密；
-- `PUT` 测试成功后创建/更新对应供应商槽并把它设为当前供应商，不覆盖另一槽；
-- `PATCH` 只接受已经配置且可用的 `activeProvider`，不接收或返回 Key；
+- `test` 只为当前 live Provider SiliconFlow 使用用户提交的 Key 做一次最小调用，不提前持久化；StepFun 在发出上游请求前返回能力错误；
+- `status` 返回 `activeProvider`、两个供应商各自的固定掩码、模型、credential health 和 role capability；v2 当前 key 只校验 envelope 与 `keyId`，v1/旧 key 迁移才在服务端短暂解密；
+- `PUT` 测试成功后创建/更新 SiliconFlow 槽并把它设为当前供应商，不覆盖历史 StepFun 槽；
+- `PATCH` 只接受已经配置且可用的 SiliconFlow `activeProvider`，不接收或返回 Key；StepFun 激活请求返回确定性 HTTP 422；
 - `DELETE` 幂等删除 Redis 记录并清除 Cookie。
 
 ### AI 任务
@@ -464,7 +490,9 @@ POST /api/ai/report
 ```text
 验证 Origin / Content-Type / body 大小
 → 读取匿名会话
-→ Redis 获取并解密 Provider 配置
+→ Redis 获取 Provider 配置并确认当前选择仍有效
+→ 按任务 role 检查 Provider capability
+→ 解密当前 Provider 凭证并续期
 → Zod 验证 task input
 → 按任务选择 model
 → 调用 OpenAI-compatible provider
@@ -532,8 +560,9 @@ renderFallbackTables(facts, locale): MarkdownSection[]
 
 生产实现位于 `src/modules/provider-config/`：Cookie 使用 32-byte base64url 随机 id，Redis key
 只含其 SHA-256；v2 record 分别保存两家供应商的 AES-256-GCM envelope，并独立保存
-`activeProvider`。PUT 在每次写入前重新执行最小结构化 Provider 调用，失败不覆盖任一旧凭证；
-PATCH 只切换已配置且可用的供应商。成功读取会原子更新当前供应商的 `lastUsedAt` 和 Redis 的
+`activeProvider`。PUT 在每次 SiliconFlow 写入前重新执行最小结构化 Provider 调用，失败不覆盖
+任一旧凭证；历史 StepFun 槽继续读取和迁移，但 public test/PUT/PATCH 均不能新建、重配或激活
+它。成功解析受支持 role 后才原子更新当前供应商的 `lastUsedAt` 和 Redis 的
 30 天 TTL，并续期 Cookie。所有整记录修改使用 revision compare-and-set；发生并发冲突时重读并
 合并重试，不以最后写入覆盖另一供应商。当前 key 的正常 status 不解密；v1 或已知旧 key 只在迁移路径短暂解密
 并用当前 key 重加密。限流只在 Cookie 对应的 Redis record 存在时切换到 session bucket，否则继续
@@ -543,6 +572,10 @@ PATCH 只切换已配置且可用的供应商。成功读取会原子更新当�
 AES 解密和 credential health 校验，再用独立 touch Lua 检查 active provider 与 credential revision
 并续期；preload 缺失、无效或在并发切换后变旧时回退到原有 GET/CAS 重读。因此正常热路径由
 4 次串行 Redis 往返降为 2 次，同时不让伪造 Cookie 获得 session bucket，也不把会议内容写入 Redis。
+配置解析以 `(provider, role)` 为能力键；若 preload 仍指向历史 StepFun、但并发中的当前记录已经
+显式切到 SiliconFlow，service 必须丢弃旧 preload 并重读，不能返回伪能力错误。确认 capability
+不可用时返回 `PROVIDER_CAPABILITY_UNAVAILABLE`，不解密、不 touch、不调用 Provider，也不读取
+另一家的凭证作为 fallback。
 `src/modules/meeting-ai/provider-adapter.ts` 是 Provider endpoint、model role、JSON
 Schema、超时/取消及错误归一化的唯一共享边界；Route 统一通过配置感知的调用封装，把 401 只归因
 到本次请求解析出的凭证 revision。
@@ -563,6 +596,10 @@ Schema、超时/取消及错误归一化的唯一共享边界；Route 统一通�
 - `classify-meeting`、`expand-node` 使用 fast 模型；实现 ST-02 时，`classify-note` 也使用 fast 模型；
 - `grill` 使用质量优先模型；
 - `initial-map` 和 `report` 使用结构化输出稳定的模型；
+- 每个任务先检查当前 Provider 对应 role 的 runtime capability；能力不可用返回确定性 HTTP 422，
+  不作为可重试 5xx，也不自动切换 Provider；
+- 当前 live path 为 SiliconFlow 的 `fast`/`grill`。既有且仍激活的 StepFun 只保留 `grill`
+  兼容路径；两家的 `report` 都不可用，报告继续使用确定性事实稿；
 - 若三个 role 指向同一模型，接口保持不变；
 - 初始图 schema 失败后最多进行一次修复请求；
 - 其他任务不自动多次消耗用户额度，错误后由用户重试；
@@ -718,7 +755,9 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - 模型费用由用户自己的 sponsor Key 承担；
 - 不依赖 Vercel Password Protection；应用公开访问，AI 调用仍要求用户配置 Key。
 
-赞助商没有提供可替代 Vercel 的 Next.js 托管权益。StepFun 为主力模型预设，硅基流动为第二预设；VibeToken 和 AI Ping 可用于开发期横评，不进入 P0 产品配置。
+赞助商没有提供可替代 Vercel 的 Next.js 托管权益。SiliconFlow 是当前 P0 live Provider；StepFun
+只保留既有凭证的 `grill` 兼容能力，不开放新的配置或激活。VibeToken 和 AI Ping 可用于开发期
+横评，不进入 P0 产品配置。
 
 ## 18. 工程验证清单
 
@@ -727,10 +766,12 @@ NEXT_PUBLIC_APP_URL=https://your-project.vercel.app
 - [x] 创建 Upstash Redis Free 实例，并用临时注入的服务端环境变量验证加密 set/get/续期/delete；
 - [x] 验证 AES-GCM round-trip、错误密钥和被修改 ciphertext/auth tag 的失败行为；
 - [x] 2026-08-29 用 sponsor Key 验证当时两个 Provider 候选模型的 Base URL、streaming、最小结构化输出、timeout 和错误格式；历史六个 live case 均通过；
-- [ ] 用 sponsor Key 分别重跑 StepFun `step-3.7-flash` 的 fast minimal/classification/expansion、
-  `step-3.5-flash-2603` 的 Grill/initial-map 复杂契约，以及 SiliconFlow `Qwen/Qwen3.5-4B`
-  的 fast minimal/classification/expansion；每家英文/简中分类必须 2/2 通过，每家英文与简中
-  expansion 都必须 3/3 成功且中位数不超过 3 秒；
+- [x] SiliconFlow `Qwen/Qwen3.5-4B` 已在 `hkg1` 通过英文/简中分类，以及每种 locale 展开
+  3/3、median ≤3 秒的产品门禁；
+- [x] StepFun `step-3.7-flash + low` 已在 PR #48 完成最终生产复测并失败：双语分类失败、双语
+  展开均 0/3；runtime 已将其 `fast` capability 设为 `UNAVAILABLE`；
+- [ ] 若未来要重新开放 StepFun 新配置或更多 role，先重跑对应 Grill/initial-map 或新 fast/report
+  契约，再通过代码审查显式修改 capability matrix；历史凭证保留不等于能力通过；
 - [ ] 验证 Hobby Function 最大时长覆盖最慢报告请求；
 - [x] 在 test-only Vite page 用真实 Chromium 验证 12 节点长文本 DOM 尺寸/换行、Dagre LR、subtree bounds/viewport 和 React Flow instance 显式 `fitView`；
 - [x] 验证 Mermaid flowchart、受控 period label 的 timeline 和 pie；时钟冒号 timeline 降级为 flowchart/table；

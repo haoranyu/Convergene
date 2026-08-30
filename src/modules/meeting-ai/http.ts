@@ -20,6 +20,7 @@ function statusForCode(code: MeetingAIErrorCode): number {
       return 401;
     case 'OUTPUT_INVALID':
     case 'OUTPUT_LANGUAGE_MISMATCH':
+    case 'PROVIDER_CAPABILITY_UNAVAILABLE':
     case 'PROVIDER_CONFIG_INVALID':
     case 'PROVIDER_MODEL_NOT_FOUND':
       return 422;

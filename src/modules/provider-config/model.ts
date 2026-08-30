@@ -28,6 +28,32 @@ export const providerModelMappingSchema = z
 
 export type ProviderModelMapping = z.infer<typeof providerModelMappingSchema>;
 
+export type ProviderModelRole = keyof ProviderModelMapping;
+
+export const providerCapabilityStates = ['AVAILABLE', 'UNAVAILABLE'] as const;
+export const providerCapabilityStateSchema = z.enum(providerCapabilityStates);
+
+export type ProviderCapabilityState = z.infer<typeof providerCapabilityStateSchema>;
+
+export const providerRoleCapabilitiesSchema = z
+  .object({
+    fast: providerCapabilityStateSchema,
+    grill: providerCapabilityStateSchema,
+    report: providerCapabilityStateSchema,
+  })
+  .strict();
+
+export type ProviderRoleCapabilities = z.infer<typeof providerRoleCapabilitiesSchema>;
+
+export const providerCapabilities = {
+  SILICONFLOW: { fast: 'AVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+  STEPFUN: { fast: 'UNAVAILABLE', grill: 'AVAILABLE', report: 'UNAVAILABLE' },
+} as const satisfies Record<ProviderId, ProviderRoleCapabilities>;
+
+export function providerSupportsRole(provider: ProviderId, role: ProviderModelRole): boolean {
+  return providerCapabilities[provider][role] === 'AVAILABLE';
+}
+
 export const providerModelPresets = {
   SILICONFLOW: {
     fast: 'Qwen/Qwen3.5-4B',
@@ -42,6 +68,7 @@ export const providerModelPresets = {
 } as const satisfies Record<ProviderId, ProviderModelMapping>;
 
 export interface ProviderCredentialSummary {
+  capabilities: ProviderRoleCapabilities;
   createdAt: string;
   keyHint?: string;
   lastUsedAt: string;
@@ -66,6 +93,7 @@ export type ProviderConfigErrorCode =
   | 'ORIGIN_INVALID'
   | 'PROVIDER_AUTH_FAILED'
   | 'PROVIDER_ACCESS_RESTRICTED'
+  | 'PROVIDER_CAPABILITY_UNAVAILABLE'
   | 'PROVIDER_CONFIG_INVALID'
   | 'PROVIDER_CONFIG_UNAVAILABLE'
   | 'PROVIDER_MODEL_NOT_FOUND'
@@ -78,6 +106,7 @@ export const providerConfigErrorCodeSchema = z.enum([
   'ORIGIN_INVALID',
   'PROVIDER_AUTH_FAILED',
   'PROVIDER_ACCESS_RESTRICTED',
+  'PROVIDER_CAPABILITY_UNAVAILABLE',
   'PROVIDER_CONFIG_INVALID',
   'PROVIDER_CONFIG_UNAVAILABLE',
   'PROVIDER_MODEL_NOT_FOUND',
@@ -96,6 +125,7 @@ export const providerConfigSummarySchema = z.discriminatedUnion('configured', [
         .object({
           SILICONFLOW: z
             .object({
+              capabilities: providerRoleCapabilitiesSchema,
               createdAt: z.iso.datetime(),
               keyHint: z.literal('••••••••').optional(),
               lastUsedAt: z.iso.datetime(),
@@ -107,6 +137,7 @@ export const providerConfigSummarySchema = z.discriminatedUnion('configured', [
             .nullable(),
           STEPFUN: z
             .object({
+              capabilities: providerRoleCapabilitiesSchema,
               createdAt: z.iso.datetime(),
               keyHint: z.literal('••••••••').optional(),
               lastUsedAt: z.iso.datetime(),

@@ -35,22 +35,15 @@ import {
 } from '@/modules/meeting-ai/expand-node';
 import { providerPresets, providerSessionCookieName } from '@/modules/provider-config/server';
 
-const liveProviderCases: Array<{
+const liveProviderCase: {
   apiKeyEnvironmentVariable: string;
   modelEnvironmentVariable: string;
   provider: ProviderId;
-}> = [
-  {
-    apiKeyEnvironmentVariable: 'STEPFUN_API_KEY',
-    modelEnvironmentVariable: 'STEPFUN_VALIDATION_MODEL',
-    provider: 'STEPFUN',
-  },
-  {
-    apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
-    modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
-    provider: 'SILICONFLOW',
-  },
-];
+} = {
+  apiKeyEnvironmentVariable: 'SILICONFLOW_API_KEY',
+  modelEnvironmentVariable: 'SILICONFLOW_VALIDATION_MODEL',
+  provider: 'SILICONFLOW',
+};
 
 const testOrigin = 'http://localhost';
 const encryptionSecret = 'BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc=';
@@ -251,70 +244,85 @@ afterEach(() => {
 });
 
 describe('live fast-role route validation', () => {
-  for (const [providerIndex, probeCase] of liveProviderCases.entries()) {
-    const apiKey = process.env[probeCase.apiKeyEnvironmentVariable];
-    const modelId = process.env[probeCase.modelEnvironmentVariable];
-    const liveTest = apiKey && modelId ? it : it.skip;
+  it('rejects public StepFun configuration before any provider request', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch');
+    try {
+      const response = await saveProviderConfig(
+        request('/api/provider-config', 'PUT', {
+          apiKey: 'test-only-stepfun-key',
+          provider: 'STEPFUN',
+        }),
+      );
 
-    liveTest(
-      `${probeCase.provider} completes classifications and three expansions per locale with the production fast role`,
-      async () => {
-        expect(modelId).toBe(providerPresets[probeCase.provider].models.fast);
-        await configureProvider(probeCase.provider, apiKey!);
-        const classifications: ClassificationRouteSample[] = [];
-        const samples: ExpansionRouteSample[] = [];
+      expect(response.status).toBe(422);
+      await expect(response.json()).resolves.toEqual({
+        error: { code: 'PROVIDER_CAPABILITY_UNAVAILABLE' },
+        ok: false,
+      });
+      expect(response.headers.get('cache-control')).toBe('no-store');
+      expect(cookieState.get(providerSessionCookieName)).toBeUndefined();
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      fetch.mockRestore();
+    }
+  });
 
-        try {
-          classifications.push(
-            await runClassificationRoute(
-              'en-US',
-              `10000000-0000-4000-8${providerIndex}00-000000000001`,
-            ),
-            await runClassificationRoute(
-              'zh-CN',
-              `10000000-0000-4000-8${providerIndex}00-000000000002`,
-            ),
-          );
-          for (const [localeIndex, locale] of (['en-US', 'zh-CN'] as const).entries()) {
-            for (const sample of [1, 2, 3]) {
-              samples.push(
-                await runExpansionRoute(
-                  locale,
-                  `00000000-0000-4000-8${providerIndex}${localeIndex}0-${String(sample).padStart(12, '0')}`,
-                  sample,
-                ),
-              );
-            }
-          }
-        } finally {
-          await clearProvider();
-        }
+  const apiKey = process.env[liveProviderCase.apiKeyEnvironmentVariable];
+  const modelId = process.env[liveProviderCase.modelEnvironmentVariable];
+  const liveTest = apiKey && modelId ? it : it.skip;
 
-        expect(cookieState.get(providerSessionCookieName)).toBeUndefined();
-        expect(classifications).toEqual([
-          { locale: 'en-US', ok: true, status: 200 },
-          { locale: 'zh-CN', ok: true, status: 200 },
-        ]);
-        expect(samples).toEqual(
-          (['en-US', 'zh-CN'] as const).flatMap((locale) =>
-            [1, 2, 3].map((sample) => ({
-              durationMs: expect.any(Number),
-              locale,
-              ok: true,
-              sample,
-              status: 200,
-            })),
-          ),
+  liveTest(
+    'SILICONFLOW completes classifications and three expansions per locale with the production fast role',
+    async () => {
+      expect(modelId).toBe(providerPresets.SILICONFLOW.models.fast);
+      await configureProvider('SILICONFLOW', apiKey!);
+      const classifications: ClassificationRouteSample[] = [];
+      const samples: ExpansionRouteSample[] = [];
+
+      try {
+        classifications.push(
+          await runClassificationRoute('en-US', '10000000-0000-4000-8000-000000000001'),
+          await runClassificationRoute('zh-CN', '10000000-0000-4000-8000-000000000002'),
         );
-        for (const locale of ['en-US', 'zh-CN'] as const) {
-          const medianDurationMs = samples
-            .filter((sample) => sample.locale === locale)
-            .map(({ durationMs }) => durationMs)
-            .sort((left, right) => left - right)[1]!;
-          expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
+        for (const [localeIndex, locale] of (['en-US', 'zh-CN'] as const).entries()) {
+          for (const sample of [1, 2, 3]) {
+            samples.push(
+              await runExpansionRoute(
+                locale,
+                `00000000-0000-4000-80${localeIndex}0-${String(sample).padStart(12, '0')}`,
+                sample,
+              ),
+            );
+          }
         }
-      },
-      80_000,
-    );
-  }
+      } finally {
+        await clearProvider();
+      }
+
+      expect(cookieState.get(providerSessionCookieName)).toBeUndefined();
+      expect(classifications).toEqual([
+        { locale: 'en-US', ok: true, status: 200 },
+        { locale: 'zh-CN', ok: true, status: 200 },
+      ]);
+      expect(samples).toEqual(
+        (['en-US', 'zh-CN'] as const).flatMap((locale) =>
+          [1, 2, 3].map((sample) => ({
+            durationMs: expect.any(Number),
+            locale,
+            ok: true,
+            sample,
+            status: 200,
+          })),
+        ),
+      );
+      for (const locale of ['en-US', 'zh-CN'] as const) {
+        const medianDurationMs = samples
+          .filter((sample) => sample.locale === locale)
+          .map(({ durationMs }) => durationMs)
+          .sort((left, right) => left - right)[1]!;
+        expect(medianDurationMs).toBeLessThanOrEqual(expansionMedianTargetMs);
+      }
+    },
+    80_000,
+  );
 });

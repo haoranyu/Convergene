@@ -28,14 +28,13 @@ export async function POST(request: Request): Promise<Response> {
     );
     const { service, store } = await createProviderConfigRuntime();
     await enforceProviderConfigRateLimit(request, store, 12, 60, 'initial-map');
-    const callProvider = await resolveConfiguredProviderCaller(service);
+    const callProvider = await resolveConfiguredProviderCaller(service, 'grill');
     const output = await runReliableInitialMapCall({
       callProvider: (prompt) =>
         callProvider({
           abortSignal: request.signal,
           maxOutputTokens: 8_192,
           prompt,
-          role: 'grill',
           schema: providerInitialMapOutputSchema,
           schemaName: 'InitialMapContent',
           timeoutMs: 60_000,

@@ -33,7 +33,6 @@ describe('runExpandNodeProviderTask', () => {
     expect(callProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 384,
-        role: 'fast',
         schema: expandNodeProviderOutputSchema,
         schemaName: 'ExpandNodeOutput',
         timeoutMs: 5_000,

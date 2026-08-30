@@ -6,22 +6,27 @@ const notConfigured = { ok: true, value: { configured: false, state: 'NOT_CONFIG
 const available = {
   ok: true,
   value: {
-    activeProvider: 'STEPFUN',
+    activeProvider: 'SILICONFLOW',
     configured: true,
     providers: {
-      SILICONFLOW: null,
-      STEPFUN: {
+      SILICONFLOW: {
+        capabilities: {
+          fast: 'AVAILABLE',
+          grill: 'AVAILABLE',
+          report: 'UNAVAILABLE',
+        },
         createdAt: '2026-08-29T00:00:00.000Z',
         keyHint: '••••••••',
         lastUsedAt: '2026-08-29T00:00:00.000Z',
         models: {
-          fast: 'step-3.7-flash',
-          grill: 'step-3.5-flash-2603',
-          report: 'step-3.5-flash-2603',
+          fast: 'Qwen/Qwen3.5-4B',
+          grill: 'deepseek-ai/DeepSeek-V4-Flash',
+          report: 'deepseek-ai/DeepSeek-V4-Flash',
         },
-        provider: 'STEPFUN',
+        provider: 'SILICONFLOW',
         state: 'AVAILABLE',
       },
+      STEPFUN: null,
     },
   },
 } as const;
@@ -392,8 +397,8 @@ test('exports and clears meetings without deleting provider configuration', asyn
   expect(path).toBeTruthy();
   const exported = JSON.parse(await readFile(path!, 'utf8')) as Record<string, unknown>;
   expect(exported).toMatchObject({ format: 'convergene-export', version: 1 });
-  expect(JSON.stringify(exported)).not.toContain('step-3.7-flash');
-  expect(JSON.stringify(exported)).not.toContain('step-3.5-flash-2603');
+  expect(JSON.stringify(exported)).not.toContain('Qwen/Qwen3.5-4B');
+  expect(JSON.stringify(exported)).not.toContain('deepseek-ai/DeepSeek-V4-Flash');
   expect(JSON.stringify(exported).toLowerCase()).not.toContain('apikey');
 
   await page.getByRole('button', { name: 'Clear local meetings' }).click();
@@ -480,8 +485,8 @@ test('preserves query state when switching locale and flags model reconfiguratio
           ...available.value,
           providers: {
             ...available.value.providers,
-            STEPFUN: {
-              ...available.value.providers.STEPFUN,
+            SILICONFLOW: {
+              ...available.value.providers.SILICONFLOW,
               state: 'NEEDS_RECONFIGURATION',
             },
           },

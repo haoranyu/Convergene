@@ -41,14 +41,14 @@ Then 打开配置引导，而不是显示通用 500 错误。
 
 ### AT-011 配置成功
 
-Given 用户选择白名单 Provider 并输入有效 Key  
-When 测试连接并保存  
+Given 用户为当前 live Provider SiliconFlow 输入有效 Key \
+When 测试连接并保存 \
 Then 返回成功、设置匿名 HttpOnly Cookie、Redis 存在加密记录，响应和页面不回显原始 Key。
 
 ### AT-012 配置失败不保存
 
-Given Key 无效、模型不存在或 Provider 限流  
-When 测试连接  
+Given SiliconFlow Key 无效、模型不存在或 Provider 限流 \
+When 测试连接 \
 Then 显示可区分错误，且不创建/覆盖有效 Redis 配置。
 
 ### AT-013 清除配置
@@ -75,17 +75,18 @@ Given 用户展开高级设置
 When 输入符合白名单格式的模型 ID 并测试  
 Then 只覆盖对应任务的模型映射，不允许修改 Base URL；隐藏高级设置时默认 preset 仍可直接使用。
 
-### AT-017 双供应商保存与切换
+### AT-017 历史 StepFun 保留与 SiliconFlow 切换
 
-Given 同一匿名会话依次保存 StepFun 与硅基流动（两种保存顺序都覆盖）
-When 刷新并在两家已配置供应商之间反复切换
-Then 两个状态与 `activeProvider` 均恢复，切换不要求重新输入 Key，也不自动发送 AI 请求。
+Given 升级前的匿名会话已有 StepFun 密文，随后保存 SiliconFlow \
+When 刷新、重新配置 SiliconFlow 并显式把它设为当前 Provider \
+Then 两个凭证槽与各自 capability 都恢复；StepFun 密文和 `createdAt` 保持不变，但界面不提供新的
+StepFun 测试、保存、重配或激活入口。
 
 ### AT-018 单供应商更新隔离
 
-Given 两家供应商均已配置
-When 一家的连接测试失败或用户成功重新配置它
-Then 失败不覆盖任何凭证；成功只替换目标凭证，另一家的密文与 `createdAt` 不变。
+Given 历史 StepFun 与 SiliconFlow 均有凭证槽 \
+When SiliconFlow 连接测试失败或用户成功重新配置它 \
+Then 失败不覆盖任何凭证；成功只替换 SiliconFlow，StepFun 的密文与 `createdAt` 不变。
 
 ### AT-019 加密记录迁移与轮换
 
@@ -95,9 +96,10 @@ Then v1 无需用户输入即迁移；已知旧 key 在服务端重加密为当�
 
 ### AT-01A 供应商失败隔离
 
-Given 两家供应商均已配置
-When 当前供应商返回确认的 401 认证拒绝
-Then 只标记当前供应商需要重配，另一家保持可选；通用 403、429、timeout 或 5xx 不改变任一凭证状态，也不打开重配门禁。
+Given 历史 StepFun 与 SiliconFlow 均有凭证槽且 SiliconFlow 为当前 Provider \
+When SiliconFlow 返回确认的 401 认证拒绝 \
+Then 只标记 SiliconFlow 需要重配；StepFun 凭证健康保持不变，但不能因此成为 live fallback。通用
+403、429、timeout 或 5xx 不改变任一凭证状态，也不打开重配门禁。
 
 ### AT-01B 来源隔离
 
@@ -107,15 +109,28 @@ Then host-only 匿名 Cookie 与模型配置彼此隔离，界面/文档不得�
 
 ### AT-01C 并发写入与迟到认证失败
 
-Given 同一匿名会话并发保存两家供应商，或旧凭证的 AI 请求仍在进行时用户替换了该凭证
-When 写入发生竞争，或旧请求随后返回确认的 401
-Then 两家保存结果都保留；迟到 401 只匹配旧凭证 revision，不把替换后的新凭证标为需重配。
+Given 同一匿名会话仍保存历史 StepFun，或旧 SiliconFlow 凭证的 AI 请求仍在进行时用户替换了它 \
+When SiliconFlow 写入发生竞争，或旧请求随后返回确认的 401 \
+Then StepFun 槽不会丢失；迟到 401 只匹配旧 SiliconFlow credential revision，不把替换后的新
+凭证或历史 StepFun 标为需重配。
 
 ### AT-01D Provider 请求策略
 
-Given 用户选择硅基流动或 StepFun
-When 测试连接或发起任一产品结构化 AI 调用
-Then 硅基流动所有 role 显式包含 `enable_thinking: false`，且 fast 使用流式严格 `json_schema`；StepFun fast 使用官方 Step Plan 支持的 `step-3.7-flash + reasoning_effort: low`、流式 `json_object` 与完整 system schema，复杂 role 使用 `step-3.5-flash-2603 + reasoning_effort: low` 与流式严格 JSON Schema；两家字段互不泄漏，所有任务仍保留本地 Zod、token、取消、超时和安全错误归一化策略。
+Given SiliconFlow 通过 capability gate，或升级前已激活 StepFun 且请求 `grill` \
+When 发起获准的产品结构化 AI 调用 \
+Then SiliconFlow 的 `fast`/`grill` 显式包含 `enable_thinking: false` 并使用流式严格
+`json_schema`；历史 StepFun `grill` 使用 `step-3.5-flash-2603 + reasoning_effort: low` 与流式
+严格 JSON Schema。两家字段互不泄漏，所有任务仍保留本地 Zod、token、取消、超时和安全错误
+归一化策略。
+
+### AT-01E Provider role capability
+
+Given capability matrix 为 SiliconFlow `fast/grill = AVAILABLE`、StepFun
+`grill = AVAILABLE`，且两家 `report` 与 StepFun `fast` 为 `UNAVAILABLE` \
+When 公共配置接口尝试 test/save/activate StepFun，或当前 StepFun 请求 `fast/report` \
+Then 返回稳定 `PROVIDER_CAPABILITY_UNAVAILABLE` 与 HTTP 422，且不调用测试 Provider、不写配置、
+不解密或 touch 凭证、不调用任务 Provider，也不自动尝试 SiliconFlow。既有 StepFun 密文保留；
+用户显式激活 SiliconFlow 后，新 `fast/grill` 请求才可执行。
 
 ## 4. 创建与剧本
 
@@ -280,6 +295,9 @@ Then 立即显示 2 个可见且尺寸稳定的骨架；当前快速任务新增
 Given 模型在 5 秒边界内未完成、请求取消、schema 无效或本机持久化失败
 When 请求结束  
 Then 移除骨架节点、保留原图且不产生部分写入；可恢复失败提供重试；Provider 输出错误只暴露固定安全分类，不包含模型正文或原始响应；取消后的迟到响应不应用，pending 期间不能重复触发。
+
+若错误为 `PROVIDER_CAPABILITY_UNAVAILABLE`，则不显示会再次得到同一 422 的重试操作，而是提供
+进入模型设置的明确路径；其他可恢复错误仍保留重试。
 
 ### AT-063 随手记即时性
 
@@ -530,8 +548,8 @@ Then 操作不依赖完整画布或 hover，写入后仍通过树不变量校验
 | 场景 | Chrome 桌面 | Safari/Edge 桌面 | Chrome 手机模拟 |
 |---|---:|---:|---:|
 | 无 Key 导览 | 必须 | 至少一项 | 必须 |
-| 配置 StepFun | 必须 | 冒烟 | 不要求完整 |
-| 配置硅基流动 | 必须 | 不要求 | 不要求 |
+| 配置 SiliconFlow | 必须 | 冒烟 | 不要求完整 |
+| 历史 StepFun 有限能力与 422 降级 | 必须 | 不要求 | 不要求 |
 | 简中完整主路径 | 必须 | 冒烟 | 轻量路径 |
 | 繁中路由/Grill/报告 | 必须 | 不要求 | 不要求 |
 | 英文长布局/完整报告 | 必须 | 冒烟 | 报告阅读 |
@@ -550,5 +568,7 @@ Then 操作不依赖完整画布或 hover，写入后仍通过树不变量校验
 - 报告在模型失败时完全不可用；
 - 任何一种 locale 无法完成核心路径；
 - 导览消耗真实模型 Key或污染真实会议；
+- 未通过 role capability 的 Provider 仍可被新建、激活或收到产品请求，或能力错误触发静默
+  fallback；
 - 时间或成本由模型计算；
 - 结束会议无需用户确认。

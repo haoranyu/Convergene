@@ -46,9 +46,10 @@ export interface MeetingCanvasNodeData extends Record<string, unknown> {
     error?: {
       code: CanvasCommandErrorCode | MeetingAIErrorCode;
       message: string;
-      onRetry: () => void;
+      onRetry?: () => void;
       outputFailure?: ProviderOutputFailure;
-      retryLabel: string;
+      recoveryAction?: { href: string; label: string };
+      retryLabel?: string;
     };
     groupLabel: string;
     onCancel: () => void;
@@ -140,9 +141,19 @@ export function MeetingNode({ data, selected }: NodeProps<MeetingCanvasNode>) {
                 role="alert"
               >
                 <span>{data.assistance.error.message}</span>
-                <Button onClick={data.assistance.error.onRetry} size="mini" type="text">
-                  {data.assistance.error.retryLabel}
-                </Button>
+                {data.assistance.error.onRetry && data.assistance.error.retryLabel ? (
+                  <Button onClick={data.assistance.error.onRetry} size="mini" type="text">
+                    {data.assistance.error.retryLabel}
+                  </Button>
+                ) : null}
+                {data.assistance.error.recoveryAction ? (
+                  <a
+                    className={styles.strategyErrorAction}
+                    href={data.assistance.error.recoveryAction.href}
+                  >
+                    {data.assistance.error.recoveryAction.label}
+                  </a>
+                ) : null}
               </div>
             ) : null}
           </div>

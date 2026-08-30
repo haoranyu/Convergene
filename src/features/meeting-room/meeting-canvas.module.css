@@ -193,6 +193,23 @@
   margin-top: var(--space-2);
 }
 
+.strategyErrorAction {
+  align-items: center;
+  border-radius: var(--radius-sm);
+  color: var(--color-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-weight: 600;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px;
+  text-decoration: none;
+}
+
+.strategyErrorAction:hover {
+  background: var(--color-primary-subtle);
+}
+
 .skeletonNode {
   animation: pulse 1.2s ease-in-out infinite;
   background: var(--color-surface);

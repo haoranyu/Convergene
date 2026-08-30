@@ -288,8 +288,9 @@
         "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
         "OUTPUT_INVALID": "The model returned an unusable recommendation. Retry once or choose a script manually.",
         "OUTPUT_LANGUAGE_MISMATCH": "The recommendation used the wrong language. Retry or choose a script manually; your input is unchanged.",
-        "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. The saved key is unchanged; retry later or use another configured provider.",
+        "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. The saved key is unchanged; retry later or review model settings.",
         "PROVIDER_AUTH_FAILED": "The provider rejected the saved key. Reconnect it, then retry.",
+        "PROVIDER_CAPABILITY_UNAVAILABLE": "This provider is not enabled for classification. Switch to SiliconFlow; your input is unchanged.",
         "PROVIDER_CONFIG_INVALID": "The saved model configuration can no longer be used. Replace it, then retry.",
         "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your form is still here; retry later or choose manually.",
         "PROVIDER_MODEL_NOT_FOUND": "The approved model is unavailable for this account. Check model settings or choose manually.",
@@ -475,8 +476,9 @@
       "OUTPUT_INVALID": "The model response did not pass validation. Your saved work is unchanged.",
       "OUTPUT_LANGUAGE_MISMATCH": "The model answered in the wrong language. Try again.",
       "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
-      "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. Your saved key is unchanged; retry later or switch providers.",
+      "PROVIDER_ACCESS_RESTRICTED": "The provider restricted this request. Your saved key is unchanged; retry later or review model settings.",
       "PROVIDER_AUTH_FAILED": "The model key was rejected. Reconnect the provider to continue.",
+      "PROVIDER_CAPABILITY_UNAVAILABLE": "This provider is not enabled for this AI task. Switch to SiliconFlow; your saved work is unchanged.",
       "PROVIDER_CONFIG_INVALID": "The saved model configuration needs to be replaced.",
       "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration is temporarily unavailable. Local meeting data is safe.",
       "PROVIDER_MODEL_NOT_FOUND": "The configured model is unavailable for this account.",
@@ -631,12 +633,14 @@
       "groupLabel": "AI suggestions for {node}",
       "cancel": "Cancel",
       "retry": "Retry",
+      "modelSettings": "Open model settings",
       "loading": "Generating suggestions",
       "saved": "Suggestions added to this browser",
       "errors": {
         "stale": "This meeting changed. Nothing was added; try again.",
         "storage": "Could not save suggestions in this browser.",
         "notConfigured": "Connect a model to use AI suggestions.",
+        "capabilityUnavailable": "This provider is not enabled for live suggestions. Switch to SiliconFlow; your meeting is unchanged.",
         "reconfigure": "Reconnect your model, then try again.",
         "rateLimited": "The model is limiting requests. Try again shortly.",
         "invalidOutput": "The model returned unusable suggestions. Try again.",
@@ -817,6 +821,10 @@
       "select": "Use {provider}",
       "test": "Test connection"
     },
+    "capabilities": {
+      "available": "Available",
+      "unavailable": "Not enabled"
+    },
     "delete": {
       "content": "This removes the encrypted model configuration and anonymous session. Meetings saved in this browser stay untouched.",
       "title": "Clear the model configuration?"
@@ -830,12 +838,14 @@
       "ORIGIN_INVALID": "This request could not be verified. Reload Convergene and try again.",
       "PROVIDER_ACCESS_RESTRICTED": "The provider denied access because of an account or model restriction. The saved key was not marked invalid.",
       "PROVIDER_AUTH_FAILED": "Authentication failed. Check the API key and try again.",
+      "PROVIDER_CAPABILITY_UNAVAILABLE": "This provider is not enabled for live AI. Switch to SiliconFlow; the saved key is unchanged.",
       "PROVIDER_CONFIG_INVALID": "The saved configuration can no longer be used. Enter the key again.",
       "PROVIDER_CONFIG_UNAVAILABLE": "Model configuration storage is temporarily unavailable. Your local meetings are still safe.",
-      "PROVIDER_MODEL_NOT_FOUND": "The approved model is unavailable for this account. Check the provider account or try the other provider.",
+      "PROVIDER_MODEL_NOT_FOUND": "The approved model is unavailable for this account. Check the SiliconFlow account and model access.",
       "PROVIDER_RATE_LIMITED": "The provider is limiting requests. Wait a moment, then test again.",
       "PROVIDER_UNAVAILABLE": "The provider could not be reached. Check the connection and try again.",
-      "RATE_LIMITED": "Too many configuration attempts. Wait a minute, then try again."
+      "RATE_LIMITED": "Too many configuration attempts. Wait a minute, then try again.",
+      "RETAINED_STEPFUN_UNAVAILABLE": "The historical StepFun key cannot be used or reconnected. Connect or switch to SiliconFlow."
     },
     "feedback": {
       "deleteSuccess": "Model configuration cleared. Local meetings were not changed.",
@@ -860,14 +870,14 @@
       "grill": "Grill",
       "presetTitle": "Approved model preset",
       "report": "Reports",
-      "title": "Active models"
+      "title": "Role capabilities"
     },
     "page": {
       "back": "Back to meetings",
       "backLabel": "Model settings navigation",
-      "description": "Connect either or both approved providers, switch explicitly, and keep model access separate from meeting data.",
+      "description": "Connect SiliconFlow for live AI and review any retained StepFun key while keeping model access separate from meeting data.",
       "eyebrow": "Your key, your quota",
-      "metadataDescription": "Securely configure a StepFun or SiliconFlow model key for Convergene.",
+      "metadataDescription": "Securely configure a SiliconFlow model key for Convergene live AI.",
       "title": "Model connection"
     },
     "privacy": {
@@ -879,11 +889,11 @@
     },
     "providers": {
       "siliconflow": {
-        "name": "SiliconFlow"
+        "name": "SiliconFlow",
+        "recommended": "Live AI"
       },
       "stepfun": {
-        "name": "StepFun",
-        "recommended": "Recommended"
+        "name": "StepFun"
       }
     },
     "route": {
@@ -899,12 +909,17 @@
       "active": "Active",
       "actionRequired": "Action required",
       "available": "Model connection ready",
+      "capabilityUnavailable": "Live AI unavailable",
       "connected": "Connected",
       "lastUsed": "Last used",
       "loading": "Checking model configuration",
       "needsReconfiguration": "Model needs a new key",
+      "providerCapabilityUnavailableActive": "{provider} is still active for preparation. Classification and live node suggestions are disabled; switch to SiliconFlow.",
+      "providerCapabilityUnavailableStored": "{provider} key is retained for historical compatibility and cannot be selected for live AI.",
       "providerReady": "{provider} is selected for AI actions",
-      "providerStored": "{provider} is saved and ready to select"
+      "providerStored": "{provider} is saved and ready to select",
+      "retainedCredentialUnavailable": "The historical {provider} key can no longer be used. Connect or switch to SiliconFlow, or clear the retained configuration.",
+      "retainedUnavailable": "Historical key unavailable"
     },
     "validation": {
       "keyRequired": "Enter an API key.",

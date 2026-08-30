@@ -2,7 +2,8 @@ import { randomBytes } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { readProviderConfigRuntimeEnvironment } from './http-runtime';
+import { providerConfigErrorResponse, readProviderConfigRuntimeEnvironment } from './http-runtime';
+import { ProviderConfigServiceError } from './service';
 
 const redisEnvironment = {
   UPSTASH_REDIS_REST_TOKEN: 'test-only-redis-token',
@@ -54,6 +55,20 @@ describe('provider configuration runtime environment', () => {
     ).toMatchObject({
       encryptionSecret: currentSecret,
       previousEncryptionSecrets: previousSecrets,
+    });
+  });
+
+  it('maps unavailable provider capabilities to a safe non-retryable response', async () => {
+    const error = Object.assign(new ProviderConfigServiceError('PROVIDER_CAPABILITY_UNAVAILABLE'), {
+      detail: 'must not cross the public boundary',
+    });
+    const response = providerConfigErrorResponse(error);
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({
+      error: { code: 'PROVIDER_CAPABILITY_UNAVAILABLE' },
+      ok: false,
     });
   });
 });

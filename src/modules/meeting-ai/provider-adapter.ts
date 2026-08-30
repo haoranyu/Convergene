@@ -10,8 +10,7 @@ import {
 } from 'ai';
 import { z } from 'zod';
 
-import type { ProviderId } from '../provider-config';
-import type { ProviderModelMapping } from '../provider-config';
+import type { ProviderId, ProviderModelRole, ProviderModelMapping } from '../provider-config';
 import { providerPresets } from '../provider-config/server';
 import type { ProviderOutputFailure } from './provider-output-failure';
 
@@ -28,7 +27,7 @@ const providerStructuredOutputPolicies = {
   STEPFUN: { fast: false, grill: true, report: true },
 } as const satisfies Record<ProviderId, Record<ProviderTaskRole, boolean>>;
 
-export type ProviderTaskRole = keyof ProviderModelMapping;
+export type ProviderTaskRole = ProviderModelRole;
 
 function providerRequestPolicy(
   provider: ProviderId,

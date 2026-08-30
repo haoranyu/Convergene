@@ -25,7 +25,6 @@ export async function runExpandNodeProviderTask(
     abortSignal,
     maxOutputTokens: expandNodeMaxOutputTokens,
     prompt: buildExpandNodePrompt(request.input, request.outputLocale),
-    role: 'fast',
     schema: expandNodeProviderOutputSchema,
     schemaName: 'ExpandNodeOutput',
     timeoutMs: expandNodeTimeoutMs,

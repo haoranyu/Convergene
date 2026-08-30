@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { providerConfigInputSchema, providerModelPresets } from './model';
+import {
+  providerCapabilities,
+  providerConfigInputSchema,
+  providerConfigSummarySchema,
+  providerModelPresets,
+  providerSupportsRole,
+} from './model';
 
 describe('provider configuration input', () => {
   it('uses the Step Plan low-latency preset for fast structured output', () => {
@@ -17,6 +23,55 @@ describe('provider configuration input', () => {
       grill: 'deepseek-ai/DeepSeek-V4-Flash',
       report: 'deepseek-ai/DeepSeek-V4-Flash',
     });
+  });
+
+  it('publishes the exact runtime capability matrix for every provider role', () => {
+    expect(providerCapabilities).toEqual({
+      SILICONFLOW: {
+        fast: 'AVAILABLE',
+        grill: 'AVAILABLE',
+        report: 'UNAVAILABLE',
+      },
+      STEPFUN: {
+        fast: 'UNAVAILABLE',
+        grill: 'AVAILABLE',
+        report: 'UNAVAILABLE',
+      },
+    });
+
+    expect(providerSupportsRole('SILICONFLOW', 'fast')).toBe(true);
+    expect(providerSupportsRole('SILICONFLOW', 'grill')).toBe(true);
+    expect(providerSupportsRole('SILICONFLOW', 'report')).toBe(false);
+    expect(providerSupportsRole('STEPFUN', 'fast')).toBe(false);
+    expect(providerSupportsRole('STEPFUN', 'grill')).toBe(true);
+    expect(providerSupportsRole('STEPFUN', 'report')).toBe(false);
+  });
+
+  it('requires the capability matrix on every configured credential summary', () => {
+    const summary = {
+      activeProvider: 'SILICONFLOW',
+      configured: true,
+      providers: {
+        SILICONFLOW: {
+          capabilities: providerCapabilities.SILICONFLOW,
+          createdAt: '2026-08-29T00:00:00.000Z',
+          keyHint: '••••••••',
+          lastUsedAt: '2026-08-29T00:00:00.000Z',
+          models: providerModelPresets.SILICONFLOW,
+          provider: 'SILICONFLOW',
+          state: 'AVAILABLE',
+        },
+        STEPFUN: null,
+      },
+    } as const;
+
+    expect(providerConfigSummarySchema.parse(summary)).toEqual(summary);
+
+    const summaryWithoutCapabilities = structuredClone(summary) as {
+      providers: { SILICONFLOW: { capabilities?: unknown } };
+    };
+    delete summaryWithoutCapabilities.providers.SILICONFLOW.capabilities;
+    expect(providerConfigSummarySchema.safeParse(summaryWithoutCapabilities).success).toBe(false);
   });
 
   it.each(['STEPFUN', 'SILICONFLOW'])('accepts the %s preset without a base URL', (provider) => {

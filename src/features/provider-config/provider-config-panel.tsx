@@ -25,13 +25,16 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  providerCapabilities,
   providerModelPresets,
   providerIds,
+  providerSupportsRole,
   type ProviderConfigErrorCode,
   type ProviderConfigInput,
   type ProviderConfigSummary,
   type ProviderId,
   type ProviderModelMapping,
+  type ProviderRoleCapabilities,
 } from '@/modules/provider-config';
 
 import { providerConfigClient, type ProviderConfigClient } from './api-client';
@@ -44,6 +47,7 @@ const errorMessageKeys: Record<ProviderConfigErrorCode, string> = {
   ORIGIN_INVALID: 'errors.ORIGIN_INVALID',
   PROVIDER_ACCESS_RESTRICTED: 'errors.PROVIDER_ACCESS_RESTRICTED',
   PROVIDER_AUTH_FAILED: 'errors.PROVIDER_AUTH_FAILED',
+  PROVIDER_CAPABILITY_UNAVAILABLE: 'errors.PROVIDER_CAPABILITY_UNAVAILABLE',
   PROVIDER_CONFIG_INVALID: 'errors.PROVIDER_CONFIG_INVALID',
   PROVIDER_CONFIG_UNAVAILABLE: 'errors.PROVIDER_CONFIG_UNAVAILABLE',
   PROVIDER_MODEL_NOT_FOUND: 'errors.PROVIDER_MODEL_NOT_FOUND',
@@ -62,23 +66,44 @@ interface Notice {
 export interface ProviderConfigPanelProps {
   api?: ProviderConfigClient;
   compact?: boolean;
+  gateErrorCode?:
+    'PROVIDER_AUTH_FAILED' | 'PROVIDER_CAPABILITY_UNAVAILABLE' | 'PROVIDER_CONFIG_INVALID';
   onConfigured?: (summary: ProviderConfigSummary) => void;
-  reconfigurationErrorCode?: 'PROVIDER_AUTH_FAILED' | 'PROVIDER_CONFIG_INVALID';
 }
 
 function providerLabel(provider: ProviderId, t: ReturnType<typeof useTranslations>) {
   return t(provider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name');
 }
 
-function ModelMapping({ models }: { models: ProviderModelMapping }) {
+function ModelMapping({
+  capabilities,
+  models,
+  onlyAvailable = false,
+}: {
+  capabilities: ProviderRoleCapabilities;
+  models: ProviderModelMapping;
+  onlyAvailable?: boolean;
+}) {
   const t = useTranslations('providerConfig');
+  const roles = (['fast', 'grill', 'report'] as const).filter(
+    (role) => !onlyAvailable || capabilities[role] === 'AVAILABLE',
+  );
 
   return (
     <dl className={styles.modelList}>
-      {(['fast', 'grill', 'report'] as const).map((role) => (
+      {roles.map((role) => (
         <div className={styles.modelRow} key={role}>
           <dt>{t(`models.${role}`)}</dt>
-          <dd>{models[role]}</dd>
+          <dd className={styles.modelValue}>
+            {capabilities[role] === 'AVAILABLE' ? (
+              <>
+                <code>{models[role]}</code>
+                <Tag color="green">{t('capabilities.available')}</Tag>
+              </>
+            ) : (
+              <Tag color="orange">{t('capabilities.unavailable')}</Tag>
+            )}
+          </dd>
         </div>
       ))}
     </dl>
@@ -88,14 +113,14 @@ function ModelMapping({ models }: { models: ProviderModelMapping }) {
 export function ProviderConfigPanel({
   api = providerConfigClient,
   compact = false,
+  gateErrorCode,
   onConfigured,
-  reconfigurationErrorCode,
 }: ProviderConfigPanelProps) {
   const t = useTranslations('providerConfig');
   const format = useFormatter();
   const [form] = Form.useForm<ProviderConfigInput>();
   const [editing, setEditing] = useState(false);
-  const [editingProvider, setEditingProvider] = useState<ProviderId>('STEPFUN');
+  const [editingProvider, setEditingProvider] = useState<ProviderId>('SILICONFLOW');
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [operation, setOperation] = useState<Operation>(null);
@@ -114,20 +139,37 @@ export function ProviderConfigPanel({
         const activeCredential = result.value.configured
           ? result.value.providers[result.value.activeProvider]
           : null;
+        const siliconFlowCredential = result.value.configured
+          ? result.value.providers.SILICONFLOW
+          : null;
+        const activeSupportsAI = activeCredential?.capabilities.fast === 'AVAILABLE';
         setEditing(
           result.value.configured &&
             (activeCredential?.state === 'NEEDS_RECONFIGURATION' ||
-              Boolean(reconfigurationErrorCode)),
+              (!activeSupportsAI && siliconFlowCredential?.state !== 'AVAILABLE') ||
+              (Boolean(gateErrorCode) && gateErrorCode !== 'PROVIDER_CAPABILITY_UNAVAILABLE')),
         );
-        if (reconfigurationErrorCode) {
+        if (gateErrorCode) {
+          const retainedStepFunUnavailable =
+            result.value.configured &&
+            result.value.activeProvider === 'STEPFUN' &&
+            (gateErrorCode === 'PROVIDER_AUTH_FAILED' ||
+              gateErrorCode === 'PROVIDER_CONFIG_INVALID');
           setNotice({
             kind: 'error',
-            message: t(errorMessageKeys[reconfigurationErrorCode]),
+            message: t(
+              retainedStepFunUnavailable
+                ? 'errors.RETAINED_STEPFUN_UNAVAILABLE'
+                : errorMessageKeys[gateErrorCode],
+            ),
           });
         }
         if (result.value.configured) {
-          setEditingProvider(result.value.activeProvider);
-          form.setFieldValue('provider', result.value.activeProvider);
+          const nextEditingProvider = activeSupportsAI
+            ? result.value.activeProvider
+            : 'SILICONFLOW';
+          setEditingProvider(nextEditingProvider);
+          form.setFieldValue('provider', nextEditingProvider);
         }
         return;
       }
@@ -139,7 +181,7 @@ export function ProviderConfigPanel({
       );
       setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
     },
-    [form, reconfigurationErrorCode, t],
+    [form, gateErrorCode, t],
   );
 
   const loadStatus = useCallback(async () => {
@@ -176,10 +218,9 @@ export function ProviderConfigPanel({
   const providerOptions = useMemo(
     () => [
       {
-        label: `${t('providers.stepfun.name')} · ${t('providers.stepfun.recommended')}`,
-        value: 'STEPFUN',
+        label: `${t('providers.siliconflow.name')} · ${t('providers.siliconflow.recommended')}`,
+        value: 'SILICONFLOW',
       },
-      { label: t('providers.siliconflow.name'), value: 'SILICONFLOW' },
     ],
     [t],
   );
@@ -257,7 +298,7 @@ export function ProviderConfigPanel({
       if (result.ok) {
         setStatus(result.value);
         setEditing(true);
-        setEditingProvider('STEPFUN');
+        setEditingProvider('SILICONFLOW');
         setTestedInput(null);
         form.resetFields();
         setNotice({ kind: 'success', message: t('feedback.deleteSuccess') });
@@ -329,6 +370,7 @@ export function ProviderConfigPanel({
             if (!credential) return null;
             const active = provider === status.activeProvider;
             const available = credential.state === 'AVAILABLE';
+            const aiAvailable = credential.capabilities.fast === 'AVAILABLE';
 
             return (
               <Card className={styles.statusCard} bordered={false} key={provider}>
@@ -345,16 +387,37 @@ export function ProviderConfigPanel({
                       </Typography.Title>
                     </Space>
                     <Typography.Text className={styles.statusCaption}>
-                      {t(active ? 'status.providerReady' : 'status.providerStored', {
-                        provider: providerLabel(provider, t),
-                      })}
+                      {t(
+                        !available && provider === 'STEPFUN'
+                          ? 'status.retainedCredentialUnavailable'
+                          : !available
+                            ? 'status.needsReconfiguration'
+                            : !aiAvailable
+                              ? active
+                                ? 'status.providerCapabilityUnavailableActive'
+                                : 'status.providerCapabilityUnavailableStored'
+                              : active
+                                ? 'status.providerReady'
+                                : 'status.providerStored',
+                        { provider: providerLabel(provider, t) },
+                      )}
                     </Typography.Text>
                   </div>
-                  <Tag color={available ? (active ? 'blue' : 'green') : 'orange'}>
-                    {available
-                      ? t(active ? 'status.active' : 'status.connected')
-                      : t('status.actionRequired')}
-                  </Tag>
+                  <Space className={styles.statusTags} size="mini" wrap>
+                    {active ? <Tag color="blue">{t('status.active')}</Tag> : null}
+                    <Tag color={available ? 'green' : 'orange'}>
+                      {t(
+                        available
+                          ? 'status.connected'
+                          : provider === 'STEPFUN'
+                            ? 'status.retainedUnavailable'
+                            : 'status.actionRequired',
+                      )}
+                    </Tag>
+                    {available && !aiAvailable ? (
+                      <Tag color="orange">{t('status.capabilityUnavailable')}</Tag>
+                    ) : null}
+                  </Space>
                 </div>
 
                 <Descriptions
@@ -376,11 +439,11 @@ export function ProviderConfigPanel({
                 />
                 <div className={styles.currentModels}>
                   <Typography.Text bold>{t('models.title')}</Typography.Text>
-                  <ModelMapping models={credential.models} />
+                  <ModelMapping capabilities={credential.capabilities} models={credential.models} />
                 </div>
 
                 <Space className={styles.statusActions} wrap>
-                  {!active && available ? (
+                  {!active && available && aiAvailable ? (
                     <Button
                       disabled={busy}
                       loading={operation === 'select' && selectingProvider === provider}
@@ -390,28 +453,27 @@ export function ProviderConfigPanel({
                       {t('actions.select', { provider: providerLabel(provider, t) })}
                     </Button>
                   ) : null}
-                  <Button
-                    icon={<IconRefresh />}
-                    onClick={() => {
-                      setEditingProvider(provider);
-                      setEditing(true);
-                      setNotice(null);
-                    }}
-                  >
-                    {t('actions.reconfigure')}
-                  </Button>
+                  {providerSupportsRole(provider, 'fast') ? (
+                    <Button
+                      icon={<IconRefresh />}
+                      onClick={() => {
+                        setEditingProvider(provider);
+                        setEditing(true);
+                        setNotice(null);
+                      }}
+                    >
+                      {t('actions.reconfigure')}
+                    </Button>
+                  ) : null}
                 </Space>
               </Card>
             );
           })}
           <Space className={styles.statusActions} wrap>
-            {providerIds.some((provider) => status.providers[provider] === null) ? (
+            {!showForm && status.providers.SILICONFLOW === null ? (
               <Button
                 onClick={() => {
-                  const missingProvider = providerIds.find(
-                    (provider) => status.providers[provider] === null,
-                  );
-                  if (missingProvider) setEditingProvider(missingProvider);
+                  setEditingProvider('SILICONFLOW');
                   setEditing(true);
                   setNotice(null);
                 }}
@@ -456,7 +518,7 @@ export function ProviderConfigPanel({
           <Form<ProviderConfigInput>
             autoComplete="off"
             form={form}
-            initialValues={{ apiKey: '', provider: 'STEPFUN' }}
+            initialValues={{ apiKey: '', provider: 'SILICONFLOW' }}
             layout="vertical"
           >
             <Form.Item field="provider" label={t('fields.provider')} required>
@@ -477,7 +539,11 @@ export function ProviderConfigPanel({
                 <Typography.Text bold>{t('models.presetTitle')}</Typography.Text>
                 <Tag>{t('models.fixed')}</Tag>
               </div>
-              <ModelMapping models={providerModelPresets[selectedProvider]} />
+              <ModelMapping
+                capabilities={providerCapabilities[selectedProvider]}
+                models={providerModelPresets[selectedProvider]}
+                onlyAvailable
+              />
             </div>
 
             <Form.Item
