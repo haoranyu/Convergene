@@ -6,9 +6,11 @@ test('uses the approved brand mark and application icons', async ({ page, reques
   const brand = page.locator('header strong').filter({ hasText: 'Convergene' });
   await expect(brand).toBeVisible();
   await expect(brand).toHaveCSS('color', 'rgb(15, 23, 42)');
-  await expect(brand).toHaveCSS('gap', '8px');
+  const brandLink = brand.getByRole('link', { name: 'Convergene' });
+  await expect(brandLink).toHaveCSS('gap', '8px');
+  expect((await brandLink.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 
-  const mark = brand.locator('img');
+  const mark = brandLink.locator('img');
   await expect(mark).toHaveAttribute('alt', '');
   await expect(mark).toHaveAttribute('src', '/brand/convergene-mark.svg');
   await expect(mark).toHaveCSS('width', '24px');

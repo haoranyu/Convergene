@@ -305,10 +305,27 @@ test('keeps the settings page usable at a 375px viewport', async ({ page }) => {
   await page.setViewportSize({ height: 812, width: 375 });
   await page.goto('/en-US/settings/model');
 
-  await expect(page.getByRole('button', { name: 'Test connection' })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  const testConnection = page.getByRole('button', { name: 'Test connection' });
+  await expect(testConnection).toBeVisible();
+  await expect(testConnection).toHaveClass(/arco-btn-primary/u);
+  await expect(testConnection).toBeInViewport({ ratio: 0.9 });
+  expect((await testConnection.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    (await page.getByRole('combobox', { name: 'Provider' }).boundingBox())!.height,
+  ).toBeGreaterThanOrEqual(44);
+  expect(
+    await page
+      .getByLabel('API key', { exact: true })
+      .evaluate((element) => element.parentElement?.getBoundingClientRect().height ?? 0),
+  ).toBeGreaterThanOrEqual(44);
+  await expect(page.locator('form svg[tabindex="0"]')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 });
 
 test('serves the BYOK page with a restrictive content security policy', async ({ page }) => {

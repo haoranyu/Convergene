@@ -506,7 +506,7 @@ export function ProviderConfigPanel({
               <IconSafe />
             </span>
             <div>
-              <Typography.Title heading={5} className={styles.formTitle}>
+              <Typography.Title heading={2} className={styles.formTitle} id="provider-config-title">
                 {status.configured ? t('form.reconfigureTitle') : t('form.title')}
               </Typography.Title>
               <Typography.Paragraph className={styles.formDescription}>
@@ -534,18 +534,6 @@ export function ProviderConfigPanel({
               />
             </Form.Item>
 
-            <div className={styles.presetBox}>
-              <div className={styles.presetHeading}>
-                <Typography.Text bold>{t('models.presetTitle')}</Typography.Text>
-                <Tag>{t('models.fixed')}</Tag>
-              </div>
-              <ModelMapping
-                capabilities={providerCapabilities[selectedProvider]}
-                models={providerModelPresets[selectedProvider]}
-                onlyAvailable
-              />
-            </div>
-
             <Form.Item
               field="apiKey"
               label={t('fields.apiKey')}
@@ -568,6 +556,7 @@ export function ProviderConfigPanel({
                 onChange={() => resetTestedInput()}
                 placeholder={t('fields.apiKeyPlaceholder')}
                 spellCheck={false}
+                visibilityToggle={false}
               />
             </Form.Item>
             <Typography.Paragraph className={styles.keyHelp} id="provider-key-help">
@@ -579,6 +568,7 @@ export function ProviderConfigPanel({
                 disabled={busy}
                 loading={operation === 'test'}
                 onClick={() => void testConnection()}
+                type={testedInput ? 'default' : 'primary'}
               >
                 {t('actions.test')}
               </Button>
@@ -586,7 +576,7 @@ export function ProviderConfigPanel({
                 disabled={!testedInput || busy}
                 loading={operation === 'save'}
                 onClick={() => void saveConfiguration()}
-                type="primary"
+                type={testedInput ? 'primary' : 'default'}
               >
                 {t('actions.save')}
               </Button>
@@ -604,6 +594,18 @@ export function ProviderConfigPanel({
                 </Button>
               ) : null}
             </Space>
+
+            <div className={styles.presetBox}>
+              <div className={styles.presetHeading}>
+                <Typography.Text bold>{t('models.presetTitle')}</Typography.Text>
+                <Tag>{t('models.fixed')}</Tag>
+              </div>
+              <ModelMapping
+                capabilities={providerCapabilities[selectedProvider]}
+                models={providerModelPresets[selectedProvider]}
+                onlyAvailable
+              />
+            </div>
           </Form>
         </Card>
       ) : null}

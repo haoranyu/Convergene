@@ -168,6 +168,7 @@
         "expansion2": "建立第三方沟通窗口",
         "expansion3": "分阶段发布说明",
         "label": "脑暴共创",
+        "tabLabel": "脑暴",
         "modeEffect": "先保护发散，再按事实基础、降温效果和执行速度收敛，不让团队被“硬刚或和解”的二选一困住。",
         "objective": "形成 24 小时回应组合",
         "outcome1": "保留三条可组合的回应路径",
@@ -190,6 +191,7 @@
         "expansion2": "私下接触争取和解",
         "expansion3": "先核实并暂缓表态",
         "label": "决策对齐",
+        "tabLabel": "决策",
         "modeEffect": "先把现状与损失、备选方案、最好与最差结果、拍板人和时限摊开，再让讨论逼近决定。",
         "objective": "确定 JT 舆情应对方案",
         "outcome1": "先核实事实，并保留和解窗口",
@@ -212,6 +214,7 @@
         "expansion2": "口径未覆盖核心疑问",
         "expansion3": "跟进责任人不明确",
         "label": "复盘改进",
+        "tabLabel": "复盘",
         "modeEffect": "把时间线、可验证事实和解释拆开，比较预期与实际，再把教训变成有负责人的舆情响应改进。",
         "objective": "找出首轮回应为何没有降温",
         "outcome1": "建立一小时事实核验清单",
@@ -521,7 +524,7 @@
     },
     "metadata": {
       "description": "把会议问清楚、锁定 Brief，并生成受控初始脑图。",
-      "title": "准备会议 · Convergene"
+      "title": "准备会议"
     },
     "modeSelection": {
       "action": "确认并开始拷问",
@@ -701,6 +704,12 @@
       "title": "准备散会？",
       "unresolved": "Brief 未决项",
       "zeroOutcomeWarning": "这场会还没有留下正式产出。"
+    },
+    "ended": {
+      "canvasDescription": "讨论树会保留作参考，并默认收起，让会议报告始终是当前主任务。",
+      "canvasTitle": "会议画布",
+      "hideCanvas": "收起会议画布",
+      "showCanvas": "回看会议画布"
     },
     "errors": {
       "activeMeetingExists": "已有另一场会议正在进行。请返回或明确结束上一场，再开始这场会议。",

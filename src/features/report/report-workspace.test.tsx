@@ -94,6 +94,10 @@ describe('report workspace', () => {
       />,
     );
 
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'No report generated yet' }),
+    ).toBeVisible();
+
     await user.click(screen.getByRole('button', { name: 'Generate report' }));
 
     expect(
@@ -221,6 +225,17 @@ describe('report workspace', () => {
 });
 
 describe('report Markdown resilience', () => {
+  it('keeps generated Markdown headings below the report workspace hierarchy', () => {
+    renderEnglish(
+      <ReportMarkdown markdown={'# Report\n\n## Section\n\n### Chart\n\n#### Chart data'} />,
+    );
+
+    expect(screen.getByRole('heading', { level: 3, name: 'Report' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 4, name: 'Section' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 5, name: 'Chart' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 6, name: 'Chart data' })).toBeVisible();
+  });
+
   it('shows Mermaid source while preserving the same-data table on render failure', async () => {
     const renderMermaid = vi.fn().mockResolvedValue({
       definition: 'flowchart LR\n  a --> b',
@@ -261,7 +276,8 @@ flowchart LR
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Safe' })).toBeVisible();
+    expect(screen.getByRole('heading', { level: 3, name: 'Safe' })).toBeVisible();
+    expect(document.querySelectorAll('h1')).toHaveLength(0);
     expect(document.querySelector('script')).toBeNull();
     expect(screen.queryByText('alert(1)')).not.toBeInTheDocument();
     expect(screen.getByText('unsafe').closest('a')).toBeNull();

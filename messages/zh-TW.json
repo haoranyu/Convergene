@@ -168,6 +168,7 @@
         "expansion2": "建立第三方溝通窗口",
         "expansion3": "分階段發布說明",
         "label": "腦暴共創",
+        "tabLabel": "腦暴",
         "modeEffect": "先保護發散，再按事實基礎、降溫效果與執行速度收斂，不讓團隊被「硬剛或和解」的二選一困住。",
         "objective": "形成 24 小時回應組合",
         "outcome1": "保留三條可組合的回應路徑",
@@ -190,6 +191,7 @@
         "expansion2": "私下接觸爭取和解",
         "expansion3": "先核實並暫緩表態",
         "label": "決策對齊",
+        "tabLabel": "決策",
         "modeEffect": "先把現況與損失、備選方案、最好與最差結果、拍板人與時限攤開，再讓討論逼近決定。",
         "objective": "確定 JT 輿情應對方案",
         "outcome1": "先核實事實，並保留和解窗口",
@@ -212,6 +214,7 @@
         "expansion2": "口徑未覆蓋核心疑問",
         "expansion3": "跟進負責人不明確",
         "label": "復盤改進",
+        "tabLabel": "復盤",
         "modeEffect": "把時間線、可驗證事實與解釋拆開，比較預期與實際，再把教訓變成有負責人的輿情回應改進。",
         "objective": "找出首輪回應為何沒有降溫",
         "outcome1": "建立一小時事實核驗清單",
@@ -521,7 +524,7 @@
     },
     "metadata": {
       "description": "把會議問清楚、鎖定 Brief，並產生受控初始心智圖。",
-      "title": "準備會議 · Convergene"
+      "title": "準備會議"
     },
     "modeSelection": {
       "action": "確認並開始拷問",
@@ -701,6 +704,12 @@
       "title": "準備散會？",
       "unresolved": "Brief 未決項",
       "zeroOutcomeWarning": "這場會還沒有留下正式產出。"
+    },
+    "ended": {
+      "canvasDescription": "討論樹會保留作參考，並預設收合，讓會議報告始終是目前主任務。",
+      "canvasTitle": "會議畫布",
+      "hideCanvas": "收合會議畫布",
+      "showCanvas": "回看會議畫布"
     },
     "errors": {
       "activeMeetingExists": "已有另一場會議正在進行。請返回或明確結束上一場，再開始這場會議。",

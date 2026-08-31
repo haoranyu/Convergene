@@ -89,12 +89,13 @@ describe('meeting canvas browser acceptance', () => {
       expect(canvasBox!.x + canvasBox!.width).toBeLessThanOrEqual(detailBox!.x);
       expect(detailBox!.x + detailBox!.width).toBeLessThanOrEqual(width);
       expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        await page.evaluate(
+          () =>
+            Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+            document.documentElement.clientWidth,
+        ),
       ).toBe(true);
-      await pageExpect(page.getByTestId('brand-mark')).toHaveAttribute(
-        'src',
-        /\/brand\/convergene-mark\.svg/,
-      );
+      await pageExpect(page.getByTestId('brand-mark')).toHaveCount(0);
       await page.close();
     },
     20_000,
@@ -288,7 +289,11 @@ describe('meeting canvas browser acceptance', () => {
     await pageExpect(page.getByText(/Use a computer for the full canvas/)).toBeVisible();
     await pageExpect(page.getByTestId('meeting-canvas-pane')).toBeHidden();
     expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      await page.evaluate(
+        () =>
+          Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+          document.documentElement.clientWidth,
+      ),
     ).toBe(true);
     await page
       .getByRole('button', { exact: true, name: 'Agree on measurable launch decision criteria' })

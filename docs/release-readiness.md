@@ -1,7 +1,7 @@
 # Convergene P0 发布检查记录
 
 > 发布目标：<https://convergene.vercel.app>  
-> 范围：P0 Issues #1–#12 及发布可靠性修复 #26；Stretch #13–#16 不计入完成门槛
+> 范围：P0 Issues #1–#12、发布可靠性修复 #26/#39 与 UI 层级修复 #40；Stretch #13–#16 不计入完成门槛
 
 ## 已验证路径
 
@@ -19,6 +19,7 @@
   阻止 StepFun fast，而不是继续把它当作可重试 live path。
 - Safari Production 冒烟完成英文首页和五步无 Key 导览；在 200% 缩放下最终会议产出、便携报告和主操作仍可访问，期间未创建真实会议或调用供应商。
 - Preparation 结构化输出先执行一次带候选值与紧凑错误的 repair；第二次仍无效时，Grill/Brief 和三议题 Initial Map 使用通过生产契约的本地确定性降级。自动化覆盖全部 mode × locale × output branch，以及连续两次无效输出后的创建 → Grill → Brief → Map → Canvas 路径。
+- 首页、创建、模型设置、导览与会议工作台统一为单一应用外壳品牌和单一页面级标题；已有会议、模型配置、导览步骤及 ENDED 页面把当前任务放在说明或历史画布之前。三语 × 375/1024/1440px 页面矩阵验证层级和横向宽度，PREPARING/LIVE/ENDED 正交矩阵验证会议状态；首页、模型设置、导览与会议状态另验证首屏主操作和 44px 点击目标。
 
 ## 发布与安全边界
 
@@ -41,7 +42,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm test:e2e -- --workers=1
+pnpm exec playwright test --workers=1
 ```
 
 核心证据位置：
@@ -51,6 +52,7 @@ pnpm test:e2e -- --workers=1
 - `e2e/dashboard-guide-creation.spec.ts`：首次使用、IndexedDB 失败、导出/清除、响应式与 locale 保持。
 - `e2e/provider-config.spec.ts`：SiliconFlow Key 不回显、失败不保存、历史 StepFun 有限状态、清除隔离、CSP 与 375px。
 - `e2e/preparation.spec.ts`：三语 Grill、桌面完整生命周期/报告和繁中手机生命周期/报告。
+- `e2e/ui-hierarchy.spec.ts`：三语 × 375/1024/1440px 的首页、创建、模型设置、导览单品牌、语义层级与宽度回归，并逐步验证导览主操作首屏可见。
 - `src/features/preparation/preparation-fallbacks.test.ts`：全部 mode × locale × branch few-shot 与降级 fixture 的生产契约。
 - `src/features/preparation/preparation-reliability.test.ts`：一次 schema-aware repair、无第三次请求、两次无效后的确定性降级和供应商传输错误边界。
 - `src/features/preparation/orchestrator.test.ts`：无效中间输出零部分写入，以及两次无效输出后的创建 → Grill → Brief → Map → Canvas 闭环。

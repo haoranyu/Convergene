@@ -111,7 +111,7 @@ function MeetingCard({ activeTopicTitle, meeting, now, onDelete }: MeetingCardPr
         </Popconfirm>
       </div>
       <Link className={styles.cardLink} href={meetingHref(meeting)}>
-        <Typography.Title className={styles.cardTitle} heading={5}>
+        <Typography.Title className={styles.cardTitle} heading={3}>
           {meeting.title}
         </Typography.Title>
         <div className={styles.cardMeta}>
@@ -201,6 +201,7 @@ export function DashboardHome() {
   );
   const groups = useMemo(() => groupMeetings(meetings, now), [meetings, now]);
   const stale = useMemo(() => staleLiveMeetings(meetings, now), [meetings, now]);
+  const showOnboarding = !loading && !error && meetings.length === 0;
 
   async function deleteMeeting(meeting: Meeting) {
     const result = await new MeetingRepository(getBrowserMeetingDatabase()).deleteMeeting(
@@ -213,6 +214,52 @@ export function DashboardHome() {
     <>
       <AppHeader title={t('pageTitle')} />
       <main className={styles.shell}>
+        {showOnboarding ? (
+          <section className={styles.hero}>
+            <div>
+              <Typography.Text className={styles.eyebrow}>{t('eyebrow')}</Typography.Text>
+              <Typography.Title className={styles.heroTitle} heading={1}>
+                {t('title')}
+              </Typography.Title>
+              <Typography.Paragraph className={styles.heroDescription}>
+                {t('description')}
+              </Typography.Paragraph>
+            </div>
+            <Space className={styles.heroActions} wrap>
+              <Link className={styles.primaryLink} href="/meetings/new">
+                <IconPlus aria-hidden="true" />
+                {t('actions.new')}
+              </Link>
+              <Link className={styles.secondaryLink} href="/guide">
+                <IconExperiment aria-hidden="true" />
+                {t('actions.guide')}
+              </Link>
+            </Space>
+          </section>
+        ) : (
+          <section className={styles.taskHeader}>
+            <div>
+              <Typography.Text className={styles.eyebrow}>{t('eyebrow')}</Typography.Text>
+              <Typography.Title className={styles.taskTitle} heading={1}>
+                {t('pageTitle')}
+              </Typography.Title>
+              <Typography.Paragraph className={styles.taskDescription}>
+                {t('description')}
+              </Typography.Paragraph>
+            </div>
+            <Space className={styles.heroActions} wrap>
+              <Link className={styles.primaryLink} href="/meetings/new">
+                <IconPlus aria-hidden="true" />
+                {t('actions.new')}
+              </Link>
+              <Link className={styles.secondaryLink} href="/guide">
+                <IconExperiment aria-hidden="true" />
+                {t('actions.guide')}
+              </Link>
+            </Space>
+          </section>
+        )}
+
         {stale.length > 0 ? (
           <Alert
             className={styles.recoveryBanner}
@@ -222,28 +269,6 @@ export function DashboardHome() {
             type="warning"
           />
         ) : null}
-
-        <section className={styles.hero}>
-          <div>
-            <Typography.Text className={styles.eyebrow}>{t('eyebrow')}</Typography.Text>
-            <Typography.Title className={styles.heroTitle} heading={1}>
-              {t('title')}
-            </Typography.Title>
-            <Typography.Paragraph className={styles.heroDescription}>
-              {t('description')}
-            </Typography.Paragraph>
-          </div>
-          <Space className={styles.heroActions} wrap>
-            <Link className={styles.primaryLink} href="/meetings/new">
-              <IconPlus aria-hidden="true" />
-              {t('actions.new')}
-            </Link>
-            <Link className={styles.secondaryLink} href="/guide">
-              <IconExperiment aria-hidden="true" />
-              {t('actions.guide')}
-            </Link>
-          </Space>
-        </section>
 
         {loading ? (
           <div aria-busy="true" aria-label={t('loading')} className={styles.loadingGrid}>
@@ -275,7 +300,7 @@ export function DashboardHome() {
               group.meetings.length > 0 ? (
                 <section className={styles.group} key={group.id}>
                   <div className={styles.groupHeading}>
-                    <Typography.Title heading={3}>{t(`groups.${group.id}.title`)}</Typography.Title>
+                    <Typography.Title heading={2}>{t(`groups.${group.id}.title`)}</Typography.Title>
                     <Typography.Text>
                       {t(`groups.${group.id}.count`, { count: group.meetings.length })}
                     </Typography.Text>

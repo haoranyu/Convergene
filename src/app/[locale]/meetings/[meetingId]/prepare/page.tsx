@@ -11,7 +11,7 @@ interface PrepareMeetingPageProps {
 export async function generateMetadata({ params }: PrepareMeetingPageProps): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'preparation.metadata' });
-  return { description: t('description'), title: t('title') };
+  return { description: t('description'), title: `${t('title')} · Convergene` };
 }
 
 export default async function PrepareMeetingPage({ params }: PrepareMeetingPageProps) {

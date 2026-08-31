@@ -80,11 +80,12 @@ export function LocalDataDrawer() {
   return (
     <>
       <Button
+        aria-label={t('trigger')}
         className={styles.headerControl}
         icon={<IconStorage aria-hidden="true" />}
         onClick={() => setOpen(true)}
       >
-        {t('trigger')}
+        <span className={styles.controlLabel}>{t('trigger')}</span>
       </Button>
       <Drawer
         autoFocus

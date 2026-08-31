@@ -50,6 +50,18 @@ export function ReportMarkdown({ markdown, renderMermaid }: ReportMarkdownProps)
               </code>
             );
           },
+          h1({ children, ...props }) {
+            return <h3 {...props}>{children}</h3>;
+          },
+          h2({ children, ...props }) {
+            return <h4 {...props}>{children}</h4>;
+          },
+          h3({ children, ...props }) {
+            return <h5 {...props}>{children}</h5>;
+          },
+          h4({ children, ...props }) {
+            return <h6 {...props}>{children}</h6>;
+          },
           pre({ children }) {
             return <>{children}</>;
           },

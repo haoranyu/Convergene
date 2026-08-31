@@ -135,6 +135,11 @@ test('runs all three in-memory tour fixtures without AI or IndexedDB writes', as
   await expect(
     page.getByText('Review sentiment every four hours and brief JT', { exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next step' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Start from this example' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Start from this example' })).toHaveClass(
+    /arco-btn-primary/u,
+  );
 
   expect(aiRequests).toEqual([]);
   expect(
@@ -418,7 +423,11 @@ test('keeps the first-use flow operable at responsive and zoom-equivalent widths
     for (const path of ['/en-US', '/en-US/guide', '/en-US/meetings/new']) {
       await page.goto(path);
       expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        await page.evaluate(
+          () =>
+            Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+            document.documentElement.clientWidth,
+        ),
       ).toBe(true);
     }
   }
@@ -497,11 +506,7 @@ test('preserves query state when switching locale and flags model reconfiguratio
 
   await page.goto('/en-US?focus=meeting-1&panel=notes');
   await expect(page.getByRole('button', { name: 'Model needs a new key' })).toBeVisible();
-  await expect(page.getByRole('link', { name: '繁體中文' })).toHaveAttribute(
-    'href',
-    '/zh-TW?focus=meeting-1&panel=notes',
-  );
-  await page.getByRole('link', { name: '繁體中文' }).click();
+  await page.getByLabel('Interface language').selectOption('zh-TW');
   await expect(page).toHaveURL('/zh-TW?focus=meeting-1&panel=notes');
   await expect(page.getByRole('heading', { name: '讓下一場會配得上佔用的時間' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW');

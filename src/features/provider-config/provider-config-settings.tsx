@@ -24,17 +24,23 @@ export function ProviderConfigSettings() {
           </Link>
         </nav>
 
-        <div className={styles.layout}>
-          <aside className={styles.contextPanel}>
-            <Typography.Text className={styles.eyebrow}>{t('page.eyebrow')}</Typography.Text>
-            <Typography.Title className={styles.pageTitle} heading={1}>
-              {t('page.title')}
-            </Typography.Title>
-            <Typography.Paragraph className={styles.lede}>
-              {t('page.description')}
-            </Typography.Paragraph>
+        <header className={styles.pageIntro}>
+          <Typography.Text className={styles.eyebrow}>{t('page.eyebrow')}</Typography.Text>
+          <Typography.Title className={styles.pageTitle} heading={1}>
+            {t('page.title')}
+          </Typography.Title>
+          <Typography.Paragraph className={styles.lede}>
+            {t('page.description')}
+          </Typography.Paragraph>
+        </header>
 
-            <Card className={styles.routeCard} bordered={false}>
+        <div className={styles.layout}>
+          <section aria-label={t('form.title')} className={styles.configColumn}>
+            <ProviderConfigPanel />
+          </section>
+
+          <aside aria-label={t('route.title')} className={styles.contextPanel}>
+            <Card className={styles.routeCard}>
               <Typography.Text bold>{t('route.title')}</Typography.Text>
               <div className={styles.routeDiagram}>
                 <div className={styles.routeStop}>
@@ -77,13 +83,6 @@ export function ProviderConfigSettings() {
               <Typography.Text>{t('privacy.provider')}</Typography.Text>
             </Space>
           </aside>
-
-          <section aria-labelledby="provider-config-section" className={styles.configColumn}>
-            <h2 className={styles.visuallyHidden} id="provider-config-section">
-              {t('form.title')}
-            </h2>
-            <ProviderConfigPanel />
-          </section>
         </div>
       </main>
     </>

@@ -13,6 +13,96 @@ const dimensions = [
   'decision_deadline',
 ];
 
+type MeetingUiLocale = 'en-US' | 'zh-CN' | 'zh-TW';
+type MeetingUiState = 'ENDED' | 'LIVE' | 'PREPARING';
+
+const meetingUiCopy: Record<
+  MeetingUiLocale,
+  {
+    canvas: string;
+    end: string;
+    generate: string;
+    report: string;
+    start: string;
+  }
+> = {
+  'en-US': {
+    canvas: 'Meeting discussion canvas',
+    end: 'End meeting',
+    generate: 'Generate report',
+    report: 'Meeting report',
+    start: 'Start meeting',
+  },
+  'zh-CN': {
+    canvas: '会议讨论画布',
+    end: '结束会议',
+    generate: '生成报告',
+    report: '会议报告',
+    start: '开始会议',
+  },
+  'zh-TW': {
+    canvas: '會議討論畫布',
+    end: '結束會議',
+    generate: '產生報告',
+    report: '會議報告',
+    start: '開始會議',
+  },
+};
+
+const meetingStateMatrix: Record<
+  MeetingUiState,
+  readonly { height: number; locale: MeetingUiLocale; width: number }[]
+> = {
+  PREPARING: [
+    { height: 812, locale: 'en-US', width: 375 },
+    { height: 768, locale: 'zh-CN', width: 1_024 },
+    { height: 900, locale: 'zh-TW', width: 1_440 },
+  ],
+  LIVE: [
+    { height: 812, locale: 'zh-CN', width: 375 },
+    { height: 768, locale: 'zh-TW', width: 1_024 },
+    { height: 900, locale: 'en-US', width: 1_440 },
+  ],
+  ENDED: [
+    { height: 812, locale: 'zh-TW', width: 375 },
+    { height: 768, locale: 'en-US', width: 1_024 },
+    { height: 900, locale: 'zh-CN', width: 1_440 },
+  ],
+};
+
+async function expectMeetingStateHierarchy(page: Page, state: MeetingUiState) {
+  for (const { height, locale, width } of meetingStateMatrix[state]) {
+    const copy = meetingUiCopy[locale];
+    await page.setViewportSize({ height, width });
+    await page.goto(`/${locale}/meetings/demo-lifecycle`);
+
+    const primaryAction = page.getByRole('button', {
+      name: state === 'PREPARING' ? copy.start : state === 'LIVE' ? copy.end : copy.generate,
+    });
+    await expect(primaryAction).toBeVisible();
+    await expect(primaryAction).toBeInViewport({ ratio: 0.9 });
+    expect((await primaryAction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.locator('main')).toHaveCount(1);
+    await expect(page.locator('h1')).toHaveCount(1);
+    if (width === 375 && state !== 'ENDED') {
+      await expect(page.locator('h1')).toBeVisible();
+    }
+    await expect(page.locator('img[src="/brand/convergene-mark.svg"]')).toHaveCount(1);
+    expect(
+      await page.evaluate(
+        () =>
+          Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+
+    if (state === 'ENDED') {
+      await expect(page.getByRole('region', { name: copy.report })).toBeVisible();
+      await expect(page.getByRole('region', { name: copy.canvas })).toHaveCount(0);
+    }
+  }
+}
+
 async function seedPendingGrill(page: Page) {
   await page.evaluate(
     ({ readinessKeys }) =>
@@ -245,11 +335,17 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
   await expect(page.getByRole('button', { name: 'Submit answer' })).toBeEnabled();
   await page.getByRole('button', { name: 'None of these — write another answer' }).click();
   await expect(page.getByLabel('Your answer')).toBeVisible();
+  await expect(page.locator('img[src="/brand/convergene-mark.svg"]')).toHaveCount(1);
   await expect(page.locator('img[src="/brand/convergene-mark.svg"]')).toHaveAttribute('alt', '');
+  await expect(page.getByText('Prepare meeting · Convergene', { exact: true })).toHaveCount(0);
   expect(await page.locator('h1').count()).toBe(1);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  expect(
+    await page.evaluate(
+      () =>
+        Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 
   for (const [locale, readiness] of [
     ['zh-CN', '开会准备度'],
@@ -266,12 +362,15 @@ test('restores one Grill question with responsive, branded, keyboard-ready contr
 test('resumes a browser-local Grill meeting from the Dashboard and direct links', async ({
   page,
 }) => {
+  await page.setViewportSize({ height: 812, width: 375 });
   await page.goto('/en-US');
   await expect(page.getByText('No meetings yet. Start with a real request')).toBeVisible();
   await seedPendingGrill(page);
   await page.reload();
 
-  await page.getByRole('link', { name: /Launch decision/u }).click();
+  const meetingCard = page.getByRole('link', { name: /Launch decision/u });
+  await expect(meetingCard).toBeInViewport({ ratio: 0.9 });
+  await meetingCard.click();
   await expect(page).toHaveURL('/en-US/meetings/meeting-1/prepare');
   await expect(
     page.getByRole('heading', { level: 2, name: 'Who owns the final decision?' }),
@@ -298,12 +397,16 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
   await page.reload();
 
   await expect(page.getByRole('region', { name: 'Meeting discussion canvas' })).toBeVisible();
+  await expectMeetingStateHierarchy(page, 'PREPARING');
+  await page.setViewportSize({ height: 900, width: 1_440 });
+  await page.goto('/en-US/meetings/demo-lifecycle');
   await page.getByRole('button', { name: 'Start meeting' }).click();
   const startDialog = page.getByRole('dialog', { name: 'Start this meeting?' });
   await expect(startDialog).toBeVisible();
   await startDialog.getByRole('button', { name: 'Start meeting' }).click();
 
   await expect(page.getByRole('region', { name: 'Live meeting status' })).toBeVisible();
+  await expectMeetingStateHierarchy(page, 'LIVE');
   await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
   await expect(page.getByRole('heading', { name: 'Meeting outcome' })).toBeVisible();
   await page.getByRole('button', { name: 'Add to meeting outcomes' }).click();
@@ -320,7 +423,16 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
     })
     .click();
 
+  await expectMeetingStateHierarchy(page, 'ENDED');
+  await page.setViewportSize({ height: 900, width: 1_440 });
+  await page.goto('/en-US/meetings/demo-lifecycle');
   await expect(page.getByRole('region', { name: 'Meeting report' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Meeting discussion canvas' })).toHaveCount(0);
+  await expect(page.locator('#ended-canvas')).toBeHidden();
+  await page.getByRole('button', { name: 'Review meeting canvas' }).click();
+  await expect(page.getByRole('region', { name: 'Meeting discussion canvas' })).toBeVisible();
+  await page.getByRole('button', { name: 'Hide meeting canvas' }).click();
+  await expect(page.getByRole('region', { name: 'Meeting discussion canvas' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Generate report' }).click();
   await expect(page.getByRole('button', { name: 'Regenerate' })).toBeVisible();
   await page.getByText('View source', { exact: true }).click();
@@ -328,6 +440,7 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
     '# Meeting report: Demo lifecycle',
   );
   await expect(page.getByLabel('Markdown source')).toContainText('```mermaid');
+  await expect(page.locator('h1')).toHaveCount(1);
 });
 
 test('persists a successful AI node expansion through the real browser canvas', async ({
@@ -614,7 +727,11 @@ test('keeps the Traditional Chinese lifecycle and report path usable on a phone'
   await expect(page.getByRole('region', { name: '會議報告' })).toBeVisible();
   await page.getByRole('button', { name: '產生報告' }).click();
   await expect(page.getByRole('button', { name: '重新產生' })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  expect(
+    await page.evaluate(
+      () =>
+        Math.max(document.body.scrollWidth, document.documentElement.scrollWidth) <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 });
