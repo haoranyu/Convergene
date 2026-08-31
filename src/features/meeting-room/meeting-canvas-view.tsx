@@ -39,7 +39,6 @@ import {
   type OnSelectionChangeParams,
   type ReactFlowInstance,
 } from '@xyflow/react';
-import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -668,18 +667,6 @@ function CanvasContent({
     >
       <header className={styles.toolbar}>
         <div className={styles.toolbarContext}>
-          <div className={styles.brandLockup}>
-            <Image
-              alt=""
-              className={styles.brandMark}
-              data-testid="brand-mark"
-              height={24}
-              src="/brand/convergene-mark.svg"
-              unoptimized
-              width={24}
-            />
-            <span className={styles.brandName}>Convergene</span>
-          </div>
           <div className={styles.activeSummary}>
             <span className={styles.toolbarLabel}>{t('activeTopic.label')}</span>
             <Typography.Text bold data-testid="active-topic-title">

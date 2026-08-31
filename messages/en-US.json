@@ -168,6 +168,7 @@
         "expansion2": "Open a third-party channel",
         "expansion3": "Publish in clear stages",
         "label": "Brainstorm together",
+        "tabLabel": "Brainstorm",
         "modeEffect": "This script protects divergence, then converges on facts, de-escalation, and speed so the team is not trapped by a fight-or-settle binary.",
         "objective": "Build a 24-hour response mix",
         "outcome1": "Keep three response paths that can be combined",
@@ -190,6 +191,7 @@
         "expansion2": "Seek a private settlement channel",
         "expansion3": "Verify first and hold comment",
         "label": "Align on a decision",
+        "tabLabel": "Decision",
         "modeEffect": "This script exposes the situation and loss, options, best and worst cases, decision authority, and deadline before the room makes the call.",
         "objective": "Choose JT's public-response plan",
         "outcome1": "Verify facts first and preserve a settlement channel",
@@ -212,6 +214,7 @@
         "expansion2": "Message missed the central questions",
         "expansion3": "Follow-up ownership was unclear",
         "label": "Reflect and improve",
+        "tabLabel": "Retro",
         "modeEffect": "This script separates the timeline and verifiable facts from interpretation, compares expected with actual, then converts learning into owned response improvements.",
         "objective": "Learn why the first response did not de-escalate",
         "outcome1": "Create a one-hour fact-verification checklist",
@@ -521,7 +524,7 @@
     },
     "metadata": {
       "description": "Clarify the meeting, lock its Brief, and generate a controlled initial map.",
-      "title": "Prepare meeting · Convergene"
+      "title": "Prepare meeting"
     },
     "modeSelection": {
       "action": "Confirm and start Grill",
@@ -734,6 +737,12 @@
       "title": "Ready to end the meeting?",
       "unresolved": "Unresolved brief items",
       "zeroOutcomeWarning": "This meeting has not left any formal outcomes yet."
+    },
+    "ended": {
+      "canvasDescription": "The discussion tree is kept as reference and stays collapsed so the report remains the primary task.",
+      "canvasTitle": "Meeting canvas",
+      "hideCanvas": "Hide meeting canvas",
+      "showCanvas": "Review meeting canvas"
     },
     "errors": {
       "activeMeetingExists": "Another meeting is already LIVE. Return to it or end it explicitly before starting this one.",

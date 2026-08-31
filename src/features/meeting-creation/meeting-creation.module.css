@@ -1,7 +1,7 @@
 .shell {
   margin: 0 auto;
   max-width: 980px;
-  min-height: calc(100dvh - 72px);
+  min-height: calc(100dvh - 64px);
   padding: 40px var(--space-6) 80px;
 }
 

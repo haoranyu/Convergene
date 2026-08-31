@@ -1,8 +1,8 @@
 .shell {
   margin: 0 auto;
   max-width: 1280px;
-  min-height: calc(100dvh - 72px);
-  padding: clamp(32px, 6vw, 72px) var(--space-6) 80px;
+  min-height: calc(100dvh - 64px);
+  padding: clamp(24px, 4vw, 48px) var(--space-6) 64px;
 }
 
 .recoveryBanner {
@@ -14,7 +14,15 @@
   display: grid;
   gap: var(--space-8);
   grid-template-columns: minmax(0, 1fr) auto;
-  margin-bottom: clamp(40px, 7vw, 72px);
+  margin-bottom: clamp(28px, 4vw, 48px);
+}
+
+.taskHeader {
+  align-items: center;
+  display: grid;
+  gap: var(--space-6);
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: var(--space-6);
 }
 
 .eyebrow {
@@ -26,11 +34,27 @@
 }
 
 .heroTitle {
-  font-size: clamp(38px, 6vw, 68px) !important;
-  letter-spacing: -0.05em !important;
-  line-height: 1 !important;
+  font-size: clamp(36px, 5vw, 54px) !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.05 !important;
   margin: var(--space-3) 0 !important;
   max-width: 850px;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.taskTitle {
+  font-size: clamp(28px, 4vw, 36px) !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.15 !important;
+  margin: var(--space-1) 0 var(--space-2) !important;
+}
+
+.taskDescription {
+  color: var(--color-muted-foreground) !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+  max-width: 680px;
 }
 
 .heroDescription {
@@ -99,8 +123,8 @@
   flex-direction: column;
   gap: var(--space-4);
   justify-content: center;
-  min-height: 280px;
-  padding: var(--space-8);
+  min-height: 200px;
+  padding: var(--space-6);
   text-align: center;
 }
 
@@ -116,7 +140,7 @@
 }
 
 .groups {
-  gap: clamp(36px, 6vw, 64px);
+  gap: clamp(28px, 4vw, 44px);
 }
 
 .group {
@@ -199,7 +223,8 @@
 }
 
 @media (max-width: 900px) {
-  .hero {
+  .hero,
+  .taskHeader {
     align-items: start;
     grid-template-columns: 1fr;
   }
@@ -211,7 +236,7 @@
 
 @media (max-width: 767px) {
   .shell {
-    padding: 32px var(--space-4) 64px;
+    padding: var(--space-6) var(--space-4) 56px;
   }
 
   .loadingGrid,
@@ -223,5 +248,9 @@
   .primaryLink,
   .secondaryLink {
     width: 100%;
+  }
+
+  .heroTitle {
+    font-size: 36px !important;
   }
 }

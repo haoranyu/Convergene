@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Empty, Spin } from '@arco-design/web-react';
+import { IconDown, IconUp } from '@arco-design/web-react/icon';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -57,6 +58,7 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
   const [failedMeetingId, setFailedMeetingId] = useState<string>();
   const [activeMeetingId, setActiveMeetingId] = useState<string>();
   const [endOpen, setEndOpen] = useState(false);
+  const [endedCanvasOpen, setEndedCanvasOpen] = useState(false);
   const [selectedNode, setSelectedNode] = useState<MindMapNode>();
   const [startOpen, setStartOpen] = useState(false);
   const aggregateRef = useRef<MeetingAggregate | undefined>(undefined);
@@ -258,42 +260,73 @@ export function PersistedMeetingCanvas({ meetingId }: PersistedMeetingCanvasProp
 
   return (
     <div className={styles.meetingWorkspace}>
-      {aggregate.meeting.status === 'PREPARING' ? (
-        <div className={styles.lifecycleControls}>
-          <Button onClick={() => setStartOpen(true)} type="primary">
-            {meetingT('actions.start')}
-          </Button>
-        </div>
-      ) : null}
-      {aggregate.meeting.status === 'LIVE' ? (
-        <LiveMeetingToolbar
-          meeting={aggregate.meeting}
-          onEndRequest={() => setEndOpen(true)}
-          outcomes={aggregate.outcomes}
-        />
-      ) : null}
-      <MeetingCanvasView
-        aggregate={aggregate}
-        commands={commands}
-        expandNode={requestNodeExpansion}
-        onSelectedNodeChange={setSelectedNode}
-      />
-      {aggregate.meeting.status === 'LIVE' && selectedNode && liveCommands ? (
-        <div className={styles.outcomeDock}>
-          <OutcomePanel
-            existingOutcome={existingOutcome}
-            meeting={aggregate.meeting}
-            node={selectedNode}
-            onMark={liveCommands.markOutcome}
-            onUnmark={liveCommands.unmarkOutcome}
-            onUpdate={liveCommands.updateOutcome}
-          />
-        </div>
-      ) : null}
       {aggregate.meeting.status === 'ENDED' ? (
-        <ReportWorkspace aggregate={aggregate} timezone={timezone} />
-      ) : null}
-      {liveCommands ? (
+        <>
+          <ReportWorkspace aggregate={aggregate} timezone={timezone} />
+          <section aria-labelledby="ended-canvas-title" className={styles.endedCanvasPanel}>
+            <div className={styles.endedCanvasHeader}>
+              <div className={styles.endedCanvasCopy}>
+                <h2 id="ended-canvas-title">{meetingT('ended.canvasTitle')}</h2>
+                <p>{meetingT('ended.canvasDescription')}</p>
+              </div>
+              <Button
+                aria-controls="ended-canvas"
+                aria-expanded={endedCanvasOpen}
+                icon={endedCanvasOpen ? <IconUp /> : <IconDown />}
+                onClick={() => setEndedCanvasOpen((open) => !open)}
+              >
+                {meetingT(endedCanvasOpen ? 'ended.hideCanvas' : 'ended.showCanvas')}
+              </Button>
+            </div>
+            <div hidden={!endedCanvasOpen} id="ended-canvas">
+              {endedCanvasOpen ? (
+                <MeetingCanvasView
+                  aggregate={aggregate}
+                  commands={commands}
+                  expandNode={requestNodeExpansion}
+                  onSelectedNodeChange={setSelectedNode}
+                />
+              ) : null}
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          {aggregate.meeting.status === 'PREPARING' ? (
+            <div className={styles.lifecycleControls}>
+              <Button onClick={() => setStartOpen(true)} type="primary">
+                {meetingT('actions.start')}
+              </Button>
+            </div>
+          ) : null}
+          {aggregate.meeting.status === 'LIVE' ? (
+            <LiveMeetingToolbar
+              meeting={aggregate.meeting}
+              onEndRequest={() => setEndOpen(true)}
+              outcomes={aggregate.outcomes}
+            />
+          ) : null}
+          <MeetingCanvasView
+            aggregate={aggregate}
+            commands={commands}
+            expandNode={requestNodeExpansion}
+            onSelectedNodeChange={setSelectedNode}
+          />
+          {aggregate.meeting.status === 'LIVE' && selectedNode && liveCommands ? (
+            <div className={styles.outcomeDock}>
+              <OutcomePanel
+                existingOutcome={existingOutcome}
+                meeting={aggregate.meeting}
+                node={selectedNode}
+                onMark={liveCommands.markOutcome}
+                onUnmark={liveCommands.unmarkOutcome}
+                onUpdate={liveCommands.updateOutcome}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
+      {liveCommands && aggregate.meeting.status !== 'ENDED' ? (
         <>
           <StartMeetingDialog
             activeMeetingId={activeMeetingId}

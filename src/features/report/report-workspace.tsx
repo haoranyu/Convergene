@@ -164,29 +164,6 @@ export function ReportWorkspaceView({
         </Tag>
       </div>
 
-      <div aria-label={t('labels.reportSummary')} className={styles.summaryGrid}>
-        <div className={styles.summaryItem}>
-          <span>{t('document.labels.mode')}</span>
-          <strong>{t(`document.modes.${facts.value.mode}`)}</strong>
-        </div>
-        <div className={styles.summaryItem}>
-          <span>{t('labels.outcomes')}</span>
-          <strong>{format.number(facts.value.outcomes.length)}</strong>
-        </div>
-        <div className={styles.summaryItem}>
-          <span>{t('labels.personHours')}</span>
-          <strong>{meetingT('live.personHourValue', { value: personHours })}</strong>
-        </div>
-        <div className={styles.summaryItem}>
-          <span>{t('labels.overtime')}</span>
-          <strong>
-            {meetingT('live.minuteValue', {
-              value: format.number(Math.ceil(facts.value.overtimeMinutes)),
-            })}
-          </strong>
-        </div>
-      </div>
-
       <div className={styles.controls}>
         <label className={styles.languageField}>
           <span>{t('labels.language')}</span>
@@ -213,6 +190,29 @@ export function ReportWorkspaceView({
         </Button>
       </div>
 
+      <div aria-label={t('labels.reportSummary')} className={styles.summaryGrid}>
+        <div className={styles.summaryItem}>
+          <span>{t('document.labels.mode')}</span>
+          <strong>{t(`document.modes.${facts.value.mode}`)}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>{t('labels.outcomes')}</span>
+          <strong>{format.number(facts.value.outcomes.length)}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>{t('labels.personHours')}</span>
+          <strong>{meetingT('live.personHourValue', { value: personHours })}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>{t('labels.overtime')}</span>
+          <strong>
+            {meetingT('live.minuteValue', {
+              value: format.number(Math.ceil(facts.value.overtimeMinutes)),
+            })}
+          </strong>
+        </div>
+      </div>
+
       <div aria-atomic="true" aria-live="polite" className={styles.noticeRegion}>
         {pending ? <Alert content={t('status.generating')} showIcon type="info" /> : null}
         {notice ? <Alert content={t(`feedback.${notice}`)} showIcon type="success" /> : null}
@@ -222,7 +222,7 @@ export function ReportWorkspaceView({
 
       {current === undefined ? (
         <div className={styles.emptyState}>
-          <Typography.Title heading={5}>{t('empty.title')}</Typography.Title>
+          <Typography.Title heading={3}>{t('empty.title')}</Typography.Title>
           <Empty description={t('empty.description')} icon={<IconFile />} />
         </div>
       ) : (

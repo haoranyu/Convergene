@@ -39,6 +39,7 @@ All production assets use flat colors. Do not add gradients, glows, shadows, out
 4. Use `convergene-app-icon-192.png` and `convergene-app-icon-512.png` in the web app manifest. Mark the maskable source/output with `purpose: "maskable"`.
 5. Use `apple-touch-icon-180.png` for the Apple touch link and `favicon-32.png` plus `favicon.ico` as browser fallbacks.
 6. The logo is decorative when immediately followed by the visible product name: use empty alt text for an image or `aria-hidden="true"` for inline SVG. A standalone icon link/button must have a localized accessible name.
+7. The application shell is the only owner of the product lockup inside a rendered product page. Feature heroes, meeting toolbars, canvases, preparation workspaces, and reports must not repeat the mark or `Convergene` wordmark.
 
 ## Clear space and sizing
 
@@ -50,6 +51,7 @@ All production assets use flat colors. Do not add gradients, glows, shadows, out
 
 ## Acceptance criteria
 
+- Each product page renders exactly one visible product lockup, owned by the application shell.
 - The app shell, metadata, favicon, manifest, and touch icon use the supplied sources rather than reconstructed geometry.
 - The mark is optically centered at 16, 24, 32, 64, 192, and 512px.
 - Asset colors match the documented tokens exactly.

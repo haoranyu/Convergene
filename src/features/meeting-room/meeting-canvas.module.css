@@ -8,6 +8,54 @@
   padding-inline: var(--space-4);
 }
 
+.lifecycleControls :global(.arco-btn) {
+  min-height: 44px;
+}
+
+.endedCanvasPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: var(--space-4);
+  width: 100%;
+}
+
+.endedCanvasHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+}
+
+.endedCanvasCopy {
+  min-width: 0;
+}
+
+.endedCanvasCopy h2,
+.endedCanvasCopy p {
+  margin: 0;
+}
+
+.endedCanvasCopy h2 {
+  font-size: 18px;
+  line-height: 26px;
+}
+
+.endedCanvasCopy p {
+  color: var(--color-muted-foreground);
+  line-height: 22px;
+  margin-top: var(--space-1);
+}
+
+.endedCanvasHeader :global(.arco-btn) {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
 .workspace {
   display: grid;
   gap: var(--space-3);
@@ -30,8 +78,7 @@
 }
 
 .toolbarContext,
-.activeSummary,
-.brandLockup {
+.activeSummary {
   align-items: center;
   display: flex;
 }
@@ -41,23 +88,6 @@
   flex-wrap: wrap;
   gap: var(--space-4);
   min-width: 0;
-}
-
-.brandLockup {
-  gap: var(--space-2);
-}
-
-.brandMark {
-  flex: 0 0 24px;
-  height: 24px;
-  width: 24px;
-}
-
-.brandName {
-  color: var(--color-foreground);
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 24px;
 }
 
 .activeSummary {
@@ -155,7 +185,7 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-float);
   padding: var(--space-2);
   width: min(720px, 90vw);
 }
@@ -320,9 +350,10 @@
   padding: var(--space-2) var(--space-3);
   position: relative;
   transition:
+    background-color 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease,
-    opacity 180ms ease;
+    color 180ms ease;
   width: 100%;
 }
 
@@ -336,8 +367,12 @@
   border-width: 2px 2px 2px 5px;
 }
 
-.node[data-dimmed] {
-  opacity: var(--opacity-dimmed);
+.node[data-dimmed]:not([data-selected]) {
+  background: var(--color-background);
+  border-color: color-mix(in srgb, var(--color-border) 72%, var(--color-surface));
+  border-left-color: var(--color-muted-foreground);
+  box-shadow: none;
+  color: var(--color-muted-foreground);
 }
 
 .node[data-outcome] {
@@ -479,6 +514,15 @@
 }
 
 @media (max-width: 767px) {
+  .endedCanvasHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .endedCanvasHeader :global(.arco-btn) {
+    width: 100%;
+  }
+
   .activeSummary {
     min-width: 0;
     width: 100%;

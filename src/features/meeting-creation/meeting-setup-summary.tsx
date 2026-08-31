@@ -62,7 +62,12 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
     return (
       <>
         <AppHeader title={meeting.title} />
-        <PersistedMeetingCanvas meetingId={meetingId} />
+        <main className={styles.canvasShell}>
+          <h1 className={meeting.status === 'ENDED' ? styles.srOnly : styles.canvasTitle}>
+            {meeting.title}
+          </h1>
+          <PersistedMeetingCanvas meetingId={meetingId} />
+        </main>
       </>
     );
   }
@@ -72,6 +77,7 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
       <>
         <AppHeader title={meeting.title} />
         <main className={styles.shell}>
+          <h1 className={styles.srOnly}>{meeting.title}</h1>
           <div aria-busy="true" aria-label={t('loading')}>
             <Skeleton animation text={{ rows: 6 }} />
           </div>
@@ -84,6 +90,9 @@ export function MeetingSetupSummary({ meetingId }: { meetingId: string }) {
     <>
       <AppHeader title={meeting?.title ?? t('pageTitle')} />
       <main className={styles.shell}>
+        {loading || error || !meeting ? (
+          <h1 className={styles.srOnly}>{meeting?.title ?? t('pageTitle')}</h1>
+        ) : null}
         <Link className={styles.backLink} href="/">
           <IconArrowLeft aria-hidden="true" />
           {t('actions.back')}

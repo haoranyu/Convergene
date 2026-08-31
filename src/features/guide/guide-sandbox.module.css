@@ -1,7 +1,8 @@
 .shell {
   margin: 0 auto;
   max-width: 1180px;
-  min-height: calc(100dvh - 72px);
+  min-height: calc(100dvh - 64px);
+  min-width: 0;
   padding: 40px var(--space-6) 72px;
 }
 
@@ -13,6 +14,7 @@
   align-items: center;
   display: flex;
   justify-content: space-between;
+  min-width: 0;
 }
 
 .titleRow {
@@ -46,6 +48,12 @@
   margin: 24px 0;
 }
 
+.scenarioTabs :global(.arco-tabs-header-title) {
+  align-items: center;
+  display: inline-flex;
+  min-height: 44px;
+}
+
 .tourFrame {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -53,7 +61,12 @@
   box-shadow: 0 12px 36px color-mix(in srgb, var(--color-foreground) 7%, transparent);
   display: grid;
   gap: var(--space-6);
+  min-width: 0;
   padding: clamp(20px, 4vw, 40px);
+}
+
+.tourFrame > * {
+  min-width: 0;
 }
 
 .progressHeader {
@@ -63,6 +76,7 @@
 
 .progressHeader > :last-child {
   flex: 0 1 320px;
+  min-width: 0;
 }
 
 .progressHeader :global(.arco-typography) {
@@ -74,12 +88,19 @@
   gap: var(--space-4);
   grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   min-height: 360px;
+  min-width: 0;
+}
+
+.stepGrid > *,
+.fullStep > * {
+  min-width: 0;
 }
 
 .fullStep {
   display: grid;
   gap: var(--space-4);
   min-height: 360px;
+  min-width: 0;
 }
 
 .explainerCard,
@@ -89,6 +110,12 @@
 .reportCard {
   border-color: var(--color-border) !important;
   border-radius: var(--radius-md) !important;
+}
+
+.tourFrame :global(.arco-card-header-title) {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .map {
@@ -180,7 +207,10 @@
 }
 
 .dimNode {
-  opacity: var(--opacity-dimmed);
+  background: var(--color-background);
+  border-color: color-mix(in srgb, var(--color-border) 72%, var(--color-surface));
+  box-shadow: none;
+  color: var(--color-muted-foreground);
 }
 
 .expansionList {
@@ -236,9 +266,15 @@
 }
 
 .controls {
-  border-top: 1px solid var(--color-border);
+  background: var(--color-primary-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
+  border-radius: var(--radius-md);
   gap: var(--space-4);
-  padding-top: var(--space-4);
+  padding: var(--space-3);
+}
+
+.controls > * {
+  min-width: 0;
 }
 
 .controls :global(.arco-btn) {
@@ -256,7 +292,7 @@
 
 @media (max-width: 767px) {
   .shell {
-    padding: 32px var(--space-4) 64px;
+    padding: 24px var(--space-4) 64px;
   }
 
   .titleRow,
@@ -265,6 +301,25 @@
   .sampleHeading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .progressHeader > :last-child {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .progressHeader :global(h2.arco-typography) {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .exitLink {
+    display: none;
+  }
+
+  .scenarioTabs {
+    margin: var(--space-4) 0;
   }
 
   .stepGrid {
@@ -296,5 +351,15 @@
 
   .controls > :last-child {
     width: 100%;
+  }
+
+  .copyAction:global(.arco-btn) {
+    width: 100%;
+  }
+
+  .controls :global(.arco-space),
+  .controls :global(.arco-space-item),
+  .controls :global(.arco-btn) {
+    max-width: 100%;
   }
 }

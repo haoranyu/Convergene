@@ -97,7 +97,7 @@ function GuideStep({ scenario, step }: { scenario: ScenarioId; step: number }) {
     return (
       <div className={styles.stepGrid}>
         <Card className={styles.explainerCard} title={t('steps.grill.title')}>
-          <Typography.Title heading={4}>{t(`fixtures.${scenario}.question`)}</Typography.Title>
+          <Typography.Title heading={3}>{t(`fixtures.${scenario}.question`)}</Typography.Title>
           <Typography.Paragraph>{t(`fixtures.${scenario}.reason`)}</Typography.Paragraph>
           <Tag>{t('sampleAnswer')}</Tag>
         </Card>
@@ -141,7 +141,7 @@ function GuideStep({ scenario, step }: { scenario: ScenarioId; step: number }) {
       <div className={styles.fullStep}>
         <div className={styles.sampleHeading}>
           <div>
-            <Typography.Title heading={4}>{t('steps.play.title')}</Typography.Title>
+            <Typography.Title heading={3}>{t('steps.play.title')}</Typography.Title>
             <Typography.Paragraph>{t('steps.play.description')}</Typography.Paragraph>
           </div>
           <Tag icon={<IconExperiment />} color="orange">
@@ -220,6 +220,25 @@ export function GuideSandbox() {
     }
   }
 
+  const finalStep = step === totalSteps - 1;
+  const copyAction = (
+    <Popconfirm
+      content={t('copy.confirmDescription')}
+      disabled={copying}
+      onOk={() => void copyExample()}
+      title={t('copy.confirmTitle')}
+    >
+      <Button
+        className={styles.copyAction}
+        icon={<IconCopy aria-hidden="true" />}
+        loading={copying}
+        type={finalStep ? 'primary' : 'outline'}
+      >
+        {t('actions.copy')}
+      </Button>
+    </Popconfirm>
+  );
+
   return (
     <>
       <AppHeader title={t('pageTitle')} />
@@ -246,26 +265,30 @@ export function GuideSandbox() {
           type="rounded"
         >
           {scenarios.map((id) => (
-            <Tabs.TabPane key={id} title={t(`fixtures.${id}.label`)} />
+            <Tabs.TabPane
+              key={id}
+              title={
+                <span aria-label={t(`fixtures.${id}.label`)}>{t(`fixtures.${id}.tabLabel`)}</span>
+              }
+            />
           ))}
         </Tabs>
 
-        <section className={styles.tourFrame}>
+        <section aria-labelledby="guide-step-title" className={styles.tourFrame}>
           <div className={styles.progressHeader}>
             <div>
               <Typography.Text>
                 {t('progress', { current: step + 1, total: totalSteps })}
               </Typography.Text>
-              <Typography.Title heading={3}>
+              <Typography.Title heading={2} id="guide-step-title">
                 {t(`steps.${['type', 'grill', 'focus', 'play', 'outcomes'][step]}.title`)}
               </Typography.Title>
             </div>
             <Progress percent={((step + 1) / totalSteps) * 100} showText={false} />
           </div>
 
-          <GuideStep scenario={scenario} step={step} />
-
           <div className={styles.controls}>
+            {finalStep ? copyAction : null}
             <Space wrap>
               <Button
                 disabled={step === 0}
@@ -274,27 +297,21 @@ export function GuideSandbox() {
               >
                 {t('actions.previous')}
               </Button>
-              <Button
-                disabled={step === totalSteps - 1}
-                icon={<IconArrowRight aria-hidden="true" />}
-                iconOnly={false}
-                onClick={() => setStep((value) => Math.min(totalSteps - 1, value + 1))}
-                type="primary"
-              >
-                {t('actions.next')}
-              </Button>
+              {!finalStep ? (
+                <Button
+                  icon={<IconArrowRight aria-hidden="true" />}
+                  iconOnly={false}
+                  onClick={() => setStep((value) => Math.min(totalSteps - 1, value + 1))}
+                  type="primary"
+                >
+                  {t('actions.next')}
+                </Button>
+              ) : null}
             </Space>
-            <Popconfirm
-              content={t('copy.confirmDescription')}
-              disabled={copying}
-              onOk={() => void copyExample()}
-              title={t('copy.confirmTitle')}
-            >
-              <Button icon={<IconCopy aria-hidden="true" />} loading={copying} type="outline">
-                {t('actions.copy')}
-              </Button>
-            </Popconfirm>
+            {!finalStep ? copyAction : null}
           </div>
+
+          <GuideStep scenario={scenario} step={step} />
         </section>
 
         <div aria-live="polite">

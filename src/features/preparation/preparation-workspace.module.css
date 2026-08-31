@@ -179,7 +179,7 @@
   background: var(--color-accent);
 }
 .segmentMISSING {
-  background: #cbd5e1;
+  background: var(--color-border);
 }
 
 .dimensionList {

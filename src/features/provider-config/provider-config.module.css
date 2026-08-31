@@ -63,6 +63,11 @@
   margin: 0 !important;
 }
 
+.formTitle {
+  font-size: 20px !important;
+  line-height: 28px !important;
+}
+
 .statusCaption,
 .formDescription,
 .keyHelp {
@@ -134,6 +139,12 @@
   min-height: 44px;
 }
 
+.formCard :global(.arco-input-inner-wrapper),
+.formCard :global(input.arco-input-password),
+.formCard :global(.arco-select-view) {
+  min-height: 44px;
+}
+
 .formHeading {
   align-items: flex-start;
   display: flex;
@@ -163,7 +174,7 @@
   background: var(--color-background);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  margin: calc(var(--space-2) * -1) 0 var(--space-4);
+  margin: var(--space-4) 0 0;
   padding: var(--space-3);
 }
 

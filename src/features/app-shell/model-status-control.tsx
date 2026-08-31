@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Spin } from '@arco-design/web-react';
+import { Button } from '@arco-design/web-react';
 import {
   IconCheckCircleFill,
   IconExclamationCircleFill,
@@ -39,7 +39,7 @@ export function ModelStatusControl() {
   if (status === undefined) {
     return (
       <span aria-label={t('loading')} className={styles.modelLoading}>
-        <Spin dot size={14} />
+        <span aria-hidden="true" className={styles.modelSpinner} />
       </span>
     );
   }
@@ -51,16 +51,23 @@ export function ModelStatusControl() {
       <ProviderConfigGate onConfigured={setStatus}>
         {({ open }) => (
           <Button
+            aria-label={providerT(
+              status.activeProvider === 'STEPFUN'
+                ? 'status.retainedUnavailable'
+                : 'status.needsReconfiguration',
+            )}
             className={styles.modelNeedsAttention}
             icon={<IconExclamationCircleFill aria-hidden="true" />}
             onClick={open}
             status="warning"
           >
-            {providerT(
-              status.activeProvider === 'STEPFUN'
-                ? 'status.retainedUnavailable'
-                : 'status.needsReconfiguration',
-            )}
+            <span className={styles.controlLabel}>
+              {providerT(
+                status.activeProvider === 'STEPFUN'
+                  ? 'status.retainedUnavailable'
+                  : 'status.needsReconfiguration',
+              )}
+            </span>
           </Button>
         )}
       </ProviderConfigGate>
@@ -76,9 +83,9 @@ export function ModelStatusControl() {
       status.activeProvider === 'STEPFUN' ? 'providers.stepfun.name' : 'providers.siliconflow.name',
     );
     return (
-      <Link className={styles.modelReady} href="/settings/model">
+      <Link aria-label={provider} className={styles.modelReady} href="/settings/model">
         <IconCheckCircleFill aria-hidden="true" />
-        <span>{provider}</span>
+        <span className={styles.controlLabel}>{provider}</span>
       </Link>
     );
   }
@@ -88,12 +95,13 @@ export function ModelStatusControl() {
       <ProviderConfigGate onConfigured={setStatus}>
         {({ open }) => (
           <Button
+            aria-label={providerT('status.capabilityUnavailable')}
             className={styles.modelNeedsAttention}
             icon={<IconExclamationCircleFill aria-hidden="true" />}
             onClick={open}
             status="warning"
           >
-            {providerT('status.capabilityUnavailable')}
+            <span className={styles.controlLabel}>{providerT('status.capabilityUnavailable')}</span>
           </Button>
         )}
       </ProviderConfigGate>
@@ -104,11 +112,14 @@ export function ModelStatusControl() {
     <ProviderConfigGate onConfigured={setStatus}>
       {({ open }) => (
         <Button
+          aria-label={status === null ? t('retry') : providerT('actions.open')}
           className={styles.headerControl}
           icon={<IconSafe aria-hidden="true" />}
           onClick={status === null ? () => void loadStatus() : open}
         >
-          {status === null ? t('retry') : providerT('actions.open')}
+          <span className={styles.controlLabel}>
+            {status === null ? t('retry') : providerT('actions.open')}
+          </span>
         </Button>
       )}
     </ProviderConfigGate>

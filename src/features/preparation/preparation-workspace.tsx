@@ -205,6 +205,7 @@ function PreparationWorkspaceBody({
   if (!loaded) {
     return (
       <main aria-busy="true" className={styles.centered}>
+        <h1 className={styles.srOnly}>{t('metadata.title')}</h1>
         <Spin dot />
         <p>{t('loading')}</p>
       </main>
@@ -214,6 +215,7 @@ function PreparationWorkspaceBody({
   if (aggregate === undefined) {
     return (
       <main className={styles.centered}>
+        <h1 className={styles.srOnly}>{t('metadata.title')}</h1>
         <Empty description={t('notFound')} />
         <Link className={styles.textLink} href="/">
           {t('actions.back')}

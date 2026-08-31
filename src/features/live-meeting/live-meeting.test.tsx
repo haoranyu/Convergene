@@ -58,9 +58,8 @@ describe('live meeting controls', () => {
     expect(screen.getByText('In progress · overtime')).toBeVisible();
     expect(screen.getByText('4 attendees')).toBeVisible();
     expect(screen.getByText('5 person-hours')).toBeVisible();
-    const brand = screen.getByText('Convergene').closest('strong');
-    expect(brand?.querySelector('img')).toHaveAttribute('src', '/brand/convergene-mark.svg');
-    expect(brand?.querySelector('img')).toHaveAttribute('alt', '');
+    expect(document.querySelector('img[src="/brand/convergene-mark.svg"]')).toBeNull();
+    expect(screen.queryByText('Convergene')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'End meeting' }));
     expect(onEndRequest).toHaveBeenCalledOnce();
   });

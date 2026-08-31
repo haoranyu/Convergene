@@ -1,8 +1,26 @@
 .shell {
   margin: 0 auto;
   max-width: 900px;
-  min-height: calc(100dvh - 72px);
+  min-height: calc(100dvh - 64px);
   padding: 40px var(--space-6) 80px;
+}
+
+.canvasShell {
+  margin: 0 auto;
+  max-width: 1440px;
+  min-height: calc(100dvh - 64px);
+  padding: var(--space-4) var(--space-6) 64px;
+}
+
+.srOnly,
+.canvasTitle {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .backLink {
@@ -47,7 +65,25 @@
 }
 
 @media (max-width: 767px) {
-  .shell {
+  .shell,
+  .canvasShell {
     padding: 32px var(--space-4) 64px;
+  }
+
+  .canvasShell {
+    padding-top: var(--space-4);
+  }
+
+  .canvasTitle {
+    clip: auto;
+    clip-path: none;
+    font-size: 22px;
+    height: auto;
+    line-height: 30px;
+    margin: 0 0 var(--space-3);
+    overflow: visible;
+    position: static;
+    white-space: normal;
+    width: auto;
   }
 }

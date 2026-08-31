@@ -3,7 +3,6 @@
 import { Alert, Button, Tag } from '@arco-design/web-react';
 import { IconClockCircle, IconPoweroff } from '@arco-design/web-react/icon';
 import { useFormatter, useTranslations } from 'next-intl';
-import Image from 'next/image';
 
 import { calculateMeetingEconomics, deriveTimingState } from '@/modules/meeting-domain';
 import type { Meeting, MeetingOutcome } from '@/modules/meeting-domain';
@@ -45,18 +44,6 @@ export function LiveMeetingToolbar({
 
   return (
     <section aria-label={t('live.summaryLabel')} className={styles.toolbar}>
-      <strong className={styles.brand}>
-        <Image
-          alt=""
-          aria-hidden="true"
-          className={styles.brandMark}
-          height={24}
-          src="/brand/convergene-mark.svg"
-          unoptimized
-          width={24}
-        />
-        <span>Convergene</span>
-      </strong>
       <div aria-atomic="true" aria-live="off" className={styles.toolbarMetrics}>
         <div className={styles.metric}>
           <span className={styles.metricLabel}>{t('live.status')}</span>

@@ -6,19 +6,20 @@
   justify-content: space-between;
   margin: 0 auto;
   max-width: 1280px;
-  min-height: 72px;
-  padding: 12px var(--space-6);
+  min-height: 64px;
+  padding: 8px var(--space-6);
 }
 
 .identity,
 .headerActions,
-.locales,
 .modelReady {
   align-items: center;
   display: flex;
 }
 
 .identity {
+  flex: 1 1 auto;
+  gap: var(--space-3);
   min-width: 0;
 }
 
@@ -28,12 +29,15 @@
   display: inline-flex;
   font-size: 18px;
   font-weight: 700;
-  gap: 8px;
   letter-spacing: -0.025em;
 }
 
 .brandLink {
+  align-items: center;
   color: inherit;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 44px;
   text-decoration: none;
 }
 
@@ -46,27 +50,33 @@
 .pageTitle {
   border-left: 1px solid var(--color-border);
   color: var(--color-muted-foreground);
-  margin-left: var(--space-3);
-  overflow-wrap: anywhere;
+  max-width: min(32vw, 360px);
+  overflow: hidden;
   padding-left: var(--space-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .headerActions {
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .headerControl:global(.arco-btn),
 .modelNeedsAttention:global(.arco-btn),
 .iconLink,
-.localeLink,
+.localeLoading,
+.localeSelect,
 .modelReady {
   min-height: 44px;
 }
 
 .iconLink,
-.localeLink,
+.localeLoading,
+.localeSelect,
 .modelReady {
   border-radius: var(--radius-sm);
   text-decoration: none;
@@ -82,24 +92,39 @@
 }
 
 .iconLink:hover,
-.localeLink:hover {
+.localeSelect:hover {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
 }
 
-.locales {
-  border-left: 1px solid var(--color-border);
-  gap: 2px;
-  margin-left: 4px;
-  padding-left: var(--space-2);
-}
-
-.localeLink {
+.localeLoading,
+.localeSelect {
   align-items: center;
+  border-left: 1px solid var(--color-border);
   color: var(--color-muted-foreground);
   display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+  padding-left: var(--space-3);
+}
+
+.localeLoading {
+  justify-content: center;
+  min-width: 52px;
+}
+
+.localeSelect select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
   font-size: 12px;
-  padding: 0 8px;
+  font-weight: 600;
+  height: 44px;
+  padding: 0 var(--space-2);
+  width: 42px;
 }
 
 .modelReady {
@@ -113,8 +138,33 @@
   align-items: center;
   display: inline-flex;
   justify-content: center;
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.modelSpinner {
+  animation: model-spinner 720ms linear infinite;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  border-top-color: var(--color-primary);
+  height: 16px;
+  width: 16px;
+}
+
+@keyframes model-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.visuallyHidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .dataDrawerBody {
@@ -162,20 +212,64 @@
 
 @media (max-width: 767px) {
   .header {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+    min-height: 60px;
+    padding: 8px var(--space-4);
+  }
+
+  .brandMark {
+    flex-basis: 24px;
+    height: 24px;
+    width: 24px;
+  }
+
+  .pageTitle {
+    display: none;
   }
 
   .headerActions {
-    justify-content: flex-start;
-    width: 100%;
+    gap: 2px;
   }
 
-  .locales {
+  .headerControl:global(.arco-btn),
+  .modelNeedsAttention:global(.arco-btn),
+  .modelReady {
+    justify-content: center;
+    padding: 0 !important;
+    width: 44px;
+  }
+
+  .controlLabel {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .localeLoading,
+  .localeSelect {
     border-left: 0;
-    flex-basis: 100%;
     margin-left: 0;
     padding-left: 0;
+  }
+
+  .localeSelect select {
+    padding-inline: 4px;
+    width: 32px;
+  }
+}
+
+@media (max-width: 359px) {
+  .brandName {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modelSpinner {
+    animation: none;
   }
 }
