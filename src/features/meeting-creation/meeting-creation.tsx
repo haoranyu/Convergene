@@ -345,6 +345,10 @@ export function MeetingCreation() {
                     }
                   }
                   layout="vertical"
+                  onValuesChange={() => {
+                    invalidateClassification();
+                    setNotice(null);
+                  }}
                   requiredSymbol={{ position: 'end' }}
                 >
                   <div className={styles.errorSummary} ref={errorSummaryRef} tabIndex={-1}>

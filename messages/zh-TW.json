@@ -422,6 +422,8 @@
       "continueGrill": "繼續拷問我 · {current} / {limit}",
       "finish": "結束拷問",
       "generateBrief": "產生 Brief",
+      "loadSavedDraft": "載入已儲存版本",
+      "continueSavedMeeting": "繼續使用已儲存的會議",
       "openCanvas": "開啟會議畫布",
       "restart": "重新準備",
       "retry": "重試",
@@ -447,6 +449,9 @@
       "lockWarning": "按下確認會先驗證心智圖，再同時鎖定 Brief 並儲存完整圖譜。",
       "locked": "已鎖定快照",
       "lockedDescription": "這份 Brief 已鎖定；產生或重試心智圖時會一直保留在頁面上。",
+      "loadSavedConfirm": "放棄尚未儲存的 Brief 修改，載入最新儲存版本？",
+      "preservedTitle": "尚未儲存的 Brief 已保留",
+      "stageChanged": "另一分頁已變更會議階段。以下修改仍可複製；繼續使用已儲存的會議會放棄這些尚未儲存的修改。",
       "title": "會議 Brief"
     },
     "dimensions": {

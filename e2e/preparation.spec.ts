@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { briefDraft } from '../src/fixtures/meeting';
+
 const dimensions = [
   'objective',
   'desired_outcome',
@@ -388,6 +390,88 @@ test('resumes a browser-local Grill meeting from the Dashboard and direct links'
   ).toBeVisible();
 });
 
+test('preserves unsaved Brief work across tabs and stage changes on a phone', async ({
+  page,
+  context,
+}, testInfo) => {
+  await page.setViewportSize({ height: 812, width: 375 });
+  await page.goto('/en-US');
+  await expect(page.getByText('No meetings yet. Start with a real request')).toBeVisible();
+  await seedPendingGrill(page);
+  await page.evaluate(
+    (brief) =>
+      new Promise<void>((resolve, reject) => {
+        const request = indexedDB.open('convergene');
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => {
+          const database = request.result;
+          const transaction = database.transaction(['meetings', 'grillTurns'], 'readwrite');
+          const meetings = transaction.objectStore('meetings');
+          const get = meetings.get('meeting-1');
+          get.onsuccess = () =>
+            meetings.put({
+              ...get.result,
+              brief,
+              preparationStage: 'BRIEF_READY',
+              updatedAt: '2026-08-29T09:07:00.000Z',
+            });
+          transaction.objectStore('grillTurns').clear();
+          transaction.onerror = () => reject(transaction.error);
+          transaction.oncomplete = () => {
+            database.close();
+            resolve();
+          };
+        };
+      }),
+    briefDraft,
+  );
+  await page.goto('/en-US/meetings/meeting-1/prepare');
+  const secondTab = await context.newPage();
+  await secondTab.goto('/en-US/meetings/meeting-1/prepare');
+  await page.getByLabel('Meeting objective').fill('My unsaved local objective');
+  await secondTab.getByLabel('Meeting objective').fill('Objective from the other tab');
+  await secondTab.getByRole('button', { name: 'Save edits' }).click();
+  await expect(secondTab.getByRole('button', { name: 'Save edits' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Save edits' }).click();
+  const loadSaved = page.getByRole('button', { name: 'Load saved version' });
+  await expect(loadSaved).toBeVisible();
+  expect((await loadSaved.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByLabel('Meeting objective')).toHaveValue('My unsaved local objective');
+  await page.screenshot({
+    path: testInfo.outputPath('brief-save-conflict-375.png'),
+    fullPage: true,
+  });
+
+  secondTab.once('dialog', (dialog) => dialog.accept());
+  await secondTab.getByRole('button', { name: 'Prepare again' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Your unsaved Brief is preserved' }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Meeting objective')).toHaveValue('My unsaved local objective');
+  await expect(page.getByLabel('Meeting objective')).toHaveAttribute('readonly');
+  const continueSaved = page.getByRole('button', { name: 'Continue with the saved meeting' });
+  await expect(continueSaved).toBeInViewport({ ratio: 0.9 });
+  expect((await continueSaved.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath('brief-stage-conflict-375.png'),
+    fullPage: true,
+  });
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await page.getByRole('button', { name: 'Continue with the saved meeting' }).click();
+  await expect(page.getByLabel('Meeting objective')).toHaveValue('My unsaved local objective');
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Continue with the saved meeting' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Choose the meeting script first', exact: true, level: 2 }),
+  ).toBeVisible();
+  await secondTab.close();
+});
+
 test('runs the canvas lifecycle through one outcome and a persisted Markdown report', async ({
   page,
 }) => {
@@ -403,9 +487,17 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
   await page.getByRole('button', { name: 'Start meeting' }).click();
   const startDialog = page.getByRole('dialog', { name: 'Start this meeting?' });
   await expect(startDialog).toBeVisible();
+  await startDialog.getByRole('spinbutton', { name: 'Actual attendees' }).fill('6');
   await startDialog.getByRole('button', { name: 'Start meeting' }).click();
 
   await expect(page.getByRole('region', { name: 'Live meeting status' })).toBeVisible();
+  // Exercise the first end check before any navigation remounts the workspace.
+  await page.getByRole('button', { name: 'End meeting' }).click();
+  const firstEndCheck = page.getByRole('dialog', { name: 'Ready to end the meeting?' });
+  await expect(firstEndCheck.getByRole('spinbutton', { name: 'Actual attendees' })).toHaveValue(
+    '6',
+  );
+  await firstEndCheck.getByRole('button', { name: 'Return to meeting' }).click();
   await expectMeetingStateHierarchy(page, 'LIVE');
   await page.locator('.react-flow__node[data-id="demo-topic-options"]').click();
   await expect(page.getByRole('heading', { name: 'Meeting outcome' })).toBeVisible();
@@ -415,6 +507,7 @@ test('runs the canvas lifecycle through one outcome and a persisted Markdown rep
   await page.getByRole('button', { name: 'End meeting' }).click();
   const endDialog = page.getByRole('dialog', { name: 'Ready to end the meeting?' });
   await expect(endDialog).toBeVisible();
+  await expect(endDialog.getByRole('spinbutton', { name: 'Actual attendees' })).toHaveValue('6');
   await endDialog.getByRole('button', { name: 'Continue to confirmation' }).click();
   await page
     .getByRole('dialog', { name: 'Confirm meeting end' })

@@ -67,6 +67,22 @@ interface BriefFields {
   unknowns: string;
 }
 
+interface BriefEditor {
+  base: MeetingBriefDraft;
+  fields: BriefFields;
+  meetingId: string;
+  revision: string;
+}
+
+const briefFieldNames = [
+  'objective',
+  'desiredOutcome',
+  'confirmed',
+  'assumptions',
+  'unknowns',
+  'openingLine',
+] as const;
+
 function lines(value: string): string[] {
   return value
     .split('\n')
@@ -83,6 +99,17 @@ function briefFields(brief: MeetingBriefDraft): BriefFields {
     openingLine: brief.facilitation.openingLine,
     unknowns: brief.unknowns.join('\n'),
   };
+}
+
+function hasBriefEdits(editor: BriefEditor): boolean {
+  const saved = briefFields(editor.base);
+  return (Object.keys(saved) as (keyof BriefFields)[]).some(
+    (field) => editor.fields[field] !== saved[field],
+  );
+}
+
+function briefEditor(meetingId: string, base: MeetingBriefDraft, revision: string): BriefEditor {
+  return { base, fields: briefFields(base), meetingId, revision };
 }
 
 function updatedBrief(brief: MeetingBriefDraft, fields: BriefFields): MeetingBriefDraft {
@@ -116,10 +143,10 @@ function PreparationWorkspaceBody({
   const [textAnswerTurnId, setTextAnswerTurnId] = useState<string>();
   const [requestedDimension, setRequestedDimension] = useState<string>();
   const [selectedMode, setSelectedMode] = useState<MeetingMode>();
-  const [fields, setFields] = useState<BriefFields>();
-  const [fieldsRevision, setFieldsRevision] = useState<string>();
+  const [editor, setEditor] = useState<BriefEditor>();
   const autoStarted = useRef<string | undefined>(undefined);
   const errorRef = useRef<HTMLDivElement | null>(null);
+  const preservedDraftRef = useRef<HTMLHeadingElement | null>(null);
 
   useEffect(() => {
     const stop = observeMeetingAggregate(
@@ -143,15 +170,27 @@ function PreparationWorkspaceBody({
   const pendingTurn = aggregate?.grillTurns.find(({ disposition }) => disposition === 'PENDING');
   const pendingTurnId = pendingTurn?.id;
   const pendingQuestionType = pendingTurn?.questionType;
+  const fields = editor?.fields;
+  const hasUnsavedBrief = editor !== undefined && hasBriefEdits(editor);
+  const briefStageChanged =
+    hasUnsavedBrief &&
+    editor.meetingId === meetingId &&
+    (meeting?.preparationStage !== 'BRIEF_READY' || meeting.brief?.confirmedAt !== undefined);
 
   if (
     meeting?.preparationStage === 'BRIEF_READY' &&
     meeting.brief !== undefined &&
-    meeting.brief.confirmedAt === undefined &&
-    fieldsRevision !== meeting.updatedAt
+    meeting.brief.confirmedAt === undefined
   ) {
-    setFields(briefFields(meeting.brief));
-    setFieldsRevision(meeting.updatedAt);
+    if (
+      editor === undefined ||
+      editor.meetingId !== meeting.id ||
+      (editor.revision < meeting.updatedAt && !hasBriefEdits(editor))
+    ) {
+      setEditor(briefEditor(meeting.id, meeting.brief, meeting.updatedAt));
+    }
+  } else if (editor !== undefined && (!hasUnsavedBrief || editor.meetingId !== meetingId)) {
+    setEditor(undefined);
   }
 
   const perform = useCallback(
@@ -188,7 +227,8 @@ function PreparationWorkspaceBody({
       aggregate?.meeting.preparationStage !== 'GRILLING' ||
       aggregate.grillTurns.length !== 0 ||
       operation !== 'IDLE' ||
-      errorCode !== undefined
+      errorCode !== undefined ||
+      briefStageChanged
     ) {
       return;
     }
@@ -196,11 +236,15 @@ function PreparationWorkspaceBody({
     if (autoStarted.current === key) return;
     autoStarted.current = key;
     void perform('GRILL', () => requestQuestion(aggregate));
-  }, [aggregate, errorCode, operation, perform, requestQuestion]);
+  }, [aggregate, briefStageChanged, errorCode, operation, perform, requestQuestion]);
 
   useEffect(() => {
     if (errorCode !== undefined) errorRef.current?.focus();
   }, [errorCode]);
+
+  useEffect(() => {
+    if (briefStageChanged) preservedDraftRef.current?.focus();
+  }, [briefStageChanged]);
 
   if (!loaded) {
     return (
@@ -231,6 +275,41 @@ function PreparationWorkspaceBody({
   const latest = pending ?? aggregate.grillTurns.at(-1);
   const readiness = meeting?.brief?.readiness ?? latest?.readiness;
   const busy = operation !== 'IDLE';
+
+  if (briefStageChanged && editor !== undefined) {
+    return (
+      <main className={styles.shell}>
+        <header className={styles.topbar}>
+          <strong>{currentMeeting.title}</strong>
+          <Tag>{t('localOnly')}</Tag>
+        </header>
+        <section className={styles.preservedDraft}>
+          <h1 ref={preservedDraftRef} tabIndex={-1}>
+            {t('brief.preservedTitle')}
+          </h1>
+          <Alert content={t('brief.stageChanged')} showIcon type="warning" />
+          <div className={styles.actionRow}>
+            <Button
+              onClick={() => {
+                if (window.confirm(t('brief.loadSavedConfirm'))) setEditor(undefined);
+              }}
+              type="primary"
+            >
+              {t('actions.continueSavedMeeting')}
+            </Button>
+          </div>
+          <div className={styles.briefGrid}>
+            {briefFieldNames.map((field) => (
+              <label className={styles.briefField} key={field}>
+                <strong>{t(`brief.fields.${field}`)}</strong>
+                <Input.TextArea readOnly rows={4} value={editor.fields[field]} />
+              </label>
+            ))}
+          </div>
+        </section>
+      </main>
+    );
+  }
   const answerMode =
     pendingQuestionType === 'SINGLE_CHOICE' && textAnswerTurnId !== pendingTurnId
       ? 'CHOICE'
@@ -240,6 +319,10 @@ function PreparationWorkspaceBody({
     answerMode === 'CHOICE'
       ? pending?.options?.find(({ label }) => label === currentAnswer)?.value
       : undefined;
+  const canLoadSavedDraft =
+    errorCode === 'STALE_WRITE' &&
+    meeting?.preparationStage === 'BRIEF_READY' &&
+    meeting.brief?.confirmedAt === undefined;
 
   const errorAlert = errorCode ? (
     <div ref={errorRef} role="alert" tabIndex={-1}>
@@ -259,6 +342,13 @@ function PreparationWorkspaceBody({
         title={t('errors.title')}
         type="error"
       />
+      {canLoadSavedDraft ? (
+        <div className={styles.actionRow}>
+          <Button disabled={busy} onClick={loadSavedDraft}>
+            {t('actions.loadSavedDraft')}
+          </Button>
+        </div>
+      ) : null}
     </div>
   ) : null;
 
@@ -343,19 +433,37 @@ function PreparationWorkspaceBody({
   async function saveDraft(): Promise<MeetingAggregate> {
     if (
       meeting?.brief === undefined ||
-      fields === undefined ||
+      editor === undefined ||
+      editor.meetingId !== meeting.id ||
       meeting.brief.confirmedAt !== undefined
     ) {
       throw new Error('INVALID_MEETING_STATE');
     }
     const saved = await repository.updateBriefDraft(
       meeting.id,
-      updatedBrief(meeting.brief, fields),
-      meeting.updatedAt,
+      updatedBrief(editor.base, editor.fields),
+      editor.revision,
       new Date(),
     );
     if (!saved.ok) throw saved.error;
+    const savedBrief = saved.value.brief;
+    if (savedBrief === undefined || savedBrief.confirmedAt !== undefined) {
+      throw new Error('INVALID_MEETING_STATE');
+    }
+    setEditor(briefEditor(saved.value.id, savedBrief, saved.value.updatedAt));
     return { ...currentAggregate, meeting: saved.value };
+  }
+
+  function loadSavedDraft() {
+    if (
+      meeting?.brief === undefined ||
+      meeting.brief.confirmedAt !== undefined ||
+      !window.confirm(t('brief.loadSavedConfirm'))
+    ) {
+      return;
+    }
+    setEditor(briefEditor(meeting.id, meeting.brief, meeting.updatedAt));
+    setErrorCode(undefined);
   }
 
   async function rollback(kind: 'GRILL' | 'DRAFT') {
@@ -370,6 +478,7 @@ function PreparationWorkspaceBody({
         await returnToModeSelection(currentMeeting, repository);
         setSelectedMode(undefined);
       }
+      setEditor(undefined);
     });
   }
 
@@ -655,16 +764,7 @@ function PreparationWorkspaceBody({
             </div>
             {fields || locked ? (
               <div className={styles.briefGrid}>
-                {(
-                  [
-                    ['objective', 'objective'],
-                    ['desiredOutcome', 'desiredOutcome'],
-                    ['confirmed', 'confirmed'],
-                    ['assumptions', 'assumptions'],
-                    ['unknowns', 'unknowns'],
-                    ['openingLine', 'openingLine'],
-                  ] as const
-                ).map(([field, label]) => {
+                {briefFieldNames.map((field) => {
                   const value = locked
                     ? field === 'openingLine'
                       ? meeting.brief!.facilitation.openingLine
@@ -674,12 +774,14 @@ function PreparationWorkspaceBody({
                     : fields![field];
                   return (
                     <label className={styles.briefField} key={field}>
-                      <strong>{t(`brief.fields.${label}`)}</strong>
+                      <strong>{t(`brief.fields.${field}`)}</strong>
                       <Input.TextArea
                         disabled={locked || busy}
                         onChange={(next) =>
-                          setFields((current) =>
-                            current ? { ...current, [field]: next } : current,
+                          setEditor((current) =>
+                            current
+                              ? { ...current, fields: { ...current.fields, [field]: next } }
+                              : current,
                           )
                         }
                         rows={field === 'objective' || field === 'desiredOutcome' ? 2 : 4}

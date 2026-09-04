@@ -8,6 +8,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import enUS from '../../../messages/en-US.json';
 import { createLiveMeetingFixture } from '@/fixtures/live-meeting';
 import { createMapReadyMeeting } from '@/fixtures/meeting';
+import type { Meeting } from '@/modules/meeting-domain';
 
 import { EndMeetingDialog } from './end-meeting-dialog';
 import { LiveMeetingToolbar } from './live-meeting-toolbar';
@@ -241,6 +242,89 @@ describe('live meeting controls', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm and end meeting' }));
     await waitFor(() => expect(onEnd).toHaveBeenCalledWith(5));
     expect(onEnded).toHaveBeenCalledWith(endedMeeting);
+  });
+
+  it('uses the started attendee snapshot when first ending a meeting without remounting', async () => {
+    const user = userEvent.setup();
+    const preparingMeeting = createMapReadyMeeting();
+    const aggregate = createLiveMeetingFixture({
+      meeting: { actualAttendeeCount: 6 },
+      outcomes: [],
+    });
+    const onEnd = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...aggregate.meeting,
+        endedAt: '2026-08-29T10:30:00.000Z',
+        status: 'ENDED',
+      },
+    });
+    const dialog = (meeting: Meeting, open: boolean) => (
+      <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
+        <EndMeetingDialog
+          fixedNow={new Date('2026-08-29T10:30:00.000Z')}
+          meeting={meeting}
+          nodes={aggregate.nodes}
+          onCancel={vi.fn()}
+          onEnd={onEnd}
+          open={open}
+          outcomes={aggregate.outcomes}
+        />
+      </NextIntlClientProvider>
+    );
+    const view = render(dialog(preparingMeeting, false));
+
+    view.rerender(dialog(aggregate.meeting, false));
+    view.rerender(dialog(aggregate.meeting, true));
+
+    expect(screen.getByRole('spinbutton', { name: 'Actual attendees' })).toHaveValue('6');
+    const personHours = screen.getByText('Total person-hours').parentElement;
+    expect(personHours).not.toBeNull();
+    expect(within(personHours!).getByText('3 person-hours')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Continue to confirmation' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm and end meeting' }));
+    await waitFor(() => expect(onEnd).toHaveBeenCalledWith(6));
+  });
+
+  it('preserves an open correction and reloads the attendee snapshot after closing and reopening', async () => {
+    const user = userEvent.setup();
+    const aggregate = createLiveMeetingFixture({ outcomes: [] });
+    const onCancel = vi.fn();
+    const onEnd = vi.fn();
+    const dialog = (meeting: Meeting, open: boolean) => (
+      <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
+        <EndMeetingDialog
+          fixedNow={new Date('2026-08-29T10:30:00.000Z')}
+          meeting={meeting}
+          nodes={aggregate.nodes}
+          onCancel={onCancel}
+          onEnd={onEnd}
+          open={open}
+          outcomes={aggregate.outcomes}
+        />
+      </NextIntlClientProvider>
+    );
+    const view = render(dialog(aggregate.meeting, true));
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Actual attendees' }), {
+      target: { value: '5' },
+    });
+
+    const updatedMeeting = { ...aggregate.meeting, updatedAt: '2026-08-29T10:31:00.000Z' };
+    view.rerender(dialog(updatedMeeting, true));
+    expect(screen.getByRole('spinbutton', { name: 'Actual attendees' })).toHaveValue('5');
+    await user.click(screen.getByRole('button', { name: 'Return to meeting' }));
+    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onEnd).not.toHaveBeenCalled();
+    view.rerender(dialog(updatedMeeting, false));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { hidden: true })).not.toBeInTheDocument(),
+    );
+
+    const correctedMeeting = { ...updatedMeeting, actualAttendeeCount: 7 };
+    view.rerender(dialog(correctedMeeting, false));
+    view.rerender(dialog(correctedMeeting, true));
+    expect(screen.getByRole('spinbutton', { name: 'Actual attendees' })).toHaveValue('7');
+    expect(screen.getByRole('button', { name: 'Continue to confirmation' })).toBeVisible();
   });
 
   it('keeps the end controls available at a 375px viewport', () => {

@@ -43,13 +43,15 @@ export function EndMeetingDialog({
   const outcomeT = useTranslations('outcome');
   const format = useFormatter();
   const now = useLiveClock(fixedNow);
-  const [attendeeCount, setAttendeeCount] = useState(meeting.actualAttendeeCount ?? 1);
+  // This dialog can mount before the meeting starts; keep only deliberate corrections in state.
+  const [attendeeCountOverride, setAttendeeCountOverride] = useState<number>();
+  const attendeeCount = attendeeCountOverride ?? meeting.actualAttendeeCount ?? 1;
   const [phase, setPhase] = useState<'confirm' | 'review'>('review');
   const [busy, setBusy] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
   function reset() {
-    setAttendeeCount(meeting.actualAttendeeCount ?? 1);
+    setAttendeeCountOverride(undefined);
     setPhase('review');
     setBusy(false);
     setErrorKey(null);
@@ -70,7 +72,7 @@ export function EndMeetingDialog({
           min={1}
           mode="button"
           onChange={(value) => {
-            setAttendeeCount(value ?? 0);
+            setAttendeeCountOverride(value ?? 0);
             setErrorKey(null);
           }}
           precision={0}

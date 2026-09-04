@@ -422,6 +422,8 @@
       "continueGrill": "Keep grilling me · {current} / {limit}",
       "finish": "Finish Grill",
       "generateBrief": "Generate Brief",
+      "loadSavedDraft": "Load saved version",
+      "continueSavedMeeting": "Continue with the saved meeting",
       "openCanvas": "Open meeting canvas",
       "restart": "Prepare again",
       "retry": "Try again",
@@ -447,6 +449,9 @@
       "lockWarning": "Confirming validates the map first, then locks this Brief and saves the graph together.",
       "locked": "Locked snapshot",
       "lockedDescription": "This Brief is locked. It remains visible while the map is generated or retried.",
+      "loadSavedConfirm": "Discard your unsaved Brief edits and load the latest saved version?",
+      "preservedTitle": "Your unsaved Brief is preserved",
+      "stageChanged": "This meeting moved to another stage in a different tab. Your edits below remain available to copy. Continuing with the saved meeting will discard these unsaved edits.",
       "title": "Meeting Brief"
     },
     "dimensions": {

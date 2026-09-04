@@ -312,6 +312,10 @@ db.version(1).stores({
 
 跨标签页使用 `BroadcastChannel` 或 Dexie live query 刷新状态；正确性依赖 IndexedDB 事务，不依赖广播消息先后。
 
+Brief 编辑器同时保留草稿字段、来源 Brief 和 `updatedAt`。没有本地修改时可跟随 live query 更新；有修改时保留草稿及其原版本，保存或生成图前以该版本执行冲突检查，不能用最新版本替旧草稿绕过 `STALE_WRITE`。载入已保存版本需要用户确认丢弃草稿。
+
+创建表单的任一输入变化使当前分类 operation 失效并取消请求；只有仍属于当前 operation 的响应可以进入推荐页。散会检查只在本地保存用户主动输入的人数修正，未修正时取当前 Meeting 的实际人数，关闭后清除临时修正。
+
 ## 6. 匿名会话与模型配置
 
 ### 6.1 会话

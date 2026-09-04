@@ -332,6 +332,69 @@ test('applies an AI recommendation only after user confirmation and allows overr
   ]);
 });
 
+test('persists current creation inputs after editing during an AI recommendation', async ({
+  page,
+}) => {
+  await mockStatus(page, true);
+  let releaseOriginal: (() => void) | undefined;
+  const originalMayFinish = new Promise<void>((resolve) => {
+    releaseOriginal = resolve;
+  });
+  let callCount = 0;
+  const inputs: unknown[] = [];
+  await page.route('**/api/ai/classify-meeting', async (route) => {
+    callCount += 1;
+    const request = route.request().postDataJSON() as { input: unknown; requestId: string };
+    inputs.push(request.input);
+    const original = callCount === 1;
+    if (original) await originalMayFinish;
+    await route
+      .fulfill({
+        json: {
+          output: {
+            confidence: 'HIGH',
+            reason: 'The request requires a concrete choice.',
+            recommendedMode: 'DECISION',
+            suggestedTitle: original ? 'Original recommendation' : 'Updated recommendation',
+          },
+          requestId: request.requestId,
+          task: 'classify-meeting',
+        },
+      })
+      .catch(() => undefined);
+  });
+  await page.route('**/api/ai/grill', async (route) => {
+    await route.fulfill({
+      json: { error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false },
+      status: 503,
+    });
+  });
+
+  await page.goto('/en-US/meetings/new');
+  await page.getByLabel('The original meeting request').fill('Choose the original launch plan.');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+  await expect.poll(() => callCount).toBe(1);
+  await page.getByLabel('The original meeting request').fill('Choose the revised launch plan.');
+  await page.getByLabel('Title · optional').fill('Revised launch decision');
+  await page.getByLabel('Expected attendees').fill('8');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+  await expect(page.getByText('Suggested title: Updated recommendation')).toBeVisible();
+  releaseOriginal?.();
+  await page.getByRole('button', { name: 'Confirm and start Grill' }).click();
+  await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
+  expect(inputs).toEqual([
+    { rawRequest: 'Choose the original launch plan.' },
+    { rawRequest: 'Choose the revised launch plan.', userTitle: 'Revised launch decision' },
+  ]);
+  expect(await readMeetings(page)).toEqual([
+    expect.objectContaining({
+      expectedAttendeeCount: 8,
+      rawRequest: 'Choose the revised launch plan.',
+      title: 'Revised launch decision',
+    }),
+  ]);
+});
+
 test('preserves creation inputs when IndexedDB is unavailable at save time', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(IDBFactory.prototype, 'open', {

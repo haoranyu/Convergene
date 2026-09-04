@@ -422,6 +422,8 @@
       "continueGrill": "继续拷问我 · {current} / {limit}",
       "finish": "结束拷问",
       "generateBrief": "生成 Brief",
+      "loadSavedDraft": "载入已保存版本",
+      "continueSavedMeeting": "继续使用已保存的会议",
       "openCanvas": "打开会议画布",
       "restart": "重新准备",
       "retry": "重试",
@@ -447,6 +449,9 @@
       "lockWarning": "点击确认会先验证脑图，再同时锁定 Brief 并保存完整图谱。",
       "locked": "已锁定快照",
       "lockedDescription": "这份 Brief 已锁定；生成或重试脑图时会一直保留在页面上。",
+      "loadSavedConfirm": "放弃尚未保存的 Brief 修改，载入最新保存版本？",
+      "preservedTitle": "尚未保存的 Brief 已保留",
+      "stageChanged": "另一标签页已改变会议阶段。以下修改仍可复制；继续使用已保存的会议会放弃这些尚未保存的修改。",
       "title": "会议 Brief"
     },
     "dimensions": {
