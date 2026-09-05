@@ -22,7 +22,7 @@ import {
   IconSafe,
 } from '@arco-design/web-react/icon';
 import { useFormatter, useTranslations } from 'next-intl';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   providerCapabilities,
@@ -124,6 +124,8 @@ export function ProviderConfigPanel({
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [operation, setOperation] = useState<Operation>(null);
+  const pendingOperation = useRef<Operation>(null);
+  const mounted = useRef(false);
   const [status, setStatus] = useState<ProviderConfigSummary | null>(null);
   const [testedInput, setTestedInput] = useState<ProviderConfigInput | null>(null);
   const [selectingProvider, setSelectingProvider] = useState<ProviderId | null>(null);
@@ -131,6 +133,13 @@ export function ProviderConfigPanel({
 
   const showForm = status?.configured !== true || editing;
   const busy = operation !== null;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const applyStatusResult = useCallback(
     (result: Awaited<ReturnType<ProviderConfigClient['getStatus']>>) => {
@@ -188,6 +197,7 @@ export function ProviderConfigPanel({
     setLoadingStatus(true);
     setNotice(null);
     const result = await api.getStatus();
+    if (!mounted.current) return;
     applyStatusResult(result);
     setLoadingStatus(false);
   }, [api, applyStatusResult]);
@@ -230,21 +240,36 @@ export function ProviderConfigPanel({
     setNotice(null);
   }
 
+  function beginOperation(nextOperation: Exclude<Operation, null>) {
+    if (!mounted.current || pendingOperation.current !== null) return false;
+    pendingOperation.current = nextOperation;
+    setOperation(nextOperation);
+    return true;
+  }
+
+  function finishOperation() {
+    pendingOperation.current = null;
+    if (mounted.current) setOperation(null);
+  }
+
   async function testConnection() {
+    if (!beginOperation('test')) return;
     let input: ProviderConfigInput;
 
     try {
       input = await form.validate();
     } catch {
+      finishOperation();
       return;
     }
 
+    if (!mounted.current) return;
     const normalizedInput = { ...input, apiKey: input.apiKey.trim() };
-    setOperation('test');
     setNotice(null);
 
     try {
       const result = await api.testConnection(normalizedInput);
+      if (!mounted.current) return;
 
       if (result.ok) {
         setTestedInput(normalizedInput);
@@ -254,25 +279,26 @@ export function ProviderConfigPanel({
         setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
       }
     } finally {
-      form.setFieldValue('apiKey', '');
-      setOperation(null);
+      if (mounted.current) form.setFieldValue('apiKey', '');
+      finishOperation();
     }
   }
 
   async function saveConfiguration() {
-    if (!testedInput) {
+    if (!testedInput || !beginOperation('save')) {
       return;
     }
 
     const input = testedInput;
-    setOperation('save');
     setNotice(null);
 
     try {
       const result = await api.saveConfig(input);
+      if (!mounted.current) return;
 
       if (result.ok) {
         const refreshed = await api.getStatus();
+        if (!mounted.current) return;
         const summary = refreshed.ok ? refreshed.value : result.value;
         setStatus(summary);
         setEditing(false);
@@ -282,18 +308,21 @@ export function ProviderConfigPanel({
         setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
       }
     } finally {
-      form.setFieldValue('apiKey', '');
-      setTestedInput(null);
-      setOperation(null);
+      if (mounted.current) {
+        form.setFieldValue('apiKey', '');
+        setTestedInput(null);
+      }
+      finishOperation();
     }
   }
 
   async function deleteConfiguration() {
-    setOperation('delete');
+    if (!beginOperation('delete')) return;
     setNotice(null);
 
     try {
       const result = await api.deleteConfig();
+      if (!mounted.current) return;
 
       if (result.ok) {
         setStatus(result.value);
@@ -306,17 +335,18 @@ export function ProviderConfigPanel({
         setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
       }
     } finally {
-      setOperation(null);
+      finishOperation();
     }
   }
 
   async function selectProvider(provider: ProviderId) {
-    setOperation('select');
+    if (!beginOperation('select')) return;
     setSelectingProvider(provider);
     setNotice(null);
 
     try {
       const result = await api.selectProvider(provider);
+      if (!mounted.current) return;
       if (result.ok) {
         setStatus(result.value);
         setEditing(false);
@@ -326,8 +356,8 @@ export function ProviderConfigPanel({
         setNotice({ kind: 'error', message: t(errorMessageKeys[result.error.code]) });
       }
     } finally {
-      setSelectingProvider(null);
-      setOperation(null);
+      if (mounted.current) setSelectingProvider(null);
+      finishOperation();
     }
   }
 
@@ -455,6 +485,7 @@ export function ProviderConfigPanel({
                   ) : null}
                   {providerSupportsRole(provider, 'fast') ? (
                     <Button
+                      disabled={busy}
                       icon={<IconRefresh />}
                       onClick={() => {
                         setEditingProvider(provider);
@@ -472,6 +503,7 @@ export function ProviderConfigPanel({
           <Space className={styles.statusActions} wrap>
             {!showForm && status.providers.SILICONFLOW === null ? (
               <Button
+                disabled={busy}
                 onClick={() => {
                   setEditingProvider('SILICONFLOW');
                   setEditing(true);
@@ -485,13 +517,14 @@ export function ProviderConfigPanel({
               autoFocus
               cancelText={t('actions.cancel')}
               content={t('delete.content')}
+              disabled={busy}
               focusLock
-              okButtonProps={{ loading: operation === 'delete', status: 'danger' }}
+              okButtonProps={{ disabled: busy, loading: operation === 'delete', status: 'danger' }}
               okText={t('actions.confirmDelete')}
               onOk={deleteConfiguration}
               title={t('delete.title')}
             >
-              <Button icon={<IconDelete />} status="danger" type="outline">
+              <Button disabled={busy} icon={<IconDelete />} status="danger" type="outline">
                 {t('actions.delete')}
               </Button>
             </Popconfirm>

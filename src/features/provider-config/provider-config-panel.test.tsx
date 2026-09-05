@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../../messages/en-US.json';
-import { providerCapabilities } from '../../modules/provider-config';
+import {
+  providerCapabilities,
+  providerModelPresets,
+  type ProviderConfigSummary,
+} from '../../modules/provider-config';
 import type { ProviderConfigClient } from './api-client';
+import { ProviderConfigGate } from './provider-config-gate';
 import { ProviderConfigPanel } from './provider-config-panel';
 
 beforeAll(() => {
@@ -28,6 +33,31 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
+const availableSummary: ProviderConfigSummary = {
+  activeProvider: 'SILICONFLOW',
+  configured: true,
+  providers: {
+    SILICONFLOW: {
+      capabilities: providerCapabilities.SILICONFLOW,
+      createdAt: '2026-08-29T00:00:00.000Z',
+      keyHint: '••••••••',
+      lastUsedAt: '2026-08-29T00:00:00.000Z',
+      models: providerModelPresets.SILICONFLOW,
+      provider: 'SILICONFLOW',
+      state: 'AVAILABLE',
+    },
+    STEPFUN: null,
+  },
+};
+
+function deferred<Value>() {
+  let resolve!: (value: Value) => void;
+  const promise = new Promise<Value>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 function renderPanel(
   api: ProviderConfigClient,
   gateErrorCode?:
@@ -41,6 +71,109 @@ function renderPanel(
 }
 
 describe('ProviderConfigPanel', () => {
+  it.each(['save', 'status refresh'] as const)(
+    'keeps a reopened configuration gate open when an old %s completes',
+    async (pendingStep) => {
+      const user = userEvent.setup();
+      const pending = deferred<Awaited<ReturnType<ProviderConfigClient['saveConfig']>>>();
+      const onConfigured = vi.fn();
+      const unconfigured = {
+        ok: true as const,
+        value: { configured: false as const, state: 'NOT_CONFIGURED' as const },
+      };
+      const getStatus = vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue(unconfigured);
+      if (pendingStep === 'status refresh') {
+        getStatus.mockResolvedValueOnce(unconfigured).mockReturnValueOnce(pending.promise);
+      }
+      const api: ProviderConfigClient = {
+        deleteConfig: vi.fn(),
+        getStatus,
+        saveConfig: vi
+          .fn<ProviderConfigClient['saveConfig']>()
+          .mockReturnValue(
+            pendingStep === 'save'
+              ? pending.promise
+              : Promise.resolve({ ok: true, value: availableSummary }),
+          ),
+        selectProvider: vi.fn(),
+        testConnection: vi.fn<ProviderConfigClient['testConnection']>().mockResolvedValue({
+          ok: true,
+          value: { models: providerModelPresets.SILICONFLOW, provider: 'SILICONFLOW' },
+        }),
+      };
+
+      render(
+        <NextIntlClientProvider locale="en-US" messages={enUS} timeZone="UTC">
+          <ProviderConfigGate api={api} onConfigured={onConfigured}>
+            {({ open }) => <button onClick={open}>Open model settings</button>}
+          </ProviderConfigGate>
+        </NextIntlClientProvider>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Open model settings' }));
+      await user.type(await screen.findByLabelText('API key'), 'sk-pending');
+      await user.click(screen.getByRole('button', { name: 'Test connection' }));
+      await screen.findByText('Connection verified. You can save this configuration.');
+      await user.click(screen.getByRole('button', { name: 'Save configuration' }));
+      await waitFor(() => expect(api.saveConfig).toHaveBeenCalledOnce());
+      if (pendingStep === 'status refresh') {
+        await waitFor(() => expect(getStatus).toHaveBeenCalledTimes(2));
+      }
+
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      await user.click(screen.getByRole('button', { name: 'Open model settings' }));
+      await screen.findByLabelText('API key');
+      await act(async () => pending.resolve({ ok: true, value: availableSummary }));
+
+      expect(onConfigured).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog', { name: 'Connect a model provider' })).toBeVisible();
+      expect(screen.getByLabelText('API key')).toBeEnabled();
+    },
+  );
+
+  it('prevents clearing or replacing configuration while a test or save is pending', async () => {
+    const user = userEvent.setup();
+    const tested = deferred<Awaited<ReturnType<ProviderConfigClient['testConnection']>>>();
+    const saved = deferred<Awaited<ReturnType<ProviderConfigClient['saveConfig']>>>();
+    const api: ProviderConfigClient = {
+      deleteConfig: vi.fn(),
+      getStatus: vi.fn<ProviderConfigClient['getStatus']>().mockResolvedValue({
+        ok: true,
+        value: availableSummary,
+      }),
+      saveConfig: vi.fn<ProviderConfigClient['saveConfig']>().mockReturnValue(saved.promise),
+      selectProvider: vi.fn(),
+      testConnection: vi
+        .fn<ProviderConfigClient['testConnection']>()
+        .mockReturnValue(tested.promise),
+    };
+
+    renderPanel(api);
+
+    await user.click(await screen.findByRole('button', { name: 'Replace configuration' }));
+    await user.type(screen.getByLabelText('API key'), 'sk-replacement');
+    await user.click(screen.getByRole('button', { name: 'Test connection' }));
+
+    expect(screen.getByRole('button', { name: 'Clear model configuration' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Replace configuration' })).toBeDisabled();
+    await act(async () => {
+      tested.resolve({
+        ok: true,
+        value: { models: providerModelPresets.SILICONFLOW, provider: 'SILICONFLOW' },
+      });
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Save configuration' }));
+    expect(screen.getByRole('button', { name: 'Clear model configuration' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Replace configuration' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear model configuration' }));
+    expect(api.deleteConfig).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Clear configuration' })).not.toBeInTheDocument();
+
+    await act(async () => saved.resolve({ ok: true, value: availableSummary }));
+    expect(screen.getByRole('button', { name: 'Clear model configuration' })).toBeEnabled();
+  });
+
   it('tests before saving and never leaves the plaintext key in the form', async () => {
     const user = userEvent.setup();
     const getStatus = vi

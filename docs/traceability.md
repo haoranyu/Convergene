@@ -35,6 +35,15 @@
 | R-P0-20 | 首页明确本机保存、导出和云同步预告，不谎称 P0 已支持登录同步 | 产品 7.13；UI 13；ADR 0002 | P0-06、P0-09 | AT-102～105 | `src/features/app-shell/`<br>`src/features/dashboard/dashboard-home.tsx`<br>`src/features/dashboard/meeting-groups.ts`<br>`src/app/[locale]/page.tsx`<br>自动化证据：`meeting-groups.test.ts`、`e2e/dashboard-guide-creation.spec.ts` |
 | R-P0-21 | 首页、创建、模型设置、导览与会议工作台保持单一品牌与语义层级，任务优先于说明；三语在 375/1024/1440px 无整体或容器横向溢出，ENDED 报告优先且历史画布按需展开 | UI 3～6、10、12、14；品牌规范 | P0-30 | AT-118～119 | `src/features/app-shell/`<br>`src/features/dashboard/`<br>`src/features/provider-config/`<br>`src/features/guide/`<br>`src/features/meeting-room/persisted-meeting-canvas.tsx`<br>`src/features/report/`<br>自动化证据：`e2e/ui-hierarchy.spec.ts`（三语 × 375/1024/1440 的首页、创建、模型设置、导览层级与宽度矩阵，逐步首屏操作断言）、`e2e/preparation.spec.ts`（三语、三宽度与 PREPARING/LIVE/ENDED 的正交状态矩阵、ENDED 报告与折叠画布生命周期）、相关组件测试 |
 
+### 主流程可靠性补充（Issue #51）
+
+| 需求 | 验收 | 回归证据 |
+|---|---|---|
+| R-P0-02 配置操作互斥、卸载后迟到响应失效 | AT-01F | `src/features/provider-config/provider-config-panel.test.tsx`：测试/保存期间禁用清除，真实 Gate 关闭重开后忽略旧保存与旧状态刷新 |
+| R-P0-03 创建输入与推荐请求一致 | AT-024 | `src/features/meeting-creation/meeting-creation.test.tsx`：编辑取消请求并忽略迟到结果，覆盖尚未确认的开始/结束时间；`e2e/dashboard-guide-creation.spec.ts`：重新推荐后持久化最新要求、标题、人数和已确认的新时间，日期编辑期间的迟到响应不能推进页面 |
+| R-P0-06 Brief 草稿的版本保护与恢复 | AT-039 | `src/features/preparation/preparation-workspace.test.tsx`：Dexie 更新不会覆盖未保存输入，保存/生成拒绝旧版本，确认载入后可再次保存，未编辑时跟随更新；外部 DRAFT/GRILLING/MAP_READY 保留可复制草稿；`e2e/preparation.spec.ts`：真实双标签页、375px 冲突提示、触控与确认恢复 |
+| R-P0-12/14/15 散会人数保持用户确认值 | AT-072/073/090 | `src/features/live-meeting/live-meeting.test.tsx`：同页 PREPARING → LIVE → 首次散会、正确人时、临时修正与关闭重开；`e2e/preparation.spec.ts`：导航前首次散会检查使用开始时确认的 6 人 |
+
 ## 3. Stretch 追踪
 
 | ID | 能力 | 实施任务 | 相关验收 | 默认状态 |

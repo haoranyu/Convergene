@@ -332,6 +332,196 @@ test('applies an AI recommendation only after user confirmation and allows overr
   ]);
 });
 
+test('persists current creation inputs after editing during an AI recommendation', async ({
+  page,
+}) => {
+  await mockStatus(page, true);
+  let releaseOriginal: (() => void) | undefined;
+  const originalMayFinish = new Promise<void>((resolve) => {
+    releaseOriginal = resolve;
+  });
+  let callCount = 0;
+  const inputs: unknown[] = [];
+  await page.route('**/api/ai/classify-meeting', async (route) => {
+    callCount += 1;
+    const request = route.request().postDataJSON() as { input: unknown; requestId: string };
+    inputs.push(request.input);
+    const original = callCount === 1;
+    if (original) await originalMayFinish;
+    await route
+      .fulfill({
+        json: {
+          output: {
+            confidence: 'HIGH',
+            reason: 'The request requires a concrete choice.',
+            recommendedMode: 'DECISION',
+            suggestedTitle: original ? 'Original recommendation' : 'Updated recommendation',
+          },
+          requestId: request.requestId,
+          task: 'classify-meeting',
+        },
+      })
+      .catch(() => undefined);
+  });
+  await page.route('**/api/ai/grill', async (route) => {
+    await route.fulfill({
+      json: { error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false },
+      status: 503,
+    });
+  });
+
+  await page.goto('/en-US/meetings/new');
+  await page.getByLabel('The original meeting request').fill('Choose the original launch plan.');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+  await expect.poll(() => callCount).toBe(1);
+  await page.getByLabel('The original meeting request').fill('Choose the revised launch plan.');
+  await page.getByLabel('Title · optional').fill('Revised launch decision');
+  await page.getByLabel('Expected attendees').fill('8');
+  await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+  await expect(page.getByText('Suggested title: Updated recommendation')).toBeVisible();
+  releaseOriginal?.();
+  await page.getByRole('button', { name: 'Confirm and start Grill' }).click();
+  await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
+  expect(inputs).toEqual([
+    { rawRequest: 'Choose the original launch plan.' },
+    { rawRequest: 'Choose the revised launch plan.', userTitle: 'Revised launch decision' },
+  ]);
+  expect(await readMeetings(page)).toEqual([
+    expect.objectContaining({
+      expectedAttendeeCount: 8,
+      rawRequest: 'Choose the revised launch plan.',
+      title: 'Revised launch decision',
+    }),
+  ]);
+});
+
+test.describe('creation schedule edits', () => {
+  test.use({ timezoneId: 'UTC' });
+
+  for (const { method, displayedStart, savedStart } of [
+    { method: 'input', displayedStart: '2030-01-15 09:30', savedStart: '2030-01-15T09:30:00.000Z' },
+    {
+      method: 'date-panel',
+      displayedStart: '2030-01-14 09:00',
+      savedStart: '2030-01-14T09:00:00.000Z',
+    },
+    {
+      method: 'time-panel',
+      displayedStart: '2030-01-15 09:30',
+      savedStart: '2030-01-15T09:30:00.000Z',
+    },
+  ] as const) {
+    test(`preserves an unconfirmed ${method} edit through a late recommendation and saves the confirmed time`, async ({
+      page,
+    }) => {
+      await mockStatus(page, true);
+      // Deliver the stale response even after cancellation, as a transport may already have buffered it.
+      await page.addInitScript(() => {
+        const fetch = window.fetch.bind(window);
+        window.fetch = (input, init) => {
+          if (input !== '/api/ai/classify-meeting') return fetch(input, init);
+          init?.signal?.addEventListener(
+            'abort',
+            () => document.documentElement.setAttribute('data-classification-cancelled', 'true'),
+            { once: true },
+          );
+          return fetch(input, { ...init, signal: undefined });
+        };
+      });
+      let releaseOriginal: (() => void) | undefined;
+      const originalMayFinish = new Promise<void>((resolve) => {
+        releaseOriginal = resolve;
+      });
+      let callCount = 0;
+      await page.route('**/api/ai/classify-meeting', async (route) => {
+        callCount += 1;
+        const original = callCount === 1;
+        const request = route.request().postDataJSON() as { requestId: string };
+        if (original) await originalMayFinish;
+        await route.fulfill({
+          json: {
+            output: {
+              confidence: 'HIGH',
+              reason: 'The request requires a concrete choice.',
+              recommendedMode: 'DECISION',
+              suggestedTitle: original
+                ? 'Original schedule recommendation'
+                : 'Updated schedule recommendation',
+            },
+            requestId: request.requestId,
+            task: 'classify-meeting',
+          },
+        });
+      });
+      await page.route('**/api/ai/grill', async (route) => {
+        await route.fulfill({
+          json: { error: { code: 'PROVIDER_UNAVAILABLE' }, ok: false },
+          status: 503,
+        });
+      });
+
+      await page.goto('/en-US/meetings/new');
+      await page.getByLabel('The original meeting request').fill('Choose the January launch plan.');
+      const plannedStart = page.getByLabel('Planned start');
+      const plannedEnd = page.getByLabel('Planned end');
+      await plannedStart.click();
+      await plannedStart.fill('2030-01-15 09:00');
+      await plannedEnd.click();
+      await plannedEnd.fill('2030-01-15 10:30');
+      await plannedEnd.press('Enter');
+      await expect(plannedStart).toHaveValue('2030-01-15 09:00');
+      await expect(plannedEnd).toHaveValue('2030-01-15 10:30');
+
+      await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+      await expect.poll(() => callCount).toBe(1);
+      await plannedStart.click();
+      if (method === 'input') {
+        await plannedStart.fill(displayedStart);
+      } else if (method === 'date-panel') {
+        await page
+          .locator('.arco-panel-date')
+          .first()
+          .locator('.arco-picker-cell-in-view')
+          .getByText('14', { exact: true })
+          .click();
+      } else {
+        await page.getByRole('button', { name: 'Select time', exact: true }).click();
+        await page
+          .locator('.arco-timepicker')
+          .first()
+          .locator('.arco-timepicker-list')
+          .nth(1)
+          .getByText('30', { exact: true })
+          .click();
+      }
+      await expect(plannedStart).toHaveValue(displayedStart);
+      await expect(page.locator('html')).toHaveAttribute('data-classification-cancelled', 'true');
+
+      // No Enter or picker confirmation has committed the edit to Form yet.
+      const originalResponse = page.waitForResponse('**/api/ai/classify-meeting');
+      releaseOriginal?.();
+      await (await originalResponse).finished();
+      await expect(plannedStart).toHaveValue(displayedStart);
+      await expect(page.getByRole('button', { name: 'Confirm and start Grill' })).toHaveCount(0);
+      await page.getByRole('button', { name: 'OK', exact: true }).click();
+      await page.getByRole('button', { name: 'Recommend a meeting script' }).click();
+      await expect(
+        page.getByText('Suggested title: Updated schedule recommendation'),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Confirm and start Grill' }).click();
+      await expect(page).toHaveURL(/\/en-US\/meetings\/[^/]+\/prepare$/u);
+      expect(callCount).toBe(2);
+      expect(await readMeetings(page)).toEqual([
+        expect.objectContaining({
+          scheduledEndAt: '2030-01-15T10:30:00.000Z',
+          scheduledStartAt: savedStart,
+          title: 'Updated schedule recommendation',
+        }),
+      ]);
+    });
+  }
+});
+
 test('preserves creation inputs when IndexedDB is unavailable at save time', async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(IDBFactory.prototype, 'open', {

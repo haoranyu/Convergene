@@ -11,7 +11,11 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import enUS from '../../../messages/en-US.json';
 import { briefDraft, createMeeting } from '@/fixtures/meeting';
-import { grillOutputFixtures, readinessDimensions } from '@/fixtures/preparation';
+import {
+  grillOutputFixtures,
+  initialMapOutputFixtures,
+  readinessDimensions,
+} from '@/fixtures/preparation';
 import { MeetingDatabase, MeetingRepository } from '@/modules/meeting-db';
 import { readMeetingAggregate } from '@/modules/meeting-db/read';
 import { completeGrill, confirmMeetingMode, type GrillTurn } from '@/modules/meeting-domain';
@@ -19,6 +23,7 @@ import { completeGrill, confirmMeetingMode, type GrillTurn } from '@/modules/mee
 import type { PreparationAIClient } from './ai-contract';
 import { PreparationAIClientError } from './api-client';
 import { PreparationWorkspace } from './preparation-workspace';
+import { lockBriefAndGenerateMap, returnToGrill, returnToModeSelection } from './orchestrator';
 
 vi.mock('@/i18n/navigation', () => ({
   Link: ({ children, href, ...props }: { children: ReactNode; href: string }) => (
@@ -359,4 +364,145 @@ describe('PreparationWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Confirm, lock, and generate map' })).toBeVisible();
     expect(initialMap).toHaveBeenCalledTimes(1);
   });
+
+  it.each([enUS.preparation.actions.saveDraft, enUS.preparation.actions.confirmGenerate])(
+    'preserves an unsaved Brief across another tab update and rejects stale %s',
+    async (action) => {
+      databaseName = `preparation-ui-${crypto.randomUUID()}`;
+      database = new MeetingDatabase(databaseName);
+      const repository = new MeetingRepository(database);
+      const grilling = await grillingMeeting(repository);
+      const completed = completeGrill(grilling, briefDraft, new Date('2026-08-29T09:07:00.000Z'));
+      if (!completed.ok) throw new Error(completed.error.code);
+      const ready = await repository.savePreparationTransition(completed.value, grilling.updatedAt);
+      if (!ready.ok) throw new Error(ready.error.code);
+
+      const client: PreparationAIClient = { grill: vi.fn(), initialMap: vi.fn() };
+      const user = userEvent.setup();
+      renderWorkspace(client);
+      const objective = await screen.findByLabelText('Meeting objective');
+      await user.clear(objective);
+      await user.type(objective, 'My unsaved objective');
+
+      const updated = await repository.updateBriefDraft(
+        ready.value.id,
+        { ...briefDraft, objective: 'Objective saved in another tab' },
+        ready.value.updatedAt,
+        new Date('2026-08-29T09:08:00.000Z'),
+      );
+      if (!updated.ok) throw new Error(updated.error.code);
+      const renamed = await repository.updateMeetingSetup(
+        ready.value.id,
+        { title: 'Meeting updated in another tab' },
+        updated.value.updatedAt,
+        new Date('2026-08-29T09:09:00.000Z'),
+      );
+      if (!renamed.ok) throw new Error(renamed.error.code);
+      await screen.findByRole('heading', { level: 1, name: renamed.value.title });
+
+      expect(objective).toHaveValue('My unsaved objective');
+      await user.click(screen.getByRole('button', { name: action }));
+      expect(await screen.findByText(enUS.preparation.errors.STALE_WRITE)).toBeVisible();
+      expect(objective).toHaveValue('My unsaved objective');
+      expect(client.initialMap).not.toHaveBeenCalled();
+      expect((await database.meetings.get(ready.value.id))?.brief?.objective).toBe(
+        'Objective saved in another tab',
+      );
+
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true);
+      await user.click(
+        screen.getByRole('button', { name: enUS.preparation.actions.loadSavedDraft }),
+      );
+      expect(confirm).toHaveBeenCalledWith(enUS.preparation.brief.loadSavedConfirm);
+      expect(objective).toHaveValue('My unsaved objective');
+      await user.click(
+        screen.getByRole('button', { name: enUS.preparation.actions.loadSavedDraft }),
+      );
+      expect(objective).toHaveValue('Objective saved in another tab');
+      expect(screen.queryByText(enUS.preparation.errors.STALE_WRITE)).not.toBeInTheDocument();
+
+      for (const value of ['Reviewed objective', 'Further reviewed objective']) {
+        await user.clear(objective);
+        await user.type(objective, value);
+        await user.click(screen.getByRole('button', { name: enUS.preparation.actions.saveDraft }));
+        await waitFor(async () => {
+          expect((await database.meetings.get(ready.value.id))?.brief?.objective).toBe(value);
+        });
+        expect(objective).toHaveValue(value);
+      }
+      expect(client.initialMap).not.toHaveBeenCalled();
+    },
+  );
+
+  it('updates an untouched Brief when another tab saves a newer version', async () => {
+    databaseName = `preparation-ui-${crypto.randomUUID()}`;
+    database = new MeetingDatabase(databaseName);
+    const repository = new MeetingRepository(database);
+    const grilling = await grillingMeeting(repository);
+    const completed = completeGrill(grilling, briefDraft, new Date('2026-08-29T09:07:00.000Z'));
+    if (!completed.ok) throw new Error(completed.error.code);
+    const ready = await repository.savePreparationTransition(completed.value, grilling.updatedAt);
+    if (!ready.ok) throw new Error(ready.error.code);
+    renderWorkspace({ grill: vi.fn(), initialMap: vi.fn() });
+    const objective = await screen.findByLabelText('Meeting objective');
+
+    const updated = await repository.updateBriefDraft(
+      ready.value.id,
+      { ...briefDraft, objective: 'New saved objective' },
+      ready.value.updatedAt,
+      new Date('2026-08-29T09:08:00.000Z'),
+    );
+    if (!updated.ok) throw new Error(updated.error.code);
+
+    await waitFor(() => expect(objective).toHaveValue('New saved objective'));
+  });
+
+  it.each(['DRAFT', 'GRILLING', 'MAP_READY'] as const)(
+    'retains a copyable unsaved Brief when another tab moves to %s',
+    async (stage) => {
+      databaseName = `preparation-ui-${crypto.randomUUID()}`;
+      database = new MeetingDatabase(databaseName);
+      const repository = new MeetingRepository(database);
+      const grilling = await grillingMeeting(repository);
+      const completed = completeGrill(grilling, briefDraft, new Date('2026-08-29T09:07:00.000Z'));
+      if (!completed.ok) throw new Error(completed.error.code);
+      const ready = await repository.savePreparationTransition(completed.value, grilling.updatedAt);
+      if (!ready.ok) throw new Error(ready.error.code);
+      const client: PreparationAIClient = { grill: vi.fn(), initialMap: vi.fn() };
+      const user = userEvent.setup();
+      renderWorkspace(client);
+      const objective = await screen.findByLabelText('Meeting objective');
+      await user.clear(objective);
+      await user.type(objective, 'Keep my unsaved work');
+
+      const now = new Date('2026-08-29T09:08:00.000Z');
+      if (stage === 'DRAFT') await returnToModeSelection(ready.value, repository, now);
+      else if (stage === 'GRILLING') await returnToGrill(ready.value, repository, now);
+      else {
+        const aggregate = await repository.getMeetingAggregate(ready.value.id);
+        if (!aggregate.ok || !aggregate.value) throw new Error('Expected meeting');
+        await lockBriefAndGenerateMap(aggregate.value, {
+          client: {
+            grill: vi.fn(),
+            initialMap: vi.fn().mockResolvedValue(initialMapOutputFixtures.DECISION),
+          },
+          now: () => now,
+          repository,
+        });
+      }
+
+      await screen.findByText('Your unsaved Brief is preserved');
+      expect(screen.getByLabelText('Meeting objective')).toHaveValue('Keep my unsaved work');
+      expect(screen.getByLabelText('Meeting objective')).toHaveAttribute('readonly');
+      expect(client.grill).not.toHaveBeenCalled();
+      expect(client.initialMap).not.toHaveBeenCalled();
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true);
+      await user.click(screen.getByRole('button', { name: 'Continue with the saved meeting' }));
+      expect(confirm).toHaveBeenCalled();
+      expect(screen.getByLabelText('Meeting objective')).toHaveValue('Keep my unsaved work');
+      await user.click(screen.getByRole('button', { name: 'Continue with the saved meeting' }));
+      expect(screen.queryByText('Your unsaved Brief is preserved')).not.toBeInTheDocument();
+      expect((await database.meetings.get(ready.value.id))?.preparationStage).toBe(stage);
+    },
+  );
 });
