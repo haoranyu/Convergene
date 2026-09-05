@@ -40,7 +40,7 @@
 | 需求 | 验收 | 回归证据 |
 |---|---|---|
 | R-P0-02 配置操作互斥、卸载后迟到响应失效 | AT-01F | `src/features/provider-config/provider-config-panel.test.tsx`：测试/保存期间禁用清除，真实 Gate 关闭重开后忽略旧保存与旧状态刷新 |
-| R-P0-03 创建输入与推荐请求一致 | AT-024 | `src/features/meeting-creation/meeting-creation.test.tsx`：编辑取消请求并忽略迟到结果；`e2e/dashboard-guide-creation.spec.ts`：重新推荐后持久化最新要求、标题和人数 |
+| R-P0-03 创建输入与推荐请求一致 | AT-024 | `src/features/meeting-creation/meeting-creation.test.tsx`：编辑取消请求并忽略迟到结果，覆盖尚未确认的开始/结束时间；`e2e/dashboard-guide-creation.spec.ts`：重新推荐后持久化最新要求、标题、人数和已确认的新时间，日期编辑期间的迟到响应不能推进页面 |
 | R-P0-06 Brief 草稿的版本保护与恢复 | AT-039 | `src/features/preparation/preparation-workspace.test.tsx`：Dexie 更新不会覆盖未保存输入，保存/生成拒绝旧版本，确认载入后可再次保存，未编辑时跟随更新；外部 DRAFT/GRILLING/MAP_READY 保留可复制草稿；`e2e/preparation.spec.ts`：真实双标签页、375px 冲突提示、触控与确认恢复 |
 | R-P0-12/14/15 散会人数保持用户确认值 | AT-072/073/090 | `src/features/live-meeting/live-meeting.test.tsx`：同页 PREPARING → LIVE → 首次散会、正确人时、临时修正与关闭重开；`e2e/preparation.spec.ts`：导航前首次散会检查使用开始时确认的 6 人 |
 

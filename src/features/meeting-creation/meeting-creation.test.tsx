@@ -47,6 +47,8 @@ describe('meeting creation request ownership', () => {
     ['The original meeting request', 'Review the launch after the incident.'],
     ['Title · optional', 'Updated title'],
     ['Expected attendees', '8'],
+    ['Planned start', '2000-01-01 09:00'],
+    ['Planned end', '2099-01-01 10:00'],
   ])('keeps edits to %s and ignores the superseded recommendation', async (label, value) => {
     const user = userEvent.setup();
     let complete:
@@ -78,7 +80,10 @@ describe('meeting creation request ownership', () => {
     await user.click(screen.getByRole('button', { name: 'Recommend a meeting script' }));
     await waitFor(() => expect(classify).toHaveBeenCalledTimes(1));
     const signal = classify.mock.calls[0]?.[2];
+    const isSchedule = label === 'Planned start' || label === 'Planned end';
+    if (isSchedule) await user.click(screen.getByLabelText(label));
     fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    expect(screen.getByLabelText(label)).toHaveValue(value);
 
     // The transport deliberately ignores abort: a late result must still be discarded.
     await act(async () => complete?.(result));
@@ -86,6 +91,10 @@ describe('meeting creation request ownership', () => {
     expect(screen.queryByText('Suggested title: Original recommendation')).not.toBeInTheDocument();
     expect(signal?.aborted).toBe(true);
 
+    if (isSchedule) {
+      // RangePicker keeps edits internal until Enter or its confirmation button.
+      fireEvent.keyDown(screen.getByLabelText(label), { key: 'Enter', keyCode: 13 });
+    }
     await user.click(screen.getByRole('button', { name: 'Recommend a meeting script' }));
     await waitFor(() => expect(classify).toHaveBeenCalledTimes(2));
     expect(classify.mock.calls[1]?.[0]).toMatchObject({

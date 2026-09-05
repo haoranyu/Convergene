@@ -187,6 +187,11 @@ export function MeetingCreation() {
     return classificationOperation.current;
   }
 
+  function handleCreationInputChange() {
+    invalidateClassification();
+    setNotice(null);
+  }
+
   async function validatedValues(): Promise<CreationFormValues | null> {
     try {
       const values = await form.validate();
@@ -345,10 +350,7 @@ export function MeetingCreation() {
                     }
                   }
                   layout="vertical"
-                  onValuesChange={() => {
-                    invalidateClassification();
-                    setNotice(null);
-                  }}
+                  onValuesChange={handleCreationInputChange}
                   requiredSymbol={{ position: 'end' }}
                 >
                   <div className={styles.errorSummary} ref={errorSummaryRef} tabIndex={-1}>
@@ -386,9 +388,17 @@ export function MeetingCreation() {
                         fixedTime
                         format="YYYY-MM-DD HH:mm"
                         inputProps={[
-                          { 'aria-label': t('fields.schedule.start') },
-                          { 'aria-label': t('fields.schedule.end') },
+                          {
+                            'aria-label': t('fields.schedule.start'),
+                            onChange: handleCreationInputChange,
+                          },
+                          {
+                            'aria-label': t('fields.schedule.end'),
+                            onChange: handleCreationInputChange,
+                          },
                         ]}
+                        // RangePicker edits stay internal until confirmation; cancel on selection too.
+                        onSelect={handleCreationInputChange}
                         placeholder={[t('fields.schedule.start'), t('fields.schedule.end')]}
                         showTime
                       />
